@@ -71,6 +71,9 @@ export interface RecipeIngredientView {
     completion_checks: string[];
     time_guidance: string | null;
   } | null;
+  // Phase 10-5: stage-specific texture guidance (null when not yet
+  // registered for this ingredient+stage — never fabricated client-side).
+  texture: string | null;
 }
 
 export interface RecipeStorageView {

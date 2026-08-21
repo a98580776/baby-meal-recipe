@@ -40,6 +40,7 @@ export function buildRecipeResponse(
             time_guidance: resolved.cookingProfile.time_guidance,
           }
         : null,
+      texture: resolved.textureProfile?.texture ?? null,
     }));
 
   return {

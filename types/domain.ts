@@ -70,12 +70,24 @@ export interface CookingProfile {
   time_guidance: string | null;
   time_status: VerificationStatus;
   evidence_id: string | null;
+  // Phase 10-4-2 decision B: separate whole-cut (vs the implicit
+  // ground/default form on temperature_rule_id) temperature + rest time.
+  // Both stay null until a primary-source-verified value exists — do not
+  // populate from general knowledge. See migration 0003.
+  whole_cut_temperature_rule_id: string | null;
+  whole_cut_rest_seconds: number | null;
 }
 
 export interface TextureProfile {
   id: string;
   stage_id: string;
-  food_form_id: string;
+  // Phase 10-5: nullable — verified texture content did not vary by food
+  // form, so null means "applies regardless of food form".
+  food_form_id: string | null;
+  // Phase 10-5: which ingredient this stage-specific texture describes.
+  // Null is reserved for a possible future food-form-generic row; every
+  // row seeded so far has this set.
+  ingredient_id: string | null;
   texture: string;
   shape: string | null;
   particle_size: string | null;

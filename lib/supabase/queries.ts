@@ -9,6 +9,7 @@ import type {
   SafetyRule,
   Stage,
   StorageRule,
+  TextureProfile,
 } from "@/types/domain";
 import type { RecipeLookupData, ResolvedIngredient } from "@/lib/rules/types";
 import type { StorageRuleId } from "@/lib/rules/storageMapping";
@@ -40,8 +41,9 @@ export async function getIngredientsList(supabase: SupabaseClient): Promise<Ingr
 async function resolveIngredient(
   supabase: SupabaseClient,
   ingredient: Ingredient,
+  stageId?: string,
 ): Promise<ResolvedIngredient> {
-  const [prepRes, cookRes, rulesRes, allergensRes] = await Promise.all([
+  const [prepRes, cookRes, rulesRes, allergensRes, textureRes] = await Promise.all([
     ingredient.preparation_profile_id
       ? supabase
           .from("preparation_profiles")
@@ -54,12 +56,25 @@ async function resolveIngredient(
       : Promise.resolve({ data: null, error: null }),
     supabase.from("ingredient_safety_rules").select("safety_rules(*)").eq("ingredient_id", ingredient.id),
     supabase.from("ingredient_allergens").select("allergens(*)").eq("ingredient_id", ingredient.id),
+    // Phase 10-5: stage-specific texture, only looked up when the caller
+    // knows which stage the recipe is for (recipe generation). The
+    // stage-agnostic ingredient-detail endpoint passes no stageId, so
+    // textureProfile stays null there.
+    stageId
+      ? supabase
+          .from("texture_profiles")
+          .select("*")
+          .eq("ingredient_id", ingredient.id)
+          .eq("stage_id", stageId)
+          .maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
   ]);
 
   if (prepRes.error) throw prepRes.error;
   if (cookRes.error) throw cookRes.error;
   if (rulesRes.error) throw rulesRes.error;
   if (allergensRes.error) throw allergensRes.error;
+  if (textureRes.error) throw textureRes.error;
 
   const safetyRules = (
     (rulesRes.data ?? []) as unknown as Array<{ safety_rules: SafetyRule }>
@@ -72,6 +87,7 @@ async function resolveIngredient(
     ingredient,
     preparationProfile: prepRes.data as PreparationProfile | null,
     cookingProfile: cookRes.data as CookingProfile | null,
+    textureProfile: textureRes.data as TextureProfile | null,
     safetyRules,
     allergens,
   };
@@ -124,7 +140,7 @@ export async function getRecipeLookupData(
       ingredients.set(id, null);
       continue;
     }
-    ingredients.set(id, await resolveIngredient(supabase, row));
+    ingredients.set(id, await resolveIngredient(supabase, row, params.stage_id));
   }
 
   return {

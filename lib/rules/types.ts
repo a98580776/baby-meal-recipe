@@ -6,6 +6,7 @@ import type {
   PreparationProfile,
   SafetyRule,
   Stage,
+  TextureProfile,
 } from "@/types/domain";
 
 // The DB-joined shape validation/recipe logic operates on. Callers (Supabase
@@ -15,6 +16,10 @@ export interface ResolvedIngredient {
   ingredient: Ingredient;
   preparationProfile: PreparationProfile | null;
   cookingProfile: CookingProfile | null;
+  // Phase 10-5: stage-specific, only populated when the caller resolved
+  // this ingredient with a stage_id (recipe generation). Null for the
+  // stage-agnostic ingredient-detail lookup.
+  textureProfile: TextureProfile | null;
   safetyRules: SafetyRule[];
   allergens: Allergen[];
 }

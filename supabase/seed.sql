@@ -149,3 +149,64 @@ insert into ingredient_safety_rules (ingredient_id, safety_rule_id) values
   ('salmon', 'FISHBONE_REMOVE'),
   ('salmon', 'RAW_FISH_BLOCK'),
   ('tofu', 'SOY_ALLERGEN');
+
+-- =======================================================================
+-- Phase 10-5 additions (append-only per docs/deployment.md §3 -- original
+-- INSERT statements above are not edited). Mirrors
+-- supabase/migrations/0003_texture_and_beef_cutform.sql's data portion so
+-- a fresh bootstrap matches the migrated state. See that file for the
+-- full sourcing rationale.
+--
+-- Left deliberately unregistered (Phase 10-4-2 "추가 검증 필요"/
+-- "등록하지 않음"): broccoli (still UNSUPPORTED, no prep/cook/texture),
+-- tofu (no Tier 1/2 infant-specific heating guidance found), beef/chicken
+-- cooking methods (no single confirmed method), beef whole-cut temp/rest
+-- time (Tier 1 primary text not reached this session), apple's "안 으스
+-- 러지는 정도" phrasing, salmon's "불투명해짐" phrasing, and all
+-- cooking-time/particle-size numbers project-wide.
+-- =======================================================================
+
+insert into evidence (id, organization, title, source_tier, applicability, status) values
+  ('E009', 'NHS (UK)', 'Best Start in Life - What to feed your baby (6 months / 7-9 months / 10-12 months)', 'TIER_1', 'age/stage-based texture progression for weaning foods', 'VERIFIED');
+
+insert into texture_profiles (id, stage_id, food_form_id, texture, shape, particle_size, particle_size_status, evidence_id, ingredient_id) values
+  ('texture_carrot_stage_1', 'stage_1', null, '익혀서 부드럽게, 큰 형태 또는 매쉬', null, null, 'UNSUPPORTED', 'E009', 'carrot'),
+  ('texture_carrot_stage_2', 'stage_2', null, '한입 크기/잘게 다지기/매쉬 + 핑거푸드', null, null, 'UNSUPPORTED', 'E009', 'carrot'),
+  ('texture_carrot_stage_3', 'stage_3', null, '다지기 또는 핑거푸드', null, null, 'UNSUPPORTED', 'E009', 'carrot'),
+  ('texture_carrot_stage_4', 'stage_4', null, '익힌 한입 크기', null, null, 'UNSUPPORTED', 'E009', 'carrot'),
+
+  ('texture_kabocha_stage_1', 'stage_1', null, '껍질·씨 제거 후 큰 조각 또는 매쉬', null, null, 'UNSUPPORTED', 'E009', 'kabocha'),
+  ('texture_kabocha_stage_2', 'stage_2', null, '한입 크기 + 핑거푸드', null, null, 'UNSUPPORTED', 'E009', 'kabocha'),
+  ('texture_kabocha_stage_3', 'stage_3', null, '한입 크기', null, null, 'UNSUPPORTED', 'E009', 'kabocha'),
+  ('texture_kabocha_stage_4', 'stage_4', null, '한입 크기/큰 조각', null, null, 'UNSUPPORTED', 'E009', 'kabocha'),
+
+  ('texture_potato_stage_1', 'stage_1', null, '큰 웨지 또는 매쉬', null, null, 'UNSUPPORTED', 'E009', 'potato'),
+  ('texture_potato_stage_2', 'stage_2', null, '매쉬 또는 핑거푸드', null, null, 'UNSUPPORTED', 'E009', 'potato'),
+  ('texture_potato_stage_3', 'stage_3', null, '한입 크기', null, null, 'UNSUPPORTED', 'E009', 'potato'),
+  ('texture_potato_stage_4', 'stage_4', null, '한입 크기', null, null, 'UNSUPPORTED', 'E009', 'potato'),
+
+  ('texture_sweet_potato_stage_1', 'stage_1', null, '웨지 또는 매쉬', null, null, 'UNSUPPORTED', 'E009', 'sweet_potato'),
+  ('texture_sweet_potato_stage_2', 'stage_2', null, '한입 크기 + 핑거푸드', null, null, 'UNSUPPORTED', 'E009', 'sweet_potato'),
+  ('texture_sweet_potato_stage_3', 'stage_3', null, '핑거푸드', null, null, 'UNSUPPORTED', 'E009', 'sweet_potato'),
+  ('texture_sweet_potato_stage_4', 'stage_4', null, '한입 크기 또는 큰 웨지', null, null, 'UNSUPPORTED', 'E009', 'sweet_potato'),
+
+  ('texture_chicken_stage_1', 'stage_1', null, '껍질 제거한 드럼스틱, 손가락 2개 크기의 긴 스트립, 또는 아기 입보다 큰 미트볼, 잘게 찢어 부드러운 음식에 혼합', null, null, 'UNSUPPORTED', 'E009', 'chicken'),
+  ('texture_chicken_stage_2', 'stage_2', null, '초기와 동일 범위(드럼스틱/스트립/미트볼/찢어서 혼합)', null, null, 'UNSUPPORTED', 'E009', 'chicken'),
+  ('texture_chicken_stage_3', 'stage_3', null, '찢거나 얇게 썰거나 한입 크기', null, null, 'UNSUPPORTED', 'E009', 'chicken'),
+  ('texture_chicken_stage_4', 'stage_4', null, '한입 크기 또는 얇은 조각(덩어리 큐브 형태는 피할 것)', null, null, 'UNSUPPORTED', 'E009', 'chicken'),
+
+  ('texture_salmon_stage_1', 'stage_1', null, '뼈·껍질 제거한 익힌 연어를 손가락 2개 크기 스트립으로, 또는 부드러운 음식에 으깨어 혼합(통조림은 헹궈서 나트륨 낮추기)', null, null, 'UNSUPPORTED', 'E009', 'salmon'),
+  ('texture_salmon_stage_2', 'stage_2', null, '초기와 동일 범위', null, null, 'UNSUPPORTED', 'E009', 'salmon'),
+  ('texture_salmon_stage_3', 'stage_3', null, '한입 크기, 패티/샐러드 형태도 가능', null, null, 'UNSUPPORTED', 'E009', 'salmon'),
+  ('texture_salmon_stage_4', 'stage_4', null, '긴 스트립·한입 크기·패티 등 다양하게', null, null, 'UNSUPPORTED', 'E009', 'salmon'),
+
+  ('texture_apple_stage_1', 'stage_1', null, '익혀서 껍질·씨·심 제거한 조각(그대로 쥐고 빨기) 또는 생사과는 강판에 갈아서만', null, null, 'UNSUPPORTED', 'E009', 'apple'),
+  ('texture_apple_stage_2', 'stage_2', null, '익힌 조각 지속, 생사과는 얇게 썰어(휘어지지 않을 두께)', null, null, 'UNSUPPORTED', 'E009', 'apple'),
+  ('texture_apple_stage_3', 'stage_3', null, '잘게 썰거나 핑거푸드', null, null, 'UNSUPPORTED', 'E009', 'apple'),
+  ('texture_apple_stage_4', 'stage_4', null, '통사과 베어먹기 가능(18개월 이후, 씹기 능숙할 때)', null, null, 'UNSUPPORTED', 'E009', 'apple');
+
+update cooking_profiles set allowed_methods = '{steam,boil,braise}' where id = 'cook_kabocha';
+update cooking_profiles set allowed_methods = '{steam,boil,bake}' where id = 'cook_potato';
+update cooking_profiles set allowed_methods = '{steam,boil,bake}' where id = 'cook_sweet_potato';
+update cooking_profiles set allowed_methods = '{boil,bake,microwave}', completion_checks = '{"포크가 쉽게 들어가는지 확인"}' where id = 'cook_apple';
+update cooking_profiles set allowed_methods = '{bake,steam}', completion_checks = '{"내부 온도 확인","포크로 쉽게 갈라지는지 확인"}' where id = 'cook_salmon';

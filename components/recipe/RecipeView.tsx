@@ -194,9 +194,22 @@ export function RecipeView() {
 
       <section className="mb-6">
         <h2 className="mb-2 text-base font-semibold">질감 · 제공 형태</h2>
-        <p className="rounded-lg border border-gray-200 p-3 text-sm text-gray-600">
-          아기의 발달 단계와 씹는 능력에 맞춰 질감을 조정해주세요. 재료별 정확한 크기 기준은 아직
-          검증된 데이터로 등록되지 않았습니다.
+        <div className="flex flex-col gap-3">
+          {recipe.ingredients.map((ing) => (
+            <div key={ing.id} className="rounded-lg border border-gray-200 p-3">
+              <p className="mb-1 text-sm font-semibold">{ing.name_ko}</p>
+              {ing.texture ? (
+                <p className="text-sm text-gray-700">{ing.texture}</p>
+              ) : (
+                <p className="text-sm text-gray-400">
+                  질감 정보가 아직 등록되지 않았습니다. 아기의 발달 단계와 씹는 능력에 맞춰 조정해주세요.
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
+        <p className="mt-2 rounded-lg border border-gray-200 p-3 text-xs text-gray-500">
+          재료별 정확한 입자 크기(mm/cm)는 아직 검증된 데이터로 등록되지 않았습니다.
         </p>
       </section>
 
