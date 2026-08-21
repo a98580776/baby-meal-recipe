@@ -3,32 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import type { ApiErrorResponse, RecipeRequestInput, RecipeResponse } from "@/types/api";
+import type { ApiErrorResponse, RecipeResponse } from "@/types/api";
 import type { FoodForm, Stage } from "@/types/domain";
-
-function parseInputFromParams(params: URLSearchParams): RecipeRequestInput | null {
-  const stage_id = params.get("stage_id");
-  const food_form_id = params.get("food_form_id");
-  const ingredientsParam = params.get("ingredient_ids");
-  if (!stage_id || !food_form_id || !ingredientsParam) return null;
-
-  const ingredient_ids = ingredientsParam.split(",").filter(Boolean);
-  if (ingredient_ids.length === 0) return null;
-
-  const servingsParam = params.get("servings");
-  const exclusionsParam = params.get("exclusions");
-  const allergiesParam = params.get("allergies");
-
-  return {
-    stage_id,
-    food_form_id,
-    ingredient_ids,
-    readiness: params.get("readiness") === "true",
-    servings: servingsParam ? Number(servingsParam) : null,
-    exclusions: exclusionsParam ? exclusionsParam.split(",").filter(Boolean) : [],
-    allergies: allergiesParam ? allergiesParam.split(",").filter(Boolean) : [],
-  };
-}
+import { parseInputFromParams } from "@/lib/recipe/parseRequestParams";
 
 type LoadState =
   | { status: "loading" }
