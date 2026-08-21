@@ -10,10 +10,15 @@ interface RecipeInputFormProps {
   foodForms: FoodForm[];
   ingredients: Ingredient[];
   allergens: Allergen[];
-  // System-suggested stage from BabyProfileGate (생년월일 기반). Pre-selects
-  // the stage but the user's own selection below stays fully independent —
-  // 인수인계 §9 "추천값과 사용자가 최종 선택한 단계값을 분리".
+  // Fresh, age-based system suggestion (재계산됨) — only drives the "추천"
+  // badge/helper text below. 인수인계 §9 "추천값과 사용자가 최종 선택한
+  // 단계값을 분리".
   recommendedStageId?: string | null;
+  // Stage to pre-select on mount. Defaults to recommendedStageId when not
+  // given. Phase 10-2 passes the baby profile's confirmedStageId here so
+  // the form opens on the user's already-established stage rather than
+  // always resetting to whatever the system currently recommends.
+  initialStageId?: string | null;
 }
 
 /**
@@ -28,10 +33,11 @@ export function RecipeInputForm({
   ingredients,
   allergens,
   recommendedStageId = null,
+  initialStageId = null,
 }: RecipeInputFormProps) {
   const router = useRouter();
 
-  const [stageId, setStageId] = useState<string>(recommendedStageId ?? "");
+  const [stageId, setStageId] = useState<string>(initialStageId ?? recommendedStageId ?? "");
   const [foodFormId, setFoodFormId] = useState<string>("");
   const [readiness, setReadiness] = useState(false);
   const [selectedIngredientIds, setSelectedIngredientIds] = useState<string[]>([]);

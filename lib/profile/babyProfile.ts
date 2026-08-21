@@ -11,6 +11,11 @@ export interface BabyProfile {
   name: string;
   birthDate: string; // ISO yyyy-mm-dd
   photoDataUrl: string | null;
+  // User-confirmed 이유식 단계 (Phase 10-2). Distinct from the fresh,
+  // age-based recommendation computed on every render — see
+  // lib/profile/stageRecommendation.ts. Only changes when the user
+  // re-confirms it via onboarding or 정보 수정.
+  confirmedStageId: string;
 }
 
 const STORAGE_KEY = "babyMealProject.babyProfile.v1";
@@ -19,11 +24,12 @@ function parseProfile(raw: string | null): BabyProfile | null {
   if (!raw) return null;
   try {
     const parsed = JSON.parse(raw) as Partial<BabyProfile>;
-    if (!parsed.name || !parsed.birthDate) return null;
+    if (!parsed.name || !parsed.birthDate || !parsed.confirmedStageId) return null;
     return {
       name: parsed.name,
       birthDate: parsed.birthDate,
       photoDataUrl: parsed.photoDataUrl ?? null,
+      confirmedStageId: parsed.confirmedStageId,
     };
   } catch {
     return null;
