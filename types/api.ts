@@ -48,3 +48,52 @@ export interface ApiErrorResponse {
     details: ApiErrorDetail[];
   };
 }
+
+// Recipe response shape — mirrors claude.md §6 Recipe fields and
+// 260821/.../설계명세_v0.2.md §23 UI order (재료→손질→조리→익힘확인→질감→주의→보관).
+// No LLM step is used to build this for MVP: every field is assembled
+// directly from already-fetched DB rows (ingredients/rules/profiles).
+export interface RecipeIngredientView {
+  id: string;
+  name_ko: string;
+  verification_status: string;
+  preparation: {
+    wash_rule: string | null;
+    peel_rule: string | null;
+    seed_removal_rule: string | null;
+    core_tough_part_rule: string | null;
+    bone_removal_rule: string | null;
+    fishbone_removal_rule: string | null;
+    cutting_guidance: string | null;
+  } | null;
+  cooking: {
+    allowed_methods: string[];
+    completion_checks: string[];
+    time_guidance: string | null;
+  } | null;
+}
+
+export interface RecipeStorageView {
+  rule_id: string;
+  refrigerator_days_min: number | null;
+  refrigerator_days_max: number | null;
+  freezer_months_min: number | null;
+  freezer_months_max: number | null;
+  reheat: {
+    method: string;
+    container_rule: string | null;
+    stirring_required: boolean;
+    stand_time_required: boolean;
+    temperature_check_required: boolean;
+    food_specific_restriction: string | null;
+  } | null;
+}
+
+export interface RecipeResponse {
+  stage_id: string;
+  food_form_id: string;
+  servings: number | null;
+  ingredients: RecipeIngredientView[];
+  safety_notes: ApiErrorDetail[];
+  storage: RecipeStorageView | null;
+}

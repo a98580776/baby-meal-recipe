@@ -1,4 +1,5 @@
 import type { ApiErrorDetail } from "@/types/api";
+import { withEunNeun } from "./koreanParticle";
 import type { ResolvedIngredient } from "./types";
 
 export interface SafetyEvaluation {
@@ -20,13 +21,14 @@ export function evaluateIngredientSafety(
   const errors: ApiErrorDetail[] = [];
   const warnings: ApiErrorDetail[] = [];
   const name = resolved.ingredient.name_ko;
+  const nameEunNeun = withEunNeun(name);
 
   for (const rule of resolved.safetyRules) {
     switch (rule.action) {
       case "BLOCK_INGREDIENT": {
         errors.push({
           code: "SAFETY_BLOCKED",
-          message: `${name}은(는) 현재 조건에서 사용할 수 없습니다.`,
+          message: `${nameEunNeun} 현재 조건에서 사용할 수 없습니다.`,
           rule_id: rule.id,
         });
         break;
@@ -40,7 +42,7 @@ export function evaluateIngredientSafety(
         if (!resolved.cookingProfile) {
           errors.push({
             code: "SAFETY_BLOCKED",
-            message: `${name}은(는) 안전하게 조리하는 방법이 확인되지 않아 이 형태로 제공할 수 없습니다.`,
+            message: `${nameEunNeun} 안전하게 조리하는 방법이 확인되지 않아 이 형태로 제공할 수 없습니다.`,
             rule_id: rule.id,
           });
         }
@@ -101,7 +103,7 @@ export function evaluateIngredientSafety(
         if (declared) {
           errors.push({
             code: "SAFETY_BLOCKED",
-            message: `${name}은(는) 등록하신 알레르기(${allergen})와 관련되어 제외됩니다.`,
+            message: `${nameEunNeun} 등록하신 알레르기(${allergen})와 관련되어 제외됩니다.`,
             rule_id: rule.id,
           });
         } else {

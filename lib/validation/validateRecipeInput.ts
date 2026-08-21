@@ -1,4 +1,5 @@
 import type { ApiErrorDetail, RecipeRequestInput, RecipeValidationResponse } from "@/types/api";
+import { withEunNeun } from "@/lib/rules/koreanParticle";
 import { evaluateIngredientSafety } from "@/lib/rules/safety";
 import { deriveStorageRuleId } from "@/lib/rules/storageMapping";
 import type { RecipeLookupData } from "@/lib/rules/types";
@@ -68,7 +69,7 @@ export function validateRecipeInput(
     if (resolved.ingredient.verification_status === "UNSUPPORTED") {
       errors.push({
         code: "VALIDATION_FAILED",
-        message: `${resolved.ingredient.name_ko}은(는) 아직 검증되지 않아 사용할 수 없습니다.`,
+        message: `${withEunNeun(resolved.ingredient.name_ko)} 아직 검증되지 않아 사용할 수 없습니다.`,
       });
     } else if (resolved.ingredient.verification_status === "NEEDS_REVIEW") {
       warnings.push({
