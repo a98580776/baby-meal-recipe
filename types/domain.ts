@@ -122,7 +122,7 @@ export interface Allergen {
   code: string;
   name_ko: string;
   country: string;
-  version: string;
+  version: string | null;
 }
 
 export interface Evidence {
