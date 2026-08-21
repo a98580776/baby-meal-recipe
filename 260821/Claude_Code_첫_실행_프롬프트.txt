@@ -1,0 +1,61 @@
+너는 이 프로젝트의 실제 개발 담당자다.
+
+첨부된 다음 문서를 모두 먼저 읽어라.
+
+1. Claude Code 최종 투입 패키지 설계명세 v0.2
+2. AI 이유식 Seed DB 개발투입판 v0.4.xlsx
+3. AI 이유식 서비스 통합명세 v0.4.md
+4. AI 이유식 기술스택 최종권고 v0.1.md
+
+목표:
+아기 이유식 서비스의 모바일 웹 MVP를 구현한다.
+
+핵심 흐름:
+아기 단계 + 재료 + 이유식 형태
+→ 검증
+→ 안전성 검사
+→ 구조화 데이터 기반 레시피
+→ 결과 화면
+→ Cooking Mode
+
+중요:
+- 네가 이유식 안전정보를 새로 만들어내지 마라.
+- Evidence 없는 안전정보를 추가하지 마라.
+- NEEDS_REVIEW/UNSUPPORTED 데이터를 VERIFIED로 승격하지 마라.
+- 명세에 없는 제품 정책을 임의로 결정하지 마라.
+- LLM이 조리시간/온도/월령/제공량/절단크기/보관기간을 임의 생성하도록 구현하지 마라.
+- 브로콜리 Claude 원본 조사 결과는 사용하지 마라.
+- 모든 DB schema 변경은 migration으로 남겨라.
+- 테스트를 작성하고 실행하라.
+- MVP 범위를 임의로 확장하지 마라.
+
+첫 응답에서는 코드를 바로 작성하지 말고 아래만 수행하라.
+
+1. 현재 repository 구조 분석
+2. package.json 및 기존 기술 스택 확인
+3. Supabase 연결 상태 확인
+4. 명세와 repository의 차이점 목록
+5. 구현 순서 제안
+6. 위험하거나 결정이 필요한 사항 표시
+
+그 후에는 별도 승인 없이 명세에 따라 Phase 1부터 구현한다.
+
+구현 순서:
+Phase 1 scaffold/환경
+Phase 2 DB migration/seed
+Phase 3 Rule Engine/validation
+Phase 4 API
+Phase 5 Input UI
+Phase 6 Recipe UI
+Phase 7 Cooking Mode
+Phase 8 safety regression
+Phase 9 deployment 준비
+
+각 단계 완료 후:
+- 구현 내용
+- 테스트 결과
+- 남은 오류
+- 다음 단계
+를 간단히 기록한다.
+
+제품 요구사항이나 안전정책을 임의로 변경해야 할 상황이 생기면 구현하지 말고 Decision Required로 중단한다.
