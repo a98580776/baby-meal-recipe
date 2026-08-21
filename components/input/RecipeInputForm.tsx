@@ -10,6 +10,10 @@ interface RecipeInputFormProps {
   foodForms: FoodForm[];
   ingredients: Ingredient[];
   allergens: Allergen[];
+  // System-suggested stage from BabyProfileGate (생년월일 기반). Pre-selects
+  // the stage but the user's own selection below stays fully independent —
+  // 인수인계 §9 "추천값과 사용자가 최종 선택한 단계값을 분리".
+  recommendedStageId?: string | null;
 }
 
 /**
@@ -18,10 +22,16 @@ interface RecipeInputFormProps {
  * component only does presence checks (필수값 미입력) for UX, and otherwise
  * just relays whatever the API returns.
  */
-export function RecipeInputForm({ stages, foodForms, ingredients, allergens }: RecipeInputFormProps) {
+export function RecipeInputForm({
+  stages,
+  foodForms,
+  ingredients,
+  allergens,
+  recommendedStageId = null,
+}: RecipeInputFormProps) {
   const router = useRouter();
 
-  const [stageId, setStageId] = useState<string>("");
+  const [stageId, setStageId] = useState<string>(recommendedStageId ?? "");
   const [foodFormId, setFoodFormId] = useState<string>("");
   const [readiness, setReadiness] = useState(false);
   const [selectedIngredientIds, setSelectedIngredientIds] = useState<string[]>([]);
@@ -101,19 +111,29 @@ export function RecipeInputForm({ stages, foodForms, ingredients, allergens }: R
     <form onSubmit={handleSubmit} className="flex flex-col gap-6 pb-24">
       <section>
         <h2 className="mb-2 text-base font-semibold">아기 단계</h2>
+        {recommendedStageId && (
+          <p className="mb-2 text-xs text-gray-500">
+            생년월일 기준 추천 단계예요. 다른 단계를 원하면 직접 선택할 수 있어요.
+          </p>
+        )}
         <div className="flex flex-wrap gap-2">
           {stages.map((stage) => (
             <button
               key={stage.id}
               type="button"
               onClick={() => setStageId(stage.id)}
-              className={`rounded-full border px-4 py-2 text-sm ${
+              className={`relative rounded-full border px-4 py-2 text-sm ${
                 stageId === stage.id
                   ? "border-blue-600 bg-blue-600 text-white"
                   : "border-gray-300 bg-white text-gray-700"
               }`}
             >
               {stage.name_ko}
+              {recommendedStageId === stage.id && (
+                <span className="absolute -top-2 -right-2 rounded-full bg-amber-500 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                  추천
+                </span>
+              )}
             </button>
           ))}
         </div>

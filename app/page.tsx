@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getAllergens, getFoodForms, getIngredientsList, getStages } from "@/lib/supabase/queries";
-import { RecipeInputForm } from "@/components/input/RecipeInputForm";
+import { BabyProfileGate } from "@/components/profile/BabyProfileGate";
 
 export default async function Home() {
   const supabase = await createClient();
@@ -14,7 +14,7 @@ export default async function Home() {
   return (
     <div className="mx-auto max-w-lg px-4 py-6">
       <h1 className="mb-6 text-xl font-bold">오늘의 이유식</h1>
-      <RecipeInputForm
+      <BabyProfileGate
         stages={stages}
         foodForms={foodForms}
         ingredients={ingredients}
