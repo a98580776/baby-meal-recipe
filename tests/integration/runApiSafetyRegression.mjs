@@ -10,6 +10,23 @@
 // Run: npm run test:integration
 // (spawns `npm run dev` if nothing is already listening on port 3000, and
 // tears it down afterward; reuses an already-running dev server otherwise)
+//
+// KNOWN LIMITATION (cases 3, 4, 5, 8 below): with the current, unmodified
+// SeedDB v0.4 data, the CHOKING_HARD_RAW/RAW_FISH_BLOCK rules on
+// carrot/apple/salmon never actually reach their BLOCK_FORM branch via this
+// live path, because every one of those ingredients already has a
+// cooking_profile — and the generate() pipeline always applies it, which
+// structurally prevents the raw/hard hazard the rule exists for. So cases
+// 3/4/5 only prove the *positive* path (cooked, not blocked) over real
+// HTTP; the *negative* path (what happens if no cooking_profile exists) is
+// not exercised here. Likewise honey (case 8) is not one of the 10 seeded
+// ingredients, so it is rejected as "ingredient not found" before
+// HONEY_UNDER_12M is ever evaluated. None of this is a gap in the rule
+// engine itself — the BLOCK_FORM / BLOCK_INGREDIENT branches for these
+// exact rules ARE exercised, at the rule-engine level, by
+// tests/safety/safetyRules.test.ts (using fixtures with cookingProfile:
+// null / a synthetic honey ingredient) without touching seed data. Treat
+// this file and that one as complementary, not redundant.
 
 import { spawn, exec } from "node:child_process";
 import { setTimeout as sleep } from "node:timers/promises";
