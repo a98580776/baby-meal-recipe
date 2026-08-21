@@ -25,6 +25,12 @@ export async function getFoodForms(supabase: SupabaseClient): Promise<FoodForm[]
   return (data ?? []) as FoodForm[];
 }
 
+export async function getAllergens(supabase: SupabaseClient): Promise<Allergen[]> {
+  const { data, error } = await supabase.from("allergens").select("*").order("code");
+  if (error) throw error;
+  return (data ?? []) as Allergen[];
+}
+
 export async function getIngredientsList(supabase: SupabaseClient): Promise<Ingredient[]> {
   const { data, error } = await supabase.from("ingredients").select("*").order("name_ko");
   if (error) throw error;
