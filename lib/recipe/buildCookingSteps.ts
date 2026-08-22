@@ -11,6 +11,10 @@ export interface CookingStep {
   // (Phase 11 §15): the Cooking Mode count-up timer is what covers steps
   // without this.
   timeGuidance: string | null;
+  // Whether this STEP measures elapsed cooking time (삶기/찌기/굽기/끓이기
+  // doneness checks). false for prep steps (세척/손질/자르기/으깨기) and the
+  // 조리 방법 description step, which have no time dimension to track.
+  timerEnabled: boolean;
 }
 
 /**
@@ -34,6 +38,7 @@ export function buildCookingSteps(recipe: RecipeResponse): CookingStep[] {
         instruction,
         actionLabel,
         timeGuidance: actionLabel === "익힘 확인" ? (ing.cooking?.time_guidance ?? null) : null,
+        timerEnabled: actionLabel === "익힘 확인",
       });
     };
 

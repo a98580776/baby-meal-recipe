@@ -43,6 +43,14 @@ describe("buildCookingSteps", () => {
     expect(steps[3].actionLabel).toBe("익힘 확인");
   });
 
+  it("enables the timer only on 익힘 확인 steps, never on prep/조리 방법 steps", () => {
+    const steps = buildCookingSteps(makeRecipe(["carrot"]));
+    expect(steps[0].timerEnabled).toBe(false); // 세척
+    expect(steps[1].timerEnabled).toBe(false); // 손질(껍질 제거)
+    expect(steps[2].timerEnabled).toBe(false); // 조리 방법
+    expect(steps[3].timerEnabled).toBe(true); // 익힘 확인
+  });
+
   it("surfaces the verified temperature threshold from safety_notes as a step, with no invented time", () => {
     const steps = buildCookingSteps(makeRecipe(["beef"]));
     const tempStep = steps.find((s) => s.instruction.includes("71.1"));

@@ -7,30 +7,38 @@ import type { ApiErrorResponse, RecipeResponse } from "@/types/api";
 import { parseInputFromParams } from "@/lib/recipe/parseRequestParams";
 import { buildCookingSteps, type CookingStep } from "@/lib/recipe/buildCookingSteps";
 
-function formatElapsed(totalSeconds: number): string {
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+function formatElapsed(totalMs: number): string {
+  const centiseconds = Math.floor(totalMs / 10);
+  const minutes = Math.floor(centiseconds / 6000);
+  const seconds = Math.floor(centiseconds / 100) % 60;
+  const hundredths = centiseconds % 100;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}:${String(hundredths).padStart(2, "0")}`;
 }
 
 /**
  * Count-up (never countdown) elapsed timer for the current STEP (Phase 11
- * §15). Mounted with `key={step.id}` by the parent so a STEP change remounts
- * it — a fresh `useState(0)` is the reset, instead of calling setState
- * synchronously inside an effect body.
+ * §15), shown only when the STEP itself needs elapsed-time tracking
+ * (`step.timerEnabled`). Mounted with `key={step.id}` by the parent so a
+ * STEP change remounts it — a fresh `useState(0)` is the reset, instead of
+ * calling setState synchronously inside an effect body. Elapsed time is
+ * derived from `performance.now() - start` rather than incremented per tick,
+ * so drift in the interval never accumulates into the displayed value.
+ * Updates every 100ms (10/s) — enough to move the hundredths digit visibly
+ * without re-rendering on every animation frame.
  */
 function StepTimer({ timeGuidance }: { timeGuidance: string | null }) {
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [elapsedMs, setElapsedMs] = useState(0);
 
   useEffect(() => {
-    const timer = setInterval(() => setElapsedSeconds((s) => s + 1), 1000);
+    const start = performance.now();
+    const timer = setInterval(() => setElapsedMs(performance.now() - start), 100);
     return () => clearInterval(timer);
   }, []);
 
   return (
     <div className="flex flex-col items-center gap-1">
       {timeGuidance && <p className="text-sm text-gray-500">권장 조리시간: {timeGuidance}</p>}
-      <p className="text-2xl font-mono font-semibold text-gray-700">⏱ {formatElapsed(elapsedSeconds)}</p>
+      <p className="text-2xl font-mono font-semibold text-gray-700">⏱ {formatElapsed(elapsedMs)}</p>
     </div>
   );
 }
@@ -156,7 +164,7 @@ export function CookingModeView() {
       </p>
       <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
         <p className="text-xl font-semibold leading-relaxed">{step.instruction}</p>
-        <StepTimer key={step.id} timeGuidance={step.timeGuidance} />
+        {step.timerEnabled && <StepTimer key={step.id} timeGuidance={step.timeGuidance} />}
       </div>
       <button
         type="button"

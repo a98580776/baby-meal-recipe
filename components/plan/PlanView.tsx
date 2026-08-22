@@ -2,7 +2,7 @@
 
 import { useMemo, useSyncExternalStore } from "react";
 import Link from "next/link";
-import type { Allergen, FoodForm, Ingredient, Stage } from "@/types/domain";
+import type { FoodForm, Ingredient, Stage } from "@/types/domain";
 import { RecipeInputForm } from "@/components/input/RecipeInputForm";
 import {
   getBabyProfileServerSnapshot,
@@ -15,14 +15,13 @@ interface PlanViewProps {
   stages: Stage[];
   foodForms: FoodForm[];
   ingredients: Ingredient[];
-  allergens: Allergen[];
 }
 
 /**
  * /plan hosts the existing RecipeInputForm, entered via BabyHome's
  * "오늘 이유식 만들기" CTA (Phase 10-2: 라우팅만 변경, 폼 자체는 그대로).
  */
-export function PlanView({ stages, foodForms, ingredients, allergens }: PlanViewProps) {
+export function PlanView({ stages, foodForms, ingredients }: PlanViewProps) {
   const profile = useSyncExternalStore(
     subscribeBabyProfile,
     getBabyProfileSnapshot,
@@ -54,7 +53,6 @@ export function PlanView({ stages, foodForms, ingredients, allergens }: PlanView
         stages={stages}
         foodForms={foodForms}
         ingredients={ingredients}
-        allergens={allergens}
         recommendedStageId={recommendedStageId}
         initialStageId={profile.confirmedStageId}
       />

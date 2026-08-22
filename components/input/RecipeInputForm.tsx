@@ -3,7 +3,7 @@
 import { useMemo, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import type { ApiErrorDetail, RecipeRequestInput, RecipeValidationResponse } from "@/types/api";
-import type { Allergen, FoodForm, Ingredient, Stage } from "@/types/domain";
+import type { FoodForm, Ingredient, Stage } from "@/types/domain";
 import { IngredientSearchOverlay } from "@/components/input/IngredientSearchOverlay";
 import {
   getRecentIngredientIdsServerSnapshot,
@@ -15,7 +15,6 @@ interface RecipeInputFormProps {
   stages: Stage[];
   foodForms: FoodForm[];
   ingredients: Ingredient[];
-  allergens: Allergen[];
   // Fresh, age-based system suggestion (재계산됨) — only drives the "추천"
   // badge/helper text below. 인수인계 §9 "추천값과 사용자가 최종 선택한
   // 단계값을 분리".
@@ -37,7 +36,6 @@ export function RecipeInputForm({
   stages,
   foodForms,
   ingredients,
-  allergens,
   recommendedStageId = null,
   initialStageId = null,
 }: RecipeInputFormProps) {
@@ -47,9 +45,6 @@ export function RecipeInputForm({
   const [foodFormId, setFoodFormId] = useState<string>("");
   const [readiness, setReadiness] = useState(false);
   const [selectedIngredientIds, setSelectedIngredientIds] = useState<string[]>([]);
-  const [exclusionIds, setExclusionIds] = useState<string[]>([]);
-  const [allergyCodes, setAllergyCodes] = useState<string[]>([]);
-  const [servings, setServings] = useState<string>("");
   const [searchOpen, setSearchOpen] = useState(false);
 
   const [formError, setFormError] = useState<string | null>(null);
@@ -74,12 +69,10 @@ export function RecipeInputForm({
     [recentIds, ingredientById],
   );
 
-  function toggle(list: string[], id: string, setter: (next: string[]) => void) {
-    setter(list.includes(id) ? list.filter((x) => x !== id) : [...list, id]);
-  }
-
   function toggleIngredient(id: string) {
-    toggle(selectedIngredientIds, id, setSelectedIngredientIds);
+    setSelectedIngredientIds((list) =>
+      list.includes(id) ? list.filter((x) => x !== id) : [...list, id],
+    );
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -101,9 +94,6 @@ export function RecipeInputForm({
       readiness,
       ingredient_ids: selectedIngredientIds,
       food_form_id: foodFormId,
-      servings: servings ? Number(servings) : null,
-      exclusions: exclusionIds,
-      allergies: allergyCodes,
     };
 
     setSubmitting(true);
@@ -127,9 +117,6 @@ export function RecipeInputForm({
         readiness: String(readiness),
         ingredient_ids: selectedIngredientIds.join(","),
       });
-      if (servings) params.set("servings", servings);
-      if (exclusionIds.length > 0) params.set("exclusions", exclusionIds.join(","));
-      if (allergyCodes.length > 0) params.set("allergies", allergyCodes.join(","));
 
       router.push(`/recipe?${params.toString()}`);
     } catch {
@@ -262,59 +249,6 @@ export function RecipeInputForm({
       >
         {submitting ? "🥕 재료를 확인하고 있어요" : "🍚 레시피 만들기"}
       </button>
-
-      <details className="rounded-lg border border-gray-200 p-3">
-        <summary className="cursor-pointer text-sm font-semibold text-gray-700">선택 입력</summary>
-        <div className="mt-3 flex flex-col gap-4">
-          <div>
-            <label className="mb-1 block text-sm text-gray-700" htmlFor="servings">
-              인분
-            </label>
-            <input
-              id="servings"
-              type="number"
-              min={1}
-              value={servings}
-              onChange={(e) => setServings(e.target.value)}
-              className="w-24 rounded border border-gray-300 px-2 py-1"
-            />
-          </div>
-
-          {allergens.length > 0 && (
-            <div>
-              <p className="mb-1 text-sm text-gray-700">알레르기</p>
-              <div className="flex flex-wrap gap-2">
-                {allergens.map((a) => (
-                  <label key={a.id} className="flex items-center gap-1 text-sm text-gray-700">
-                    <input
-                      type="checkbox"
-                      checked={allergyCodes.includes(a.code)}
-                      onChange={() => toggle(allergyCodes, a.code, setAllergyCodes)}
-                    />
-                    {a.name_ko}
-                  </label>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div>
-            <p className="mb-1 text-sm text-gray-700">제외 재료</p>
-            <div className="flex flex-wrap gap-2">
-              {ingredients.map((ing) => (
-                <label key={ing.id} className="flex items-center gap-1 text-sm text-gray-700">
-                  <input
-                    type="checkbox"
-                    checked={exclusionIds.includes(ing.id)}
-                    onChange={() => toggle(exclusionIds, ing.id, setExclusionIds)}
-                  />
-                  {ing.name_ko}
-                </label>
-              ))}
-            </div>
-          </div>
-        </div>
-      </details>
 
       {formError && <p className="text-sm text-red-600">{formError}</p>}
 
