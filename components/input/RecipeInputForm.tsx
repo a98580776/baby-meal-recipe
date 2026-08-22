@@ -129,8 +129,12 @@ export function RecipeInputForm({
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6 pb-8">
       <section>
-        <h2 className="mb-2 text-base font-semibold">이유식 단계</h2>
-        <div className="flex gap-2 overflow-x-auto whitespace-nowrap pb-1">
+        <h2 className="text-base font-semibold">이유식 단계</h2>
+        {/* pt-2 reserves room for the ⭐ badge's -top-2 offset: overflow-x-auto
+            forces overflow-y to compute as auto too (CSS overflow spec), which
+            clips anything poking above this row's box unless padding makes
+            space for it first. */}
+        <div className="flex gap-2 overflow-x-auto whitespace-nowrap pt-2 pb-1">
           {stages.map((stage) => (
             <button
               key={stage.id}

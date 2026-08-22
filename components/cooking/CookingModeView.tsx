@@ -20,25 +20,51 @@ function formatElapsed(totalMs: number): string {
  * §15), shown only when the STEP itself needs elapsed-time tracking
  * (`step.timerEnabled`). Mounted with `key={step.id}` by the parent so a
  * STEP change remounts it — a fresh `useState(0)` is the reset, instead of
- * calling setState synchronously inside an effect body. Elapsed time is
- * derived from `performance.now() - start` rather than incremented per tick,
- * so drift in the interval never accumulates into the displayed value.
- * Updates every 100ms (10/s) — enough to move the hundredths digit visibly
- * without re-rendering on every animation frame.
+ * calling setState synchronously inside an effect body.
+ *
+ * Phase 11-2: never auto-starts on STEP entry. `running` starts `false`, so
+ * the effect that drives the interval only attaches once the user presses
+ * 시작. Elapsed time is derived from `performance.now() - start` rather than
+ * incremented per tick, so drift in the interval never accumulates — and on
+ * every 시작 press `start` is recomputed as `now - elapsedMs`, so resuming
+ * after 중지 continues from the frozen value instead of resetting it.
  */
 function StepTimer({ timeGuidance }: { timeGuidance: string | null }) {
   const [elapsedMs, setElapsedMs] = useState(0);
+  const [running, setRunning] = useState(false);
 
   useEffect(() => {
-    const start = performance.now();
+    if (!running) return;
+    const start = performance.now() - elapsedMs;
     const timer = setInterval(() => setElapsedMs(performance.now() - start), 100);
     return () => clearInterval(timer);
-  }, []);
+    // elapsedMs is intentionally read only at effect-start time (resume point),
+    // not tracked as a dependency — that would restart the interval every tick.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [running]);
 
   return (
-    <div className="flex flex-col items-center gap-1">
+    <div className="flex flex-col items-center gap-2">
       {timeGuidance && <p className="text-sm text-gray-500">권장 조리시간: {timeGuidance}</p>}
       <p className="text-2xl font-mono font-semibold text-gray-700">⏱ {formatElapsed(elapsedMs)}</p>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => setRunning(true)}
+          disabled={running}
+          className="rounded-lg border border-blue-600 px-4 py-2 text-sm font-semibold text-blue-600 disabled:opacity-40"
+        >
+          ▶ 시작
+        </button>
+        <button
+          type="button"
+          onClick={() => setRunning(false)}
+          disabled={!running}
+          className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-600 disabled:opacity-40"
+        >
+          ■ 중지
+        </button>
+      </div>
     </div>
   );
 }
