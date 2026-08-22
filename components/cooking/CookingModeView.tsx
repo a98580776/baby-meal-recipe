@@ -7,6 +7,34 @@ import type { ApiErrorResponse, RecipeResponse } from "@/types/api";
 import { parseInputFromParams } from "@/lib/recipe/parseRequestParams";
 import { buildCookingSteps, type CookingStep } from "@/lib/recipe/buildCookingSteps";
 
+function formatElapsed(totalSeconds: number): string {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
+/**
+ * Count-up (never countdown) elapsed timer for the current STEP (Phase 11
+ * §15). Mounted with `key={step.id}` by the parent so a STEP change remounts
+ * it — a fresh `useState(0)` is the reset, instead of calling setState
+ * synchronously inside an effect body.
+ */
+function StepTimer({ timeGuidance }: { timeGuidance: string | null }) {
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => setElapsedSeconds((s) => s + 1), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="flex flex-col items-center gap-1">
+      {timeGuidance && <p className="text-sm text-gray-500">권장 조리시간: {timeGuidance}</p>}
+      <p className="text-2xl font-mono font-semibold text-gray-700">⏱ {formatElapsed(elapsedSeconds)}</p>
+    </div>
+  );
+}
+
 type LoadState =
   | { status: "loading" }
   | { status: "error"; message: string }
@@ -126,8 +154,9 @@ export function CookingModeView() {
       <p className="mb-8 text-sm font-medium text-gray-500">
         STEP {stepIndex + 1} / {steps.length}
       </p>
-      <div className="flex flex-1 flex-col items-center justify-center text-center">
+      <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
         <p className="text-xl font-semibold leading-relaxed">{step.instruction}</p>
+        <StepTimer key={step.id} timeGuidance={step.timeGuidance} />
       </div>
       <button
         type="button"

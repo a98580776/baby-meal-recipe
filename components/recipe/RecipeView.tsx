@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import type { ApiErrorResponse, RecipeResponse } from "@/types/api";
 import type { FoodForm, Stage } from "@/types/domain";
 import { parseInputFromParams } from "@/lib/recipe/parseRequestParams";
+import { recordRecentIngredients } from "@/lib/recipe/recentIngredients";
 
 type LoadState =
   | { status: "loading" }
@@ -73,6 +74,12 @@ export function RecipeView() {
     };
   }, [input]);
 
+  useEffect(() => {
+    if (state.status === "ready") {
+      recordRecentIngredients(state.recipe.ingredients.map((ing) => ing.id));
+    }
+  }, [state]);
+
   if (!input) {
     return (
       <div className="p-4">
@@ -103,10 +110,11 @@ export function RecipeView() {
 
   const { recipe, stage, foodForm } = state;
   const cookingModeHref = `/cooking?${searchParams.toString()}`;
+  const recipeName = `${recipe.ingredients.map((ing) => ing.name_ko).join(" ")} ${foodForm?.name_ko ?? ""}`.trim();
 
   return (
     <div className="mx-auto max-w-lg px-4 py-6 pb-28">
-      <h1 className="mb-1 text-xl font-bold">오늘의 이유식</h1>
+      <h1 className="mb-1 text-xl font-bold">{recipeName}</h1>
       <p className="mb-6 text-sm text-gray-500">
         {stage?.name_ko ?? recipe.stage_id} · {foodForm?.name_ko ?? recipe.food_form_id}
         {recipe.servings ? ` · ${recipe.servings}인분` : ""}
@@ -213,17 +221,6 @@ export function RecipeView() {
         </p>
       </section>
 
-      {recipe.safety_notes.length > 0 && (
-        <section className="mb-6">
-          <h2 className="mb-2 text-base font-semibold">주의사항</h2>
-          <ul className="list-disc rounded-lg border border-amber-300 bg-amber-50 p-3 pl-8 text-sm text-amber-800">
-            {recipe.safety_notes.map((note, i) => (
-              <li key={i}>{note.message}</li>
-            ))}
-          </ul>
-        </section>
-      )}
-
       {recipe.storage && (
         <section className="mb-6">
           <h2 className="mb-2 text-base font-semibold">보관</h2>
@@ -243,6 +240,17 @@ export function RecipeView() {
               </div>
             )}
           </div>
+        </section>
+      )}
+
+      {recipe.safety_notes.length > 0 && (
+        <section className="mb-6">
+          <h2 className="mb-2 text-base font-semibold">⚠️ 주의할 점</h2>
+          <ul className="list-disc rounded-lg border border-amber-300 bg-amber-50 p-3 pl-8 text-sm text-amber-800">
+            {recipe.safety_notes.map((note, i) => (
+              <li key={i}>{note.message}</li>
+            ))}
+          </ul>
         </section>
       )}
 

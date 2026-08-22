@@ -6,6 +6,11 @@ export interface CookingStep {
   ingredientName: string;
   instruction: string;
   actionLabel: "완료" | "익힘 확인";
+  // Verified cook-time text (cooking_profiles.time_guidance) for 익힘 확인
+  // steps only — null when no such data exists. Never a fabricated number
+  // (Phase 11 §15): the Cooking Mode count-up timer is what covers steps
+  // without this.
+  timeGuidance: string | null;
 }
 
 /**
@@ -22,7 +27,14 @@ export function buildCookingSteps(recipe: RecipeResponse): CookingStep[] {
   for (const ing of recipe.ingredients) {
     let index = 0;
     const push = (instruction: string, actionLabel: CookingStep["actionLabel"] = "완료") => {
-      steps.push({ id: `${ing.id}-${index++}`, ingredientId: ing.id, ingredientName: ing.name_ko, instruction, actionLabel });
+      steps.push({
+        id: `${ing.id}-${index++}`,
+        ingredientId: ing.id,
+        ingredientName: ing.name_ko,
+        instruction,
+        actionLabel,
+        timeGuidance: actionLabel === "익힘 확인" ? (ing.cooking?.time_guidance ?? null) : null,
+      });
     };
 
     const p = ing.preparation;
