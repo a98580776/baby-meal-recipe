@@ -42,3 +42,7 @@ next-env.d.ts
 
 # claude code runtime state (not project config)
 .claude/scheduled_tasks.lock
+
+# supabase CLI local state (not project schema/data -- see supabase/migrations
+# and supabase/seed.sql for those)
+supabase/.temp/
