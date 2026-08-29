@@ -540,3 +540,33 @@ where id in (
   'korean_melon', 'watermelon'
 );
 
+-- =======================================================================
+-- Migration 0007 additions (append-only, mirrors that migration's data
+-- portion so a fresh bootstrap matches the migrated state -- see that file
+-- for full sourcing rationale: docs/p0-safety-fixes-investigation.md).
+--
+-- Per user decision: original INSERT statements above (cook_egg, cook_chestnut,
+-- ingredients tofu row) are left untouched -- these three fixes are applied
+-- as append-only UPDATEs here instead of editing the original INSERT values.
+-- =======================================================================
+
+insert into ingredient_safety_rules (ingredient_id, safety_rule_id) values
+  ('cod', 'FISHBONE_REMOVE'),
+  ('tuna', 'FISHBONE_REMOVE');
+
+update cooking_profiles set allowed_methods = '{boil}' where id = 'cook_egg';
+update cooking_profiles set allowed_methods = '{boil}' where id = 'cook_chestnut';
+
+update ingredients set verification_status = 'UNSUPPORTED' where id = 'tofu';
+
+-- =======================================================================
+-- Migration 0008 addition (append-only, mirrors that migration's data
+-- portion so a fresh bootstrap matches the migrated state -- see that file
+-- for full sourcing rationale: docs/p0-safety-fixes-investigation.md §8).
+-- Content-only correction, no safety_rule/schema change.
+-- =======================================================================
+
+update cooking_profiles set
+  completion_checks = '{"속이 완전히 부드럽게 익음", "곱게 다지거나 으깨어 덩어리 없이 제공"}'
+where id = 'cook_chestnut';
+
