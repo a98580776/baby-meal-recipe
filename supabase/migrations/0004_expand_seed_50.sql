@@ -1,242 +1,86 @@
--- Seed data sourced from 260821/AI_이유식_SeedDB_개발투입판_v0.4.xlsx
--- (Seed Ingredient / SafetyRule / StorageRule / Evidence sheets) and
--- 260821/Claude_Code_최종투입패키지_설계명세_v0.2.md §9-11.
+-- Phase: 50개 Seed DB 확장 (260823/이유식_50개_Seed_DB_SCHEMA_FREEZE_v1_0.xlsx,
+-- "50개 Seed Master" 시트를 source of truth로 사용).
 --
--- IMPORTANT: verification_status values are preserved as given in the
--- source (REVIEW -> NEEDS_REVIEW). Do not promote these to VERIFIED here.
--- Broccoli is excluded from prep/cooking/texture profile content per the
--- explicit instruction that the original Claude research for broccoli is
--- contaminated/unusable; only its ingredient row is seeded, unlinked.
-
--- ---------------------------------------------------------------------
--- stages / food_forms
--- Source: 260820 handoff doc (only confirmed stage taxonomy available).
--- No fixed age-range numbers are attached — none were given.
--- ---------------------------------------------------------------------
-insert into stages (id, name_ko, sort_order, readiness_required, is_active) values
-  ('stage_1', '초기', 1, true, true),
-  ('stage_2', '중기', 2, false, true),
-  ('stage_3', '후기', 3, false, true),
-  ('stage_4', '완료기', 4, false, true);
-
-insert into food_forms (id, name_ko, description, is_active) values
-  ('puree', '퓨레', '부드럽게 갈아 덩어리가 없는 형태', true),
-  ('porridge', '죽', '곡물과 함께 끓여 부드럽게 제공하는 형태', true),
-  ('topping', '토핑', '죽/퓨레 위에 잘게 다지거나 으깨어 올리는 형태', true),
-  ('blw', '자기주도식', '아기가 직접 손으로 잡고 먹는 형태(Baby-Led Weaning)', true);
-
--- ---------------------------------------------------------------------
--- evidence (8 rows, Evidence sheet exact contents)
--- url / checked_at are not present in the source sheet — left null.
--- ---------------------------------------------------------------------
-insert into evidence (id, organization, title, source_tier, applicability, status) values
-  ('E001', 'CDC', 'solid food readiness and texture', 'TIER_1', 'about 6 months + developmental readiness; texture progression', 'VERIFIED'),
-  ('E002', 'CDC', 'choking hazards', 'TIER_1', 'hard raw foods, large/tough pieces, bones', 'VERIFIED'),
-  ('E003', 'FDA', 'produce washing', 'TIER_1', 'running water; no soap/detergent/produce wash', 'VERIFIED'),
-  ('E004', 'USDA FSIS', 'safe cooking temperatures', 'TIER_1', 'poultry 73.9C; ground meat 71.1C; fish 62.8C', 'VERIFIED'),
-  ('E005', 'FoodSafety.gov', 'baby food storage', 'TIER_1', 'refrigerator/freezer storage table', 'VERIFIED'),
-  ('E006', 'FoodSafety.gov', 'baby food microwaving', 'TIER_1', 'transfer to dish, stir, stand, temperature check; meat/eggs restriction', 'VERIFIED'),
-  ('E007', 'FDA/EPA', 'fish choices', 'TIER_1', 'salmon is Best Choice; serving guidance is not automatically infant serving', 'VERIFIED'),
-  ('E008', 'Korea MFDS/Food Safety Korea', 'allergen labeling', 'TIER_1', 'Korean allergen taxonomy', 'VERIFIED');
-
--- ---------------------------------------------------------------------
--- allergens — only SOY is populated: it is the only allergen referenced
--- by the current 10-ingredient seed set (tofu). The full Korean MFDS
--- allergen taxonomy is not enumerated in any source document provided,
--- so it is not fabricated here; add rows only as evidence is supplied.
--- ---------------------------------------------------------------------
-insert into allergens (id, code, name_ko, country, version) values
-  ('SOY', 'SOY', '대두', 'KR', null);
-
--- ---------------------------------------------------------------------
--- safety_rules (9 rows, SafetyRule sheet exact contents)
--- condition_json is a structured transcription of the sheet's condition
--- text — thresholds (73.9/71.1/62.8) are the exact given numbers.
--- ---------------------------------------------------------------------
-insert into safety_rules (id, rule_type, severity, condition_json, action, evidence_id, status) values
-  ('CHOKING_HARD_RAW', 'choking', 'CRITICAL', '{"description": "hard raw apple/carrot or similarly hard raw form for infant"}', 'BLOCK_FORM', 'E002', 'VERIFIED'),
-  ('POULTRY_TEMP', 'cooking_temperature', 'CRITICAL', '{"category": "poultry", "min_internal_temp_c": 73.9}', 'CONTINUE_COOKING', 'E004', 'VERIFIED'),
-  ('GROUND_MEAT_TEMP', 'cooking_temperature', 'CRITICAL', '{"category": "ground_meat", "min_internal_temp_c": 71.1}', 'CONTINUE_COOKING', 'E004', 'VERIFIED'),
-  ('FISH_TEMP', 'cooking_temperature', 'CRITICAL', '{"category": "fish", "min_internal_temp_c": 62.8}', 'CONTINUE_COOKING', 'E004', 'VERIFIED'),
-  ('RAW_FISH_BLOCK', 'raw_food', 'CRITICAL', '{"description": "raw fish intended for infant"}', 'BLOCK_FORM', 'E002', 'VERIFIED'),
-  ('BONE_REMOVE', 'physical_hazard', 'CRITICAL', '{"description": "meat/bone-containing form"}', 'REMOVE_BONE', 'E002', 'VERIFIED'),
-  ('FISHBONE_REMOVE', 'physical_hazard', 'CRITICAL', '{"description": "fish with bones"}', 'REMOVE_FISH_BONES', 'E002', 'VERIFIED'),
-  ('SOY_ALLERGEN', 'allergen', 'HIGH', '{"allergen": "SOY"}', 'WARN_OR_BLOCK', 'E008', 'VERIFIED'),
-  ('HONEY_UNDER_12M', 'age_restriction', 'CRITICAL', '{"ingredient": "honey", "max_age_months": 12}', 'BLOCK_INGREDIENT', null, 'VERIFIED');
-
--- ---------------------------------------------------------------------
--- reheat_rules
--- BABY_FOOD_REHEAT content matches 설계명세 §11 microwave guidance verbatim
--- (backed by E006). NO_MICROWAVE_MEAT_EGG operationalizes the "meat/eggs
--- restriction" named in E006's applicability but not spelled out verbatim
--- in any source text, so it is marked NEEDS_REVIEW rather than VERIFIED.
--- ---------------------------------------------------------------------
-insert into reheat_rules (id, method, container_rule, stirring_required, stand_time_required, temperature_check_required, food_specific_restriction, evidence_id, status) values
-  ('BABY_FOOD_REHEAT', 'microwave_or_stovetop', '병째 가열하지 않고 별도 용기로 옮겨서 가열', true, true, true, null, 'E006', 'VERIFIED'),
-  ('NO_MICROWAVE_MEAT_EGG', 'avoid_microwave', null, false, false, true, '육류·계란 이유식은 전자레인지 재가열을 피하고 다른 방법으로 재가열', 'E006', 'NEEDS_REVIEW');
-
--- ---------------------------------------------------------------------
--- storage_rules (4 rows, StorageRule sheet exact contents)
--- ---------------------------------------------------------------------
-insert into storage_rules (id, food_state, refrigerator_days_min, refrigerator_days_max, freezer_months_min, freezer_months_max, reheat_rule_id, evidence_id, status) values
-  ('FRUIT_VEG_PUREE', 'strained fruits and vegetables', 2, 3, 6, 8, 'BABY_FOOD_REHEAT', 'E005', 'VERIFIED'),
-  ('MEAT_EGG_PUREE', 'strained meats and eggs', 1, 1, 1, 2, 'NO_MICROWAVE_MEAT_EGG', 'E005', 'VERIFIED'),
-  ('MEAT_VEG_COMBO', 'meat/vegetable combinations', 1, 2, 1, 2, 'BABY_FOOD_REHEAT', 'E005', 'VERIFIED'),
-  ('HOMEMADE_BABY_FOOD', 'homemade baby food', 1, 2, 1, 2, 'BABY_FOOD_REHEAT', 'E005', 'VERIFIED');
-
--- ---------------------------------------------------------------------
--- preparation_profiles / cooking_profiles
--- Decoded from the short profile labels in the Seed Ingredient sheet
--- (e.g. "wash_peel_seed") into structured fields. No cooking times,
--- temperatures beyond the four VERIFIED thresholds above, or particle
--- sizes are introduced — none were supplied.
--- Broccoli is intentionally omitted: its Claude-sourced profile values
--- are excluded from use per explicit instruction.
--- ---------------------------------------------------------------------
-insert into preparation_profiles (id, wash_rule, peel_rule, seed_removal_rule, core_tough_part_rule, bone_removal_rule, fishbone_removal_rule, cutting_guidance, status, evidence_id) values
-  ('prep_carrot', '흐르는 물로 세척', '껍질 제거', null, null, null, null, null, 'NEEDS_REVIEW', 'E003'),
-  ('prep_kabocha', '흐르는 물로 세척', '껍질 제거', '씨와 속 제거', null, null, null, null, 'NEEDS_REVIEW', 'E003'),
-  ('prep_potato', '흐르는 물로 세척, 손상되거나 상한 부위 제거', '껍질 제거', null, null, null, null, null, 'NEEDS_REVIEW', 'E003'),
-  ('prep_sweet_potato', '흐르는 물로 세척, 손상되거나 상한 부위 제거', '껍질 제거', null, null, null, null, null, 'NEEDS_REVIEW', 'E003'),
-  ('prep_beef', '별도 세척 불필요', null, null, null, null, null, null, 'NEEDS_REVIEW', null),
-  ('prep_chicken', '생닭은 세척하지 않음(교차오염 방지)', null, null, null, '뼈 제거 필요', null, null, 'NEEDS_REVIEW', null),
-  ('prep_salmon', null, null, null, null, null, '가시 확인 및 제거 필요', null, 'NEEDS_REVIEW', 'E002'),
-  ('prep_tofu', null, null, null, null, null, null, null, 'NEEDS_REVIEW', null),
-  ('prep_apple', '흐르는 물로 세척', '껍질 제거 또는 월령에 맞는 안전한 형태로 제공', '씨와 심 제거', '심 제거', null, null, null, 'NEEDS_REVIEW', 'E003');
-
-insert into cooking_profiles (id, allowed_methods, temperature_rule_id, completion_checks, time_guidance, time_status, evidence_id) values
-  ('cook_carrot', '{steam,boil}', null, '{"포크로 눌렀을 때 쉽게 으깨지는지 확인"}', null, 'UNSUPPORTED', null),
-  ('cook_kabocha', '{steam,boil}', null, '{"포크로 눌렀을 때 쉽게 으깨지는지 확인"}', null, 'UNSUPPORTED', null),
-  ('cook_potato', '{steam,boil}', null, '{"포크로 눌렀을 때 쉽게 으깨지는지 확인"}', null, 'UNSUPPORTED', null),
-  ('cook_sweet_potato', '{steam,boil}', null, '{"포크로 눌렀을 때 쉽게 으깨지는지 확인"}', null, 'UNSUPPORTED', null),
-  ('cook_beef', '{}', 'GROUND_MEAT_TEMP', '{"내부 온도 확인"}', null, 'UNSUPPORTED', 'E004'),
-  ('cook_chicken', '{}', 'POULTRY_TEMP', '{"내부 온도 확인"}', null, 'UNSUPPORTED', 'E004'),
-  ('cook_salmon', '{}', 'FISH_TEMP', '{"내부 온도 확인"}', null, 'UNSUPPORTED', 'E004'),
-  ('cook_tofu', '{}', null, '{}', null, 'NEEDS_REVIEW', null),
-  ('cook_apple', '{steam,boil}', null, '{"포크로 눌렀을 때 쉽게 으깨지는지 확인"}', null, 'UNSUPPORTED', null);
-
--- ---------------------------------------------------------------------
--- ingredients (10 rows, Seed Ingredient sheet)
--- verification_status: REVIEW -> NEEDS_REVIEW, except broccoli -> UNSUPPORTED
--- (original research contaminated; final data pending re-sourcing per
--- 설계명세 §16). Broccoli's profile FKs are left null.
--- ---------------------------------------------------------------------
-insert into ingredients (id, name_ko, name_en, category, verification_status, preparation_profile_id, cooking_profile_id, texture_profile_id) values
-  ('broccoli', '브로콜리', 'broccoli', 'vegetable', 'UNSUPPORTED', null, null, null),
-  ('carrot', '당근', 'carrot', 'vegetable', 'NEEDS_REVIEW', 'prep_carrot', 'cook_carrot', null),
-  ('kabocha', '단호박', 'kabocha', 'vegetable', 'NEEDS_REVIEW', 'prep_kabocha', 'cook_kabocha', null),
-  ('potato', '감자', 'potato', 'vegetable', 'NEEDS_REVIEW', 'prep_potato', 'cook_potato', null),
-  ('sweet_potato', '고구마', 'sweet potato', 'vegetable', 'NEEDS_REVIEW', 'prep_sweet_potato', 'cook_sweet_potato', null),
-  ('beef', '소고기', 'beef', 'meat', 'NEEDS_REVIEW', 'prep_beef', 'cook_beef', null),
-  ('chicken', '닭고기', 'chicken', 'poultry', 'NEEDS_REVIEW', 'prep_chicken', 'cook_chicken', null),
-  ('salmon', '연어', 'salmon', 'fish', 'NEEDS_REVIEW', 'prep_salmon', 'cook_salmon', null),
-  ('tofu', '두부', 'tofu', 'soy', 'NEEDS_REVIEW', 'prep_tofu', 'cook_tofu', null),
-  ('apple', '사과', 'apple', 'fruit', 'NEEDS_REVIEW', 'prep_apple', 'cook_apple', null);
-
--- ---------------------------------------------------------------------
--- ingredient_allergens / ingredient_safety_rules (junctions)
--- ---------------------------------------------------------------------
-insert into ingredient_allergens (ingredient_id, allergen_id) values
-  ('tofu', 'SOY');
-
-insert into ingredient_safety_rules (ingredient_id, safety_rule_id) values
-  ('carrot', 'CHOKING_HARD_RAW'),
-  ('apple', 'CHOKING_HARD_RAW'),
-  ('chicken', 'POULTRY_TEMP'),
-  ('chicken', 'BONE_REMOVE'),
-  ('beef', 'GROUND_MEAT_TEMP'),
-  ('salmon', 'FISH_TEMP'),
-  ('salmon', 'FISHBONE_REMOVE'),
-  ('salmon', 'RAW_FISH_BLOCK'),
-  ('tofu', 'SOY_ALLERGEN');
+-- 기존 10개 재료(broccoli/carrot/kabocha/potato/sweet_potato/beef/chicken/
+-- salmon/tofu/apple)는 xlsx의 No.1~10과 동일 재료이므로 재삽입하지 않는다.
+-- 이 마이그레이션은 (a) 스키마 확장 2건, (b) No.11~50 신규 40개 재료 데이터,
+-- (c) 기존 3개 재료(beef/chicken/salmon)에 한해 안전 관련 링크를 "추가"한다.
+-- 기존에 이미 값이 있던 row/column은 어떤 것도 수정하지 않는다(append-only).
 
 -- =======================================================================
--- Phase 10-5 additions (append-only per docs/deployment.md §3 -- original
--- INSERT statements above are not edited). Mirrors
--- supabase/migrations/0003_texture_and_beef_cutform.sql's data portion so
--- a fresh bootstrap matches the migrated state. See that file for the
--- full sourcing rationale.
+-- (A) 스키마 확장 1: allergen taxonomy scope
 --
--- Left deliberately unregistered (Phase 10-4-2 "추가 검증 필요"/
--- "등록하지 않음"): broccoli (still UNSUPPORTED, no prep/cook/texture),
--- tofu (no Tier 1/2 infant-specific heating guidance found), beef/chicken
--- cooking methods (no single confirmed method), beef whole-cut temp/rest
--- time (Tier 1 primary text not reached this session), apple's "안 으스
--- 러지는 정도" phrasing, salmon's "불투명해짐" phrasing, and all
--- cooking-time/particle-size numbers project-wide.
+-- 사용자 결정: ingredient_allergens에 scope 컬럼 추가(allergens 테이블이
+-- 아니라 M:N 관계 쪽에 둠 — 같은 알레르겐이라도 재료별로 KR_MFDS_19(법정
+-- 19개 표시대상) vs BROADER_ALLERGEN_CONTEXT(임상적 가능성은 있으나 법정
+-- 표시대상은 아님, 예: 연어/대구/참치의 "생선")로 갈릴 수 있기 때문.
+-- 기존 유일한 행 (tofu, SOY)는 xlsx상 대두=KR_MFDS_19이므로 default로
+-- 정확히 backfill되며 값 자체를 바꾸지 않는다.
 -- =======================================================================
+create type allergen_scope as enum ('KR_MFDS_19', 'BROADER_ALLERGEN_CONTEXT');
 
-insert into evidence (id, organization, title, source_tier, applicability, status) values
-  ('E009', 'NHS (UK)', 'Best Start in Life - What to feed your baby (6 months / 7-9 months / 10-12 months)', 'TIER_1', 'age/stage-based texture progression for weaning foods', 'VERIFIED');
-
-insert into texture_profiles (id, stage_id, food_form_id, texture, shape, particle_size, particle_size_status, evidence_id, ingredient_id) values
-  ('texture_carrot_stage_1', 'stage_1', null, '익혀서 부드럽게, 큰 형태 또는 매쉬', null, null, 'UNSUPPORTED', 'E009', 'carrot'),
-  ('texture_carrot_stage_2', 'stage_2', null, '한입 크기/잘게 다지기/매쉬 + 핑거푸드', null, null, 'UNSUPPORTED', 'E009', 'carrot'),
-  ('texture_carrot_stage_3', 'stage_3', null, '다지기 또는 핑거푸드', null, null, 'UNSUPPORTED', 'E009', 'carrot'),
-  ('texture_carrot_stage_4', 'stage_4', null, '익힌 한입 크기', null, null, 'UNSUPPORTED', 'E009', 'carrot'),
-
-  ('texture_kabocha_stage_1', 'stage_1', null, '껍질·씨 제거 후 큰 조각 또는 매쉬', null, null, 'UNSUPPORTED', 'E009', 'kabocha'),
-  ('texture_kabocha_stage_2', 'stage_2', null, '한입 크기 + 핑거푸드', null, null, 'UNSUPPORTED', 'E009', 'kabocha'),
-  ('texture_kabocha_stage_3', 'stage_3', null, '한입 크기', null, null, 'UNSUPPORTED', 'E009', 'kabocha'),
-  ('texture_kabocha_stage_4', 'stage_4', null, '한입 크기/큰 조각', null, null, 'UNSUPPORTED', 'E009', 'kabocha'),
-
-  ('texture_potato_stage_1', 'stage_1', null, '큰 웨지 또는 매쉬', null, null, 'UNSUPPORTED', 'E009', 'potato'),
-  ('texture_potato_stage_2', 'stage_2', null, '매쉬 또는 핑거푸드', null, null, 'UNSUPPORTED', 'E009', 'potato'),
-  ('texture_potato_stage_3', 'stage_3', null, '한입 크기', null, null, 'UNSUPPORTED', 'E009', 'potato'),
-  ('texture_potato_stage_4', 'stage_4', null, '한입 크기', null, null, 'UNSUPPORTED', 'E009', 'potato'),
-
-  ('texture_sweet_potato_stage_1', 'stage_1', null, '웨지 또는 매쉬', null, null, 'UNSUPPORTED', 'E009', 'sweet_potato'),
-  ('texture_sweet_potato_stage_2', 'stage_2', null, '한입 크기 + 핑거푸드', null, null, 'UNSUPPORTED', 'E009', 'sweet_potato'),
-  ('texture_sweet_potato_stage_3', 'stage_3', null, '핑거푸드', null, null, 'UNSUPPORTED', 'E009', 'sweet_potato'),
-  ('texture_sweet_potato_stage_4', 'stage_4', null, '한입 크기 또는 큰 웨지', null, null, 'UNSUPPORTED', 'E009', 'sweet_potato'),
-
-  ('texture_chicken_stage_1', 'stage_1', null, '껍질 제거한 드럼스틱, 손가락 2개 크기의 긴 스트립, 또는 아기 입보다 큰 미트볼, 잘게 찢어 부드러운 음식에 혼합', null, null, 'UNSUPPORTED', 'E009', 'chicken'),
-  ('texture_chicken_stage_2', 'stage_2', null, '초기와 동일 범위(드럼스틱/스트립/미트볼/찢어서 혼합)', null, null, 'UNSUPPORTED', 'E009', 'chicken'),
-  ('texture_chicken_stage_3', 'stage_3', null, '찢거나 얇게 썰거나 한입 크기', null, null, 'UNSUPPORTED', 'E009', 'chicken'),
-  ('texture_chicken_stage_4', 'stage_4', null, '한입 크기 또는 얇은 조각(덩어리 큐브 형태는 피할 것)', null, null, 'UNSUPPORTED', 'E009', 'chicken'),
-
-  ('texture_salmon_stage_1', 'stage_1', null, '뼈·껍질 제거한 익힌 연어를 손가락 2개 크기 스트립으로, 또는 부드러운 음식에 으깨어 혼합(통조림은 헹궈서 나트륨 낮추기)', null, null, 'UNSUPPORTED', 'E009', 'salmon'),
-  ('texture_salmon_stage_2', 'stage_2', null, '초기와 동일 범위', null, null, 'UNSUPPORTED', 'E009', 'salmon'),
-  ('texture_salmon_stage_3', 'stage_3', null, '한입 크기, 패티/샐러드 형태도 가능', null, null, 'UNSUPPORTED', 'E009', 'salmon'),
-  ('texture_salmon_stage_4', 'stage_4', null, '긴 스트립·한입 크기·패티 등 다양하게', null, null, 'UNSUPPORTED', 'E009', 'salmon'),
-
-  ('texture_apple_stage_1', 'stage_1', null, '익혀서 껍질·씨·심 제거한 조각(그대로 쥐고 빨기) 또는 생사과는 강판에 갈아서만', null, null, 'UNSUPPORTED', 'E009', 'apple'),
-  ('texture_apple_stage_2', 'stage_2', null, '익힌 조각 지속, 생사과는 얇게 썰어(휘어지지 않을 두께)', null, null, 'UNSUPPORTED', 'E009', 'apple'),
-  ('texture_apple_stage_3', 'stage_3', null, '잘게 썰거나 핑거푸드', null, null, 'UNSUPPORTED', 'E009', 'apple'),
-  ('texture_apple_stage_4', 'stage_4', null, '통사과 베어먹기 가능(18개월 이후, 씹기 능숙할 때)', null, null, 'UNSUPPORTED', 'E009', 'apple');
-
-update cooking_profiles set allowed_methods = '{steam,boil,braise}' where id = 'cook_kabocha';
-update cooking_profiles set allowed_methods = '{steam,boil,bake}' where id = 'cook_potato';
-update cooking_profiles set allowed_methods = '{steam,boil,bake}' where id = 'cook_sweet_potato';
-update cooking_profiles set allowed_methods = '{boil,bake,microwave}', completion_checks = '{"포크가 쉽게 들어가는지 확인"}' where id = 'cook_apple';
-update cooking_profiles set allowed_methods = '{bake,steam}', completion_checks = '{"내부 온도 확인","포크로 쉽게 갈라지는지 확인"}' where id = 'cook_salmon';
+alter table ingredient_allergens
+  add column scope allergen_scope not null default 'KR_MFDS_19';
 
 -- =======================================================================
--- Migration 0004 additions (append-only, mirrors that migration's data
--- portion so a fresh bootstrap matches the migrated state -- see that
--- file for the schema changes (allergen_scope column, cooking_profiles
--- time_min/time_max/time_unit columns) and full sourcing rationale).
--- Source: 260823/이유식_50개_Seed_DB_SCHEMA_FREEZE_v1_0.xlsx "50개 Seed
--- Master" sheet, No.11-50 (No.1-10 are the 10 ingredients already seeded
--- above). USDA-based safety_rules above are NOT modified -- the MFDS
--- rules below are additive, per-source-separate rules.
+-- (B) 스키마 확장 2: cooking_profiles에 구조화된 조리시간 컬럼 추가
+--
+-- 260823 실행 프롬프트 Phase 1이 명시한 "time_min <= time_max" DB 제약을
+-- 만족하려면 구조화된 컬럼이 필요하다(기존 cooking_profiles에는 자유
+-- 텍스트 time_guidance만 있었음). 기존 9개 재료의 cooking_profiles는 원래
+-- 시간 데이터가 전혀 없었으므로(time_status='UNSUPPORTED') 새 컬럼은
+-- NULL로 유지되어 기존 값에 영향 없음.
 -- =======================================================================
+alter table cooking_profiles add column time_min integer;
+alter table cooking_profiles add column time_max integer;
+alter table cooking_profiles add column time_unit text;
 
+alter table cooking_profiles
+  add constraint cooking_profiles_time_range_check
+  check (time_min is null or time_max is null or time_min <= time_max);
+
+alter table cooking_profiles
+  add constraint cooking_profiles_time_unit_required_check
+  check ((time_min is null and time_max is null) or time_unit is not null);
+
+-- =======================================================================
+-- (C) Evidence — xlsx "Evidence Register" 시트 4건. 기존 evidence에 이미
+-- E001~E003 id가 존재하지만 내용이 다르므로(예: 기존 E001=CDC, 신규
+-- 것은 질병관리청) id 충돌을 피하기 위해 E010~E013으로 신규 채번한다.
+-- =======================================================================
 insert into evidence (id, organization, title, url, source_tier, checked_at, applicability, status) values
   ('E010', '질병관리청', '국가건강정보포털: 식이영양(영유아)', 'https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfoView.do?cntnts_sn=5212', 'TIER_1', '2026-08-23', '이유식 시작, 위생, 과일 씨·껍질 제거, 충분한 가열, 보관', 'VERIFIED'),
   ('E011', '식품안전나라/식품의약품안전처', '식품 알레르기에 대해 알아보아요(수정)', 'https://www.foodsafetykorea.go.kr/portal/board/boardDetail.do?bbs_no=bbs001&menu_grp=MENU_NEW01&menu_no=3120&ntctxt_no=1100304', 'TIER_1', '2026-08-23', '국내 알레르기 유발물질 19개 및 영유아 다빈도 원인식품', 'VERIFIED'),
   ('E012', '식품안전나라/식품의약품안전처', '어린이급식관리지원센터 알레르기 유발 식품 표시에 대해 알아보아요', 'https://www.foodsafetykorea.go.kr/portal/board/boardDetail.do?bbs_no=bbs039&menu_grp=MENU_NEW03&menu_no=4847&ntctxt_no=1093585', 'TIER_1', '2026-08-23', '국내 알레르기 표시대상 식품', 'VERIFIED'),
   ('E013', '식품의약품안전처', '식중독 예방 조리 기준', 'https://www.mfds.go.kr/brd/m_827/view.do?seq=3609', 'TIER_1', '2026-08-23', '육류·가금류 중심온도 75℃ 1분 이상, 어패류 중심온도 85℃ 1분 이상', 'VERIFIED');
 
+-- =======================================================================
+-- (D) MFDS 안전 조리온도 — 기존 USDA 기반 3개 safety_rule
+-- (POULTRY_TEMP=73.9℃/GROUND_MEAT_TEMP=71.1℃/FISH_TEMP=62.8℃, evidence
+-- E004)은 그대로 둔다(값도, 링크도 수정하지 않음). 이번 50개 xlsx가
+-- 채택한 한국 식약처 기준(육류·가금류 75℃ 1분, 어패류 85℃ 1분)은 별도
+-- safety_rule로 신설한다. 한국 서비스에서는 이 MFDS 규칙이 사용자 노출
+-- 우선 기준이며, 이는 condition_json.source_standard 마커를 통해
+-- lib/rules/safety.ts에서 처리한다(같은 CONTINUE_COOKING 규칙이 이미
+-- 있는 재료에서는 MFDS 쪽만 사용자에게 노출되고, 기존 USDA 규칙은 DB에
+-- 그대로 남아 있다). 조리시간(time_min/max)과는 완전히 별개의 안전 규칙.
+-- =======================================================================
 insert into safety_rules (id, rule_type, severity, condition_json, action, evidence_id, status) values
   ('MEAT_POULTRY_TEMP_MFDS', 'cooking_temperature', 'CRITICAL', '{"category": "meat_poultry", "min_internal_temp_c": 75, "hold_time_min": 1, "source_standard": "KR_MFDS"}', 'CONTINUE_COOKING', 'E013', 'VERIFIED'),
   ('FISH_SHELLFISH_TEMP_MFDS', 'cooking_temperature', 'CRITICAL', '{"category": "fish_shellfish", "min_internal_temp_c": 85, "hold_time_min": 1, "source_standard": "KR_MFDS"}', 'CONTINUE_COOKING', 'E013', 'VERIFIED');
 
+-- 기존 재료(beef/chicken/salmon)에 MFDS 규칙을 추가 링크한다. 기존에
+-- 이미 존재하는 (beef,GROUND_MEAT_TEMP) 등의 링크는 건드리지 않는다.
 insert into ingredient_safety_rules (ingredient_id, safety_rule_id) values
   ('beef', 'MEAT_POULTRY_TEMP_MFDS'),
   ('chicken', 'MEAT_POULTRY_TEMP_MFDS'),
   ('salmon', 'FISH_SHELLFISH_TEMP_MFDS');
 
+-- =======================================================================
+-- (E) 신규 allergens — 기존 SOY 1건 외 xlsx가 재료별로 명시한 알레르겐.
+-- KR_MFDS_19 vs BROADER_ALLERGEN_CONTEXT 구분은 xlsx의 allergen_scope
+-- 컬럼을 그대로 전사한 것이며 임의 판단이 아니다.
+-- =======================================================================
 insert into allergens (id, code, name_ko, country, version) values
   ('BEEF', 'BEEF', '쇠고기', 'KR', null),
   ('CHICKEN', 'CHICKEN', '닭고기', 'KR', null),
@@ -251,6 +95,20 @@ insert into allergens (id, code, name_ko, country, version) values
   ('SESAME', 'SESAME', '참깨(국내 19개 표시대상에는 해당 없음)', 'KR', null),
   ('PERILLA', 'PERILLA', '들깨(국내 19개 표시대상에는 해당 없음)', 'KR', null);
 
+-- 새 allergen에 대한 WARN_OR_BLOCK safety_rule (기존 SOY_ALLERGEN과 동일
+-- 패턴). KR_MFDS_19 범위는 severity=HIGH(법정 표시대상), broader context는
+-- severity=MEDIUM(임상적 가능성, 법정 의무 표시 아님)으로 구분한다.
+-- QA follow-up: FISH/CHESTNUT/SESAME/PERILLA are BROADER_ALLERGEN_CONTEXT
+-- (explicitly outside Korea's legal 19-item list). E011's stated
+-- applicability is "국내 알레르기 유발물질 19개 및 영유아 다빈도 원인식품"
+-- -- it does not directly support a broader-than-19 clinical claim, so
+-- citing it as VERIFIED evidence for these 4 rules would overstate what it
+-- backs. Their status is NEEDS_REVIEW (not VERIFIED) for that reason; the
+-- allergen classification and the ingredient<->allergen link themselves are
+-- unaffected (kept as BROADER_ALLERGEN_CONTEXT, not merged into
+-- KR_MFDS_19). evidence_id stays E011 as a placeholder pointer so a
+-- specific broader-context evidence can be swapped in later without a
+-- schema change -- it is not being cited as sufficient support today.
 insert into safety_rules (id, rule_type, severity, condition_json, action, evidence_id, status) values
   ('BEEF_ALLERGEN', 'allergen', 'HIGH', '{"allergen": "BEEF"}', 'WARN_OR_BLOCK', 'E011', 'VERIFIED'),
   ('CHICKEN_ALLERGEN', 'allergen', 'HIGH', '{"allergen": "CHICKEN"}', 'WARN_OR_BLOCK', 'E011', 'VERIFIED'),
@@ -265,6 +123,9 @@ insert into safety_rules (id, rule_type, severity, condition_json, action, evide
   ('SESAME_ALLERGEN', 'allergen', 'MEDIUM', '{"allergen": "SESAME"}', 'WARN_OR_BLOCK', 'E011', 'NEEDS_REVIEW'),
   ('PERILLA_ALLERGEN', 'allergen', 'MEDIUM', '{"allergen": "PERILLA"}', 'WARN_OR_BLOCK', 'E011', 'NEEDS_REVIEW');
 
+-- 기존 재료(beef/chicken/salmon)에 새 allergen 링크를 추가한다(기존에는
+-- 이 세 재료에 allergen 링크가 전혀 없었으므로 값을 바꾸는 것이 아니라
+-- 비어 있던 관계를 채우는 것).
 insert into ingredient_allergens (ingredient_id, allergen_id, scope) values
   ('beef', 'BEEF', 'KR_MFDS_19'),
   ('chicken', 'CHICKEN', 'KR_MFDS_19'),
@@ -275,6 +136,21 @@ insert into ingredient_safety_rules (ingredient_id, safety_rule_id) values
   ('chicken', 'CHICKEN_ALLERGEN'),
   ('salmon', 'FISH_ALLERGEN');
 
+-- =======================================================================
+-- (F) 신규 40개 재료 (No.11~50) — preparation_profiles / cooking_profiles
+--
+-- 전사 규칙(추측 없이 xlsx 컬럼을 그대로 매핑):
+--  - cutting_guidance = xlsx preparation_notes 원문 그대로 (모든 재료).
+--  - peel_rule = '껍질 제거' iff peel_policy=REMOVE, '껍질·꼬리 등 단단한
+--    부분 제거' iff REMOVE_SHELL(새우). CONTEXT_DEPENDENT/N/A는 세우지
+--    않음(추측 금지 — cutting_guidance 텍스트가 이미 그 취지를 담음).
+--  - seed_removal_rule = '씨 제거' iff seed_core_policy=REMOVE.
+--  - bone_removal_rule = '뼈가 있는 경우 제거' iff REMOVE_BONE_IF_PRESENT.
+--  - fishbone_removal_rule = '가시 완전 제거' iff REMOVE_BONES.
+--  - wash_rule은 xlsx preparation_notes가 "세척"을 명시한 5개(쌀/오트밀/
+--    현미/보리/옥수수)만 설정, 나머지는 세우지 않음(원문에 없음).
+--  - status='INFERRED' — xlsx 전 행의 verification_status와 동일.
+-- =======================================================================
 insert into preparation_profiles (id, wash_rule, peel_rule, seed_removal_rule, core_tough_part_rule, bone_removal_rule, fishbone_removal_rule, cutting_guidance, status, evidence_id) values
   ('prep_rice', '원재료 특성에 맞게 세척', null, null, null, null, null, '원재료 특성에 맞게 세척·조리하고 초기에는 부드럽게 제공', 'INFERRED', 'E010'),
   ('prep_oatmeal', '원재료 특성에 맞게 세척', null, null, null, null, null, '원재료 특성에 맞게 세척·조리하고 초기에는 부드럽게 제공', 'INFERRED', 'E010'),
@@ -318,17 +194,10 @@ insert into preparation_profiles (id, wash_rule, peel_rule, seed_removal_rule, c
   ('prep_cheese', null, null, null, null, null, null, '재료의 질긴 부분·씨·껍질 등은 제공 형태와 재료 상태에 따라 확인', 'INFERRED', 'E010');
 
 insert into cooking_profiles (id, allowed_methods, temperature_rule_id, completion_checks, time_guidance, time_status, evidence_id, time_min, time_max, time_unit) values
-  -- UI/UX QA follow-up (김 재조사 — allowed_methods 데이터 품질 보정):
-  -- 원본 스프레드시트가 채소류(당근 등)에는 allowed_methods를 채워 넣고도
-  -- 곡물류는 비워 둔 데이터 공백이었다. time_guidance가 이미 명시하는
-  -- 조리법(모두 "끓이기")을 그대로 옮겨 적을 뿐, 새로운 조리법을 만들어
-  -- 내지 않는다. completion_checks/time_guidance/time_min/max/safety rule
-  -- 등 다른 컬럼은 전혀 건드리지 않는다(rice/oatmeal/brown_rice/barley에는
-  -- 애초에 연결된 safety rule이 없다).
-  ('cook_rice', '{boil}', null, '{"쌀알이 충분히 퍼지고 쉽게 으깨짐"}', '추천 20~30분 (시작 기준) — 불린 쌀, 죽 끓이기', 'INFERRED', 'E010', 20, 30, '분'),
-  ('cook_oatmeal', '{boil}', null, '{"완전히 퍼지고 부드러움"}', '추천 3~8분 (시작 기준) — 오트밀, 끓이기', 'INFERRED', 'E010', 3, 8, '분'),
-  ('cook_brown_rice', '{boil}', null, '{"알갱이가 충분히 퍼지고 부드러움"}', '추천 25~40분 (시작 기준) — 불린 현미, 충분히 끓이기', 'INFERRED', 'E010', 25, 40, '분'),
-  ('cook_barley', '{boil}', null, '{"알갱이가 쉽게 으깨질 정도로 부드러움"}', '추천 30~45분 (시작 기준) — 불린 보리, 충분히 끓이기', 'INFERRED', 'E010', 30, 45, '분'),
+  ('cook_rice', '{}', null, '{"쌀알이 충분히 퍼지고 쉽게 으깨짐"}', '추천 20~30분 (시작 기준) — 불린 쌀, 죽 끓이기', 'INFERRED', 'E010', 20, 30, '분'),
+  ('cook_oatmeal', '{}', null, '{"완전히 퍼지고 부드러움"}', '추천 3~8분 (시작 기준) — 오트밀, 끓이기', 'INFERRED', 'E010', 3, 8, '분'),
+  ('cook_brown_rice', '{}', null, '{"알갱이가 충분히 퍼지고 부드러움"}', '추천 25~40분 (시작 기준) — 불린 현미, 충분히 끓이기', 'INFERRED', 'E010', 25, 40, '분'),
+  ('cook_barley', '{}', null, '{"알갱이가 쉽게 으깨질 정도로 부드러움"}', '추천 30~45분 (시작 기준) — 불린 보리, 충분히 끓이기', 'INFERRED', 'E010', 30, 45, '분'),
   ('cook_pear', '{}', null, '{"포크로 쉽게 으깨짐"}', '추천 5~10분 (시작 기준) — 작게 썬 배, 찌기', 'INFERRED', 'E010', 5, 10, '분'),
   ('cook_banana', '{}', null, '{"잘 익은 과육이 쉽게 으깨짐"}', '조리 불필요(숙도와 제공 형태 확인) — 조리하지 않는 과육 기준', 'INFERRED', 'E010', 0, 0, '분'),
   ('cook_avocado', '{}', null, '{"과육이 충분히 부드러움"}', '조리 불필요(숙도와 제공 형태 확인) — 조리하지 않는 과육 기준', 'INFERRED', 'E010', 0, 0, '분'),
@@ -343,12 +212,7 @@ insert into cooking_profiles (id, allowed_methods, temperature_rule_id, completi
   ('cook_cauliflower', '{steam,boil}', null, '{"줄기와 꽃 부분이 쉽게 으깨짐"}', '추천 8~12분 (시작 기준) — 작은 송이, 찌기', 'INFERRED', 'E010', 8, 12, '분'),
   ('cook_green_pea', '{steam,boil}', null, '{"콩이 쉽게 으깨짐"}', '추천 5~10분 (시작 기준) — 삶기/찌기', 'INFERRED', 'E010', 5, 10, '분'),
   ('cook_kidney_bean', '{steam,boil}', null, '{"콩이 완전히 부드럽게 익음"}', '추천 10~15분 (시작 기준) — 충분히 삶기', 'INFERRED', 'E010', 10, 15, '분'),
-  -- 옥수수는 CHOKING_HARD_RAW(질식 위험, BLOCK_FORM) safety rule이 연결된
-  -- 재료다 — BLOCK_FORM은 cooking_profile 자체의 유무로만 판단하므로
-  -- allowed_methods 값 변경은 그 안전 검증에 영향을 주지 않는다(§lib/rules/
-  -- safety.ts). 같은 8~12분대 채소들이 이미 {steam,boil}을 쓰고 있어
-  -- 새 조리법이 아니라 같은 어휘를 재사용한다.
-  ('cook_corn', '{steam,boil}', null, '{"알이 부드럽고 필요 시 갈아 제공"}', '추천 8~12분 (시작 기준) — 알을 충분히 익히기', 'INFERRED', 'E010', 8, 12, '분'),
+  ('cook_corn', '{}', null, '{"알이 부드럽고 필요 시 갈아 제공"}', '추천 8~12분 (시작 기준) — 알을 충분히 익히기', 'INFERRED', 'E010', 8, 12, '분'),
   ('cook_tomato', '{steam,boil}', null, '{"과육이 부드러움"}', '추천 3~5분 (시작 기준) — 껍질 제거가 필요하면 데치기', 'INFERRED', 'E010', 3, 5, '분'),
   ('cook_eggplant', '{steam,boil}', null, '{"껍질과 과육이 충분히 부드러움"}', '추천 8~12분 (시작 기준) — 작게 썰어 찌기', 'INFERRED', 'E010', 8, 12, '분'),
   ('cook_mushroom', '{steam,boil}', null, '{"질긴 부분 없이 충분히 부드러움"}', '추천 5~10분 (시작 기준) — 잘게 썰어 충분히 익히기', 'INFERRED', 'E010', 5, 10, '분'),
@@ -371,6 +235,13 @@ insert into cooking_profiles (id, allowed_methods, temperature_rule_id, completi
   ('cook_perilla', '{}', null, '{"큰 알갱이 없이 곱게 분쇄"}', '추천 3~5분 (시작 기준) — 가열 후 곱게 갈기/분쇄', 'INFERRED', 'E010', 3, 5, '분'),
   ('cook_cheese', '{}', null, '{"연령에 맞는 제품을 부드럽게 제공"}', '추천 0~2분 (시작 기준) — 가열 필요 시 녹이기', 'INFERRED', 'E010', 0, 2, '분');
 
+-- =======================================================================
+-- (G) ingredients (신규 40개, No.11~50)
+-- category는 기존 6개 값(vegetable/fruit/meat/poultry/fish/soy) 체계를
+-- 그대로 확장한 것 — storageMapping.ts의 PRODUCE_CATEGORIES/
+-- PROTEIN_CATEGORIES도 이 마이그레이션과 함께 업데이트한다(별도 커밋의
+-- 애플리케이션 코드 변경 참고).
+-- =======================================================================
 insert into ingredients (id, name_ko, name_en, category, verification_status, preparation_profile_id, cooking_profile_id, texture_profile_id) values
   ('rice', '쌀', 'rice', 'grain', 'INFERRED', 'prep_rice', 'cook_rice', null),
   ('oatmeal', '오트밀', 'oatmeal', 'grain', 'INFERRED', 'prep_oatmeal', 'cook_oatmeal', null),
@@ -413,6 +284,10 @@ insert into ingredients (id, name_ko, name_en, category, verification_status, pr
   ('perilla', '들깨', 'perilla seed', 'nut_seed', 'INFERRED', 'prep_perilla', 'cook_perilla', null),
   ('cheese', '치즈', 'cheese', 'dairy', 'INFERRED', 'prep_cheese', 'cook_cheese', null);
 
+-- =======================================================================
+-- (H) ingredient_allergens (신규 재료분) — allergen 텍스트가
+-- "해당 없음/추가 확인"인 재료는 링크를 만들지 않는다(추측 금지).
+-- =======================================================================
 insert into ingredient_allergens (ingredient_id, allergen_id, scope) values
   ('pork', 'PORK', 'KR_MFDS_19'),
   ('egg', 'EGG', 'KR_MFDS_19'),
@@ -426,6 +301,11 @@ insert into ingredient_allergens (ingredient_id, allergen_id, scope) values
   ('perilla', 'PERILLA', 'BROADER_ALLERGEN_CONTEXT'),
   ('cheese', 'MILK', 'KR_MFDS_19');
 
+-- =======================================================================
+-- (I) ingredient_safety_rules (신규 재료분) — MFDS 조리온도 링크,
+-- allergen 링크, CHOKING_HARD_RAW 링크(xlsx safety_notes가 "단단하거나
+-- 둥근 생형태는 질식 위험을 고려해 형태를 조정"이라고 명시한 재료만).
+-- =======================================================================
 insert into ingredient_safety_rules (ingredient_id, safety_rule_id) values
   ('pork', 'MEAT_POULTRY_TEMP_MFDS'),
   ('pork', 'PORK_ALLERGEN'),
@@ -449,6 +329,10 @@ insert into ingredient_safety_rules (ingredient_id, safety_rule_id) values
   ('grape', 'CHOKING_HARD_RAW'),
   ('korean_melon', 'CHOKING_HARD_RAW'),
   ('watermelon', 'CHOKING_HARD_RAW'),
+  -- QA follow-up: xlsx safety_notes for 참깨(sesame)/들깨(perilla) (No.48,49)
+  -- carry the exact same "단단하거나 둥근 생형태는 질식 위험을 고려해 형태를
+  -- 조정" text as corn/strawberry/blueberry/grape/korean_melon/watermelon/
+  -- chestnut above -- this was missed on first pass. Reuses the existing
+  -- CHOKING_HARD_RAW rule/evidence as-is, no new rule or evidence created.
   ('sesame', 'CHOKING_HARD_RAW'),
   ('perilla', 'CHOKING_HARD_RAW');
-
