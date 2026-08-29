@@ -962,3 +962,22 @@ insert into texture_profiles (id, stage_id, food_form_id, texture, shape, partic
   ('texture_mango_stage_2', 'stage_2', null, '과육이 충분히 부드러운 질감', 'mashed', null, 'UNSUPPORTED', 'E010', 'mango'),
   ('texture_mango_stage_3', 'stage_3', null, '과육이 충분히 부드러운 질감', 'mashed', null, 'UNSUPPORTED', 'E010', 'mango'),
   ('texture_mango_stage_4', 'stage_4', null, '과육이 충분히 부드러운 질감', 'mashed', null, 'UNSUPPORTED', 'E010', 'mango');
+
+-- =======================================================================
+-- Migration 0026 addition (append-only, mirrors that migration's data
+-- portion so a fresh bootstrap matches the migrated state -- see
+-- supabase/migrations/0026_beef_whole_cut_evidence_and_methods.sql and
+-- docs/beef-safety-rule-schema-investigation.md §12-13 for full rationale).
+-- BEEF_WHOLE_CUT_TEMP is registered but deliberately NOT linked to any
+-- ingredient (Q1 invariant) -- do not add an ingredient_safety_rules row
+-- for it without a meat_form input/domain model first.
+-- =======================================================================
+
+insert into evidence (id, organization, title, url, source_tier, checked_at, applicability, status) values
+  ('E024', 'USDA FSIS', 'What is a safe internal temperature for cooking meat and poultry?', 'https://ask.fsis.usda.gov/article/What-is-a-safe-internal-temperature-for-cooking-meat-and-poultry', 'TIER_1', '2026-08-29', 'whole cuts of beef (steaks/roasts): 145F/62.8C internal temperature plus a minimum 3-minute rest before carving/serving -- distinct from E004''s ground-meat (71.1C), poultry (73.9C), and fish (62.8C) figures, which remain ground/whole-form defaults for their respective categories. Cross-checked via an independent mirror (temperaturetool.com) after ask.fsis.usda.gov / fsis.usda.gov direct fetch returned 403/certificate errors this session.', 'VERIFIED');
+
+insert into safety_rules (id, rule_type, severity, condition_json, action, evidence_id, status) values
+  ('BEEF_WHOLE_CUT_TEMP', 'cooking_temperature', 'CRITICAL', '{"category": "beef_whole_cut", "min_internal_temp_c": 62.8, "rest_seconds": 180}', 'CONTINUE_COOKING', 'E024', 'VERIFIED');
+
+update cooking_profiles set allowed_methods = '{bake,boil,braise}' where id = 'cook_beef';
+update cooking_profiles set allowed_methods = '{bake,boil}' where id = 'cook_chicken';
