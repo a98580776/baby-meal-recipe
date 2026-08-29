@@ -1013,3 +1013,13 @@ update cooking_profiles set allowed_methods = '{bake,boil,braise}' where id = 'c
 -- =======================================================================
 
 update cooking_profiles set whole_cut_rest_seconds = 180 where id = 'cook_beef';
+
+-- =======================================================================
+-- Migration 0030 addition (append-only, mirrors that migration's data
+-- portion) -- see supabase/migrations/0030_pork_bone_removal_safety_rule.sql
+-- for rationale (BONE_REMOVE reused from chicken -- same generic
+-- meat/bone-containing-form condition, no new rule/evidence).
+-- =======================================================================
+
+insert into ingredient_safety_rules (ingredient_id, safety_rule_id) values
+  ('pork', 'BONE_REMOVE');
