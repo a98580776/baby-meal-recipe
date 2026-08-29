@@ -981,3 +981,14 @@ insert into safety_rules (id, rule_type, severity, condition_json, action, evide
 
 update cooking_profiles set allowed_methods = '{bake,boil,braise}' where id = 'cook_beef';
 update cooking_profiles set allowed_methods = '{bake,boil}' where id = 'cook_chicken';
+
+-- =======================================================================
+-- Migration 0027 addition (append-only, mirrors that migration's data
+-- portion) -- see supabase/migrations/0027_chicken_dryness_completion_check.sql
+-- and docs/content-beef-chicken-investigation.md §5-2 for rationale.
+-- =======================================================================
+
+update cooking_profiles
+set completion_checks = array_append(completion_checks, '건조하지 않고 촉촉하게 익음 확인')
+where id = 'cook_chicken'
+  and not ('건조하지 않고 촉촉하게 익음 확인' = any(completion_checks));
