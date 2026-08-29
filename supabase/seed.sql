@@ -697,3 +697,157 @@ insert into texture_profiles (id, stage_id, food_form_id, texture, shape, partic
   ('texture_korean_melon_stage_4', 'stage_4', null, '부드럽게 으깨지는 질감', 'wedge', null, 'UNSUPPORTED', 'E016', 'korean_melon');
 
 -- =======================================================================
+-- Migration 0015 addition (append-only, mirrors that migration's data
+-- portion so a fresh bootstrap matches the migrated state -- see
+-- supabase/migrations/0015_pear_meat_fish_texture_insert.sql and
+-- docs/pear-meat-fish-texture-investigation.md for full rationale).
+-- pear/beef/pork/cod/tuna texture_profiles INSERT -- first batch under the
+-- new bucket-classification workflow, all evidence-reuse (E010/E016), no
+-- new evidence rows, no completion_checks changes needed.
+-- =======================================================================
+
+insert into texture_profiles (id, stage_id, food_form_id, texture, shape, particle_size, particle_size_status, evidence_id, ingredient_id) values
+  ('texture_pear_stage_1', 'stage_1', null, '포크로 쉽게 으깨지는 질감', 'mashed', null, 'UNSUPPORTED', 'E010', 'pear'),
+  ('texture_pear_stage_2', 'stage_2', null, '포크로 쉽게 으깨지는 질감', 'mashed', null, 'UNSUPPORTED', 'E010', 'pear'),
+  ('texture_pear_stage_3', 'stage_3', null, '포크로 쉽게 으깨지는 질감', 'mashed', null, 'UNSUPPORTED', 'E010', 'pear'),
+  ('texture_pear_stage_4', 'stage_4', null, '포크로 쉽게 으깨지는 질감', 'mashed', null, 'UNSUPPORTED', 'E010', 'pear'),
+
+  ('texture_beef_stage_1', 'stage_1', null, '부드럽게 씹히는 질감', 'stick', null, 'UNSUPPORTED', 'E016', 'beef'),
+  ('texture_beef_stage_2', 'stage_2', null, '부드럽게 씹히는 질감', 'stick', null, 'UNSUPPORTED', 'E016', 'beef'),
+  ('texture_beef_stage_3', 'stage_3', null, '부드럽게 씹히는 질감', 'stick', null, 'UNSUPPORTED', 'E016', 'beef'),
+  ('texture_beef_stage_4', 'stage_4', null, '부드럽게 씹히는 질감', 'stick', null, 'UNSUPPORTED', 'E016', 'beef'),
+
+  ('texture_pork_stage_1', 'stage_1', null, '부드럽게 씹히는 질감', 'stick', null, 'UNSUPPORTED', 'E016', 'pork'),
+  ('texture_pork_stage_2', 'stage_2', null, '부드럽게 씹히는 질감', 'stick', null, 'UNSUPPORTED', 'E016', 'pork'),
+  ('texture_pork_stage_3', 'stage_3', null, '부드럽게 씹히는 질감', 'stick', null, 'UNSUPPORTED', 'E016', 'pork'),
+  ('texture_pork_stage_4', 'stage_4', null, '부드럽게 씹히는 질감', 'stick', null, 'UNSUPPORTED', 'E016', 'pork'),
+
+  ('texture_cod_stage_1', 'stage_1', null, '살이 쉽게 분리되는 질감', 'stick', null, 'UNSUPPORTED', 'E016', 'cod'),
+  ('texture_cod_stage_2', 'stage_2', null, '살이 쉽게 분리되는 질감', 'stick', null, 'UNSUPPORTED', 'E016', 'cod'),
+  ('texture_cod_stage_3', 'stage_3', null, '살이 쉽게 분리되는 질감', 'stick', null, 'UNSUPPORTED', 'E016', 'cod'),
+  ('texture_cod_stage_4', 'stage_4', null, '살이 쉽게 분리되는 질감', 'stick', null, 'UNSUPPORTED', 'E016', 'cod'),
+
+  ('texture_tuna_stage_1', 'stage_1', null, '부드럽게 씹히는 질감', 'stick', null, 'UNSUPPORTED', 'E016', 'tuna'),
+  ('texture_tuna_stage_2', 'stage_2', null, '부드럽게 씹히는 질감', 'stick', null, 'UNSUPPORTED', 'E016', 'tuna'),
+  ('texture_tuna_stage_3', 'stage_3', null, '부드럽게 씹히는 질감', 'stick', null, 'UNSUPPORTED', 'E016', 'tuna'),
+  ('texture_tuna_stage_4', 'stage_4', null, '부드럽게 씹히는 질감', 'stick', null, 'UNSUPPORTED', 'E016', 'tuna');
+
+-- =======================================================================
+-- Migration 0016 addition (append-only, mirrors that migration's data
+-- portion so a fresh bootstrap matches the migrated state -- see
+-- supabase/migrations/0016_vegetable_batch_texture_insert.sql and
+-- docs/vegetable-batch-texture-investigation.md for full rationale).
+-- zucchini/cucumber/radish/cauliflower/eggplant texture_profiles INSERT --
+-- E016 reuse (zucchini/cucumber/radish/eggplant) + self-derived from own
+-- completion_checks (cauliflower, evidence stays E010). No completion_checks
+-- changes needed.
+-- =======================================================================
+
+insert into texture_profiles (id, stage_id, food_form_id, texture, shape, particle_size, particle_size_status, evidence_id, ingredient_id) values
+  ('texture_zucchini_stage_1', 'stage_1', null, '포크로 쉽게 으깨지는 질감', 'mashed', null, 'UNSUPPORTED', 'E016', 'zucchini'),
+  ('texture_zucchini_stage_2', 'stage_2', null, '포크로 쉽게 으깨지는 질감', 'stick', null, 'UNSUPPORTED', 'E016', 'zucchini'),
+  ('texture_zucchini_stage_3', 'stage_3', null, '포크로 쉽게 으깨지는 질감', 'stick', null, 'UNSUPPORTED', 'E016', 'zucchini'),
+  ('texture_zucchini_stage_4', 'stage_4', null, '포크로 쉽게 으깨지는 질감', 'stick', null, 'UNSUPPORTED', 'E016', 'zucchini'),
+
+  ('texture_radish_stage_1', 'stage_1', null, '중심까지 쉽게 으깨지는 질감', 'mashed', null, 'UNSUPPORTED', 'E016', 'radish'),
+  ('texture_radish_stage_2', 'stage_2', null, '중심까지 쉽게 으깨지는 질감', 'stick', null, 'UNSUPPORTED', 'E016', 'radish'),
+  ('texture_radish_stage_3', 'stage_3', null, '중심까지 쉽게 으깨지는 질감', 'stick', null, 'UNSUPPORTED', 'E016', 'radish'),
+  ('texture_radish_stage_4', 'stage_4', null, '중심까지 쉽게 으깨지는 질감', 'stick', null, 'UNSUPPORTED', 'E016', 'radish'),
+
+  ('texture_eggplant_stage_1', 'stage_1', null, '껍질과 과육이 충분히 부드러운 질감', 'mashed', null, 'UNSUPPORTED', 'E016', 'eggplant'),
+  ('texture_eggplant_stage_2', 'stage_2', null, '껍질과 과육이 충분히 부드러운 질감', 'stick', null, 'UNSUPPORTED', 'E016', 'eggplant'),
+  ('texture_eggplant_stage_3', 'stage_3', null, '껍질과 과육이 충분히 부드러운 질감', 'stick', null, 'UNSUPPORTED', 'E016', 'eggplant'),
+  ('texture_eggplant_stage_4', 'stage_4', null, '껍질과 과육이 충분히 부드러운 질감', 'stick', null, 'UNSUPPORTED', 'E016', 'eggplant'),
+
+  ('texture_cucumber_stage_1', 'stage_1', null, '부드럽게 눌리는 질감', 'stick', null, 'UNSUPPORTED', 'E016', 'cucumber'),
+  ('texture_cucumber_stage_2', 'stage_2', null, '부드럽게 눌리는 질감', 'stick', null, 'UNSUPPORTED', 'E016', 'cucumber'),
+  ('texture_cucumber_stage_3', 'stage_3', null, '부드럽게 눌리는 질감', 'stick', null, 'UNSUPPORTED', 'E016', 'cucumber'),
+  ('texture_cucumber_stage_4', 'stage_4', null, '부드럽게 눌리는 질감', 'stick', null, 'UNSUPPORTED', 'E016', 'cucumber'),
+
+  ('texture_cauliflower_stage_1', 'stage_1', null, '줄기와 꽃 부분이 쉽게 으깨지는 질감', 'floret', null, 'UNSUPPORTED', 'E010', 'cauliflower'),
+  ('texture_cauliflower_stage_2', 'stage_2', null, '줄기와 꽃 부분이 쉽게 으깨지는 질감', 'floret', null, 'UNSUPPORTED', 'E010', 'cauliflower'),
+  ('texture_cauliflower_stage_3', 'stage_3', null, '줄기와 꽃 부분이 쉽게 으깨지는 질감', 'floret', null, 'UNSUPPORTED', 'E010', 'cauliflower'),
+  ('texture_cauliflower_stage_4', 'stage_4', null, '줄기와 꽃 부분이 쉽게 으깨지는 질감', 'floret', null, 'UNSUPPORTED', 'E010', 'cauliflower');
+
+-- =======================================================================
+-- Migration 0017 addition (append-only, mirrors that migration's data
+-- portion so a fresh bootstrap matches the migrated state -- see
+-- supabase/migrations/0017_perilla_legume_texture_insert.sql and
+-- docs/perilla-legume-texture-investigation.md for full rationale).
+-- perilla/green_pea/kidney_bean texture_profiles INSERT -- E015/E014
+-- reuse, no new evidence, no completion_checks changes.
+-- =======================================================================
+
+insert into texture_profiles (id, stage_id, food_form_id, texture, shape, particle_size, particle_size_status, evidence_id, ingredient_id) values
+  ('texture_perilla_stage_1', 'stage_1', null, '입안에 큰 알갱이가 남지 않는 고운 질감', 'minced', null, 'UNSUPPORTED', 'E015', 'perilla'),
+  ('texture_perilla_stage_2', 'stage_2', null, '입안에 큰 알갱이가 남지 않는 고운 질감', 'minced', null, 'UNSUPPORTED', 'E015', 'perilla'),
+  ('texture_perilla_stage_3', 'stage_3', null, '입안에 큰 알갱이가 남지 않는 고운 질감', 'minced', null, 'UNSUPPORTED', 'E015', 'perilla'),
+  ('texture_perilla_stage_4', 'stage_4', null, '입안에 큰 알갱이가 남지 않는 고운 질감', 'minced', null, 'UNSUPPORTED', 'E015', 'perilla'),
+
+  ('texture_green_pea_stage_1', 'stage_1', null, '콩이 쉽게 으깨지는 질감', 'mashed', null, 'UNSUPPORTED', 'E014', 'green_pea'),
+  ('texture_green_pea_stage_2', 'stage_2', null, '콩이 쉽게 으깨지는 질감', 'mashed', null, 'UNSUPPORTED', 'E014', 'green_pea'),
+  ('texture_green_pea_stage_3', 'stage_3', null, '콩이 쉽게 으깨지는 질감', 'mashed', null, 'UNSUPPORTED', 'E014', 'green_pea'),
+  ('texture_green_pea_stage_4', 'stage_4', null, '콩이 쉽게 으깨지는 질감', 'mashed', null, 'UNSUPPORTED', 'E014', 'green_pea'),
+
+  ('texture_kidney_bean_stage_1', 'stage_1', null, '콩이 완전히 부드러운 질감', 'mashed', null, 'UNSUPPORTED', 'E014', 'kidney_bean'),
+  ('texture_kidney_bean_stage_2', 'stage_2', null, '콩이 완전히 부드러운 질감', 'mashed', null, 'UNSUPPORTED', 'E014', 'kidney_bean'),
+  ('texture_kidney_bean_stage_3', 'stage_3', null, '콩이 완전히 부드러운 질감', 'mashed', null, 'UNSUPPORTED', 'E014', 'kidney_bean'),
+  ('texture_kidney_bean_stage_4', 'stage_4', null, '콩이 완전히 부드러운 질감', 'mashed', null, 'UNSUPPORTED', 'E014', 'kidney_bean');
+
+-- =======================================================================
+-- Migration 0018 addition (append-only, mirrors that migration's data
+-- portion so a fresh bootstrap matches the migrated state -- see
+-- supabase/migrations/0018_egg_texture_insert.sql and
+-- docs/egg-texture-investigation.md for full rationale).
+-- egg texture_profiles INSERT + 2 new evidence rows (NHS Egg fingers,
+-- Solid Starts Eggs). User decision: B안 (Solid Starts age-staged
+-- progression) -- E017 (NHS, uniform wedge) preserved for provenance only,
+-- not referenced by any texture_profiles row below.
+-- =======================================================================
+
+insert into evidence (id, organization, title, url, source_tier, checked_at, applicability, status) values
+  ('E017', 'NHS (UK)', 'Egg fingers (Start for Life recipe)', 'https://www.nhs.uk/start-for-life/baby/recipes-and-meal-ideas/egg-fingers/', 'TIER_1', '2026-08-29', 'single boiled-egg recipe for "6 months or older" -- boil 5 min, cool, peel, slice into quarters (4 fingers); no stage differentiation given. Not used as a texture_profiles.evidence_id (see docs/egg-texture-investigation.md -- B안 adopted instead of this uniform wedge value); kept for provenance only.', 'VERIFIED'),
+  ('E018', 'Solid Starts', 'Eggs -- When can babies eat eggs?', 'https://solidstarts.com/foods/eggs/', 'TIER_1', '2026-08-29', 'age-staged hard-boiled egg serving guidance -- 6mo+: well-cooked hard-boiled egg mashed with breast milk/formula/water/another food; 9mo+: bite-sized pieces (small amount of liquid alongside); 12mo+: bite-sized pieces continue. Cites the dry/chalky yolk as a choking consideration for young babies, motivating the mashed-then-bite-size progression -- this is the evidence backing texture_egg shape values.', 'VERIFIED');
+
+insert into texture_profiles (id, stage_id, food_form_id, texture, shape, particle_size, particle_size_status, evidence_id, ingredient_id) values
+  ('texture_egg_stage_1', 'stage_1', null, '흰자와 노른자가 모두 완전히 응고된 질감', 'mashed', null, 'UNSUPPORTED', 'E018', 'egg'),
+  ('texture_egg_stage_2', 'stage_2', null, '흰자와 노른자가 모두 완전히 응고된 질감', 'mashed', null, 'UNSUPPORTED', 'E018', 'egg'),
+  ('texture_egg_stage_3', 'stage_3', null, '흰자와 노른자가 모두 완전히 응고된 질감', 'small_piece', null, 'UNSUPPORTED', 'E018', 'egg'),
+  ('texture_egg_stage_4', 'stage_4', null, '흰자와 노른자가 모두 완전히 응고된 질감', 'small_piece', null, 'UNSUPPORTED', 'E018', 'egg');
+
+-- =======================================================================
+-- Migration 0019 addition (append-only, mirrors that migration's data
+-- portion so a fresh bootstrap matches the migrated state -- see
+-- supabase/migrations/0019_napa_cabbage_spinach_tomato_texture_insert.sql
+-- and docs/napa-cabbage-spinach-tomato-texture-investigation.md for full
+-- rationale). napa_cabbage/spinach/tomato texture_profiles INSERT + 5 new
+-- evidence rows. spinach stage_4 shape is deliberately left null (no
+-- source gives one); spinach stage_3 evidence (E023) is deliberately
+-- INFERRED, distinct from stage_1/2's VERIFIED (E022) -- see migration
+-- comments for why.
+-- =======================================================================
+
+insert into evidence (id, organization, title, url, source_tier, checked_at, applicability, status) values
+  ('E019', 'NHS (UK)', 'Egg and toast fingers with tomatoes (Start for Life recipe)', 'https://www.nhs.uk/start-for-life/baby/recipes-and-meal-ideas/egg-and-toast-fingers-with-tomatoes/', 'TIER_1', '2026-08-29', 'recipe for "10 to 12 months" -- "Slice the cherry tomatoes into quarters", plus a general tip "cut small round foods like cherry tomatoes into small pieces to avoid choking". Corroborates the tomato wedge/quarter shape from E020 for the 9-12 month band; not used as a texture_profiles.evidence_id (E020 alone already covers stage_1-4) -- kept for provenance only.', 'VERIFIED'),
+  ('E020', 'Solid Starts', 'Tomato -- When can babies eat tomatoes?', 'https://solidstarts.com/foods/tomato/', 'TIER_1', '2026-08-29', 'age-staged tomato serving guidance -- 6mo+: "Quarter a large tomato and offer the wedges"; 9mo+: "Try serving quartered cherry tomatoes as finger food" (also large wedges/thin slices/sauce as alternatives); 24mo+: whole cherry tomato biting practice (outside this app''s stage range and its boil/steam-only cook_tomato). The "quarter/wedge" concept is consistent across every band this app covers -- backs shape=''wedge'' for texture_tomato_stage_1 through stage_4.', 'VERIFIED'),
+  ('E021', 'Solid Starts', 'Napa Cabbage -- When can babies eat napa cabbage?', 'https://solidstarts.com/foods/napa-cabbage/', 'TIER_1', '2026-08-29', 'age-staged napa cabbage serving guidance -- 6mo+ and 9mo+ give identical wording: "finely chopped or shredded cooked napa cabbage mixed into mashed vegetables, porridge, or another soft food" (both options map cleanly to existing shape vocabulary -- ''minced'' picked as the first-listed option, same precedent as cheese/chestnut''s A-or-B resolution in migrations 0008/0013); 12mo+: "bite-sized pieces of napa cabbage, raw or cooked, as finger food or utensil practice" -- unambiguous. Backs shape=''minced'' for stage_1-3 and shape=''small_piece'' for stage_4.', 'VERIFIED'),
+  ('E022', 'Solid Starts', 'Spinach -- When can babies eat spinach? (6 Months+ band)', 'https://solidstarts.com/foods/spinach/', 'TIER_1', '2026-08-29', '6mo+ band only: "Mix finely chopped cooked spinach into mashed vegetables, porridge, or another soft food for baby to scoop." Single unambiguous option ("finely chopped"), maps directly to shape=''minced'' with no interpretive gap -- backs texture_spinach_stage_1/stage_2 at VERIFIED confidence.', 'VERIFIED'),
+  ('E023', 'Solid Starts', 'Spinach -- When can babies eat spinach? (9 Months+ band)', 'https://solidstarts.com/foods/spinach/', 'TIER_1', '2026-08-29', '9mo+ band only: "Serve chopped pieces or thin ribbons of cooked or raw spinach mixed into soft foods for baby to scoop, cooked dishes, or sauces." Two named options, but unlike napa_cabbage''s chopped/shredded pair, only "chopped pieces" maps cleanly onto existing shape vocabulary (''minced'') -- "thin ribbons" has no clean vocabulary match (closest, ''shredded'', is not what the source says). shape=''minced'' is therefore a weaker, interpretive pick, not a clean disjunction -- recorded at INFERRED (not VERIFIED) confidence, deliberately distinct from E022. Backs texture_spinach_stage_3 only.', 'INFERRED');
+
+insert into texture_profiles (id, stage_id, food_form_id, texture, shape, particle_size, particle_size_status, evidence_id, ingredient_id) values
+  ('texture_napa_cabbage_stage_1', 'stage_1', null, '질긴 부분 없이 부드럽게 익은 질감', 'minced', null, 'UNSUPPORTED', 'E021', 'napa_cabbage'),
+  ('texture_napa_cabbage_stage_2', 'stage_2', null, '질긴 부분 없이 부드럽게 익은 질감', 'minced', null, 'UNSUPPORTED', 'E021', 'napa_cabbage'),
+  ('texture_napa_cabbage_stage_3', 'stage_3', null, '질긴 부분 없이 부드럽게 익은 질감', 'minced', null, 'UNSUPPORTED', 'E021', 'napa_cabbage'),
+  ('texture_napa_cabbage_stage_4', 'stage_4', null, '질긴 부분 없이 부드럽게 익은 질감', 'small_piece', null, 'UNSUPPORTED', 'E021', 'napa_cabbage'),
+
+  ('texture_spinach_stage_1', 'stage_1', null, '잎이 충분히 숨이 죽고 부드러운 질감', 'minced', null, 'UNSUPPORTED', 'E022', 'spinach'),
+  ('texture_spinach_stage_2', 'stage_2', null, '잎이 충분히 숨이 죽고 부드러운 질감', 'minced', null, 'UNSUPPORTED', 'E022', 'spinach'),
+  ('texture_spinach_stage_3', 'stage_3', null, '잎이 충분히 숨이 죽고 부드러운 질감', 'minced', null, 'UNSUPPORTED', 'E023', 'spinach'),
+  ('texture_spinach_stage_4', 'stage_4', null, '잎이 충분히 숨이 죽고 부드러운 질감', null, null, 'UNSUPPORTED', 'E010', 'spinach'),
+
+  ('texture_tomato_stage_1', 'stage_1', null, '과육이 부드러운 질감', 'wedge', null, 'UNSUPPORTED', 'E020', 'tomato'),
+  ('texture_tomato_stage_2', 'stage_2', null, '과육이 부드러운 질감', 'wedge', null, 'UNSUPPORTED', 'E020', 'tomato'),
+  ('texture_tomato_stage_3', 'stage_3', null, '과육이 부드러운 질감', 'wedge', null, 'UNSUPPORTED', 'E020', 'tomato'),
+  ('texture_tomato_stage_4', 'stage_4', null, '과육이 부드러운 질감', 'wedge', null, 'UNSUPPORTED', 'E020', 'tomato');
+
+-- =======================================================================
