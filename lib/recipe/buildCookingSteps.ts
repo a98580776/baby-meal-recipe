@@ -1,4 +1,5 @@
 import type { RecipeResponse } from "@/types/api";
+import { isServingStateOnly } from "@/lib/recipe/cookingTimeStatus";
 
 export interface CookingStep {
   id: string;
@@ -11,6 +12,10 @@ export interface CookingStep {
   // (Phase 11 §15): the Cooking Mode count-up timer is what covers steps
   // without this.
   timeGuidance: string | null;
+  // Recipe Engine: structured recommended-time range (time_min/max/unit),
+  // same 익힘 확인-only scope as timeGuidance. Independent source — not
+  // derived from timeGuidance, never both fabricated from one another.
+  recommendedTime: { min: number | null; max: number | null; unit: string } | null;
   // Whether this STEP measures elapsed cooking time (삶기/찌기/굽기/끓이기
   // doneness checks). false for prep steps (세척/손질/자르기/으깨기) and the
   // 조리 방법 description step, which have no time dimension to track.
@@ -28,7 +33,13 @@ export interface CookingStep {
 export function buildCookingSteps(recipe: RecipeResponse): CookingStep[] {
   const steps: CookingStep[] = [];
 
-  for (const ing of recipe.ingredients) {
+  // Recipe MVP — Part 2 Topping 분리: toppings are appended after all base
+  // ingredients — spread order is processing order, matching real cooking
+  // flow (base is prepped/cooked first, toppings go on last). Whether a
+  // step needs a timer depends purely on the ingredient's own cooking data
+  // (see isServingStateOnly below), never on which array it came from.
+  const entries = [...recipe.ingredients, ...recipe.toppings];
+  for (const ing of entries) {
     let index = 0;
     const push = (instruction: string, actionLabel: CookingStep["actionLabel"] = "완료") => {
       steps.push({
@@ -38,6 +49,7 @@ export function buildCookingSteps(recipe: RecipeResponse): CookingStep[] {
         instruction,
         actionLabel,
         timeGuidance: actionLabel === "익힘 확인" ? (ing.cooking?.time_guidance ?? null) : null,
+        recommendedTime: actionLabel === "익힘 확인" ? (ing.cooking?.recommended_time ?? null) : null,
         timerEnabled: actionLabel === "익힘 확인",
       });
     };
@@ -70,11 +82,22 @@ export function buildCookingSteps(recipe: RecipeResponse): CookingStep[] {
     const tempNotes = recipe.safety_notes.filter(
       (n) => n.code === "SAFETY_COOKING_REQUIRED" && n.message.startsWith(`${ing.name_ko}:`),
     );
+    // UI/UX QA follow-up (김 재조사 — data-quality fix): an ingredient with
+    // no registered cooking method (allowed_methods=[]) has nothing
+    // concrete to time — its completion_checks text is ripeness/serving-
+    // form guidance, not a doneness state reached by cooking, regardless
+    // of whether the ingredient is a base ingredient or a topping. See
+    // isServingStateOnly for the full reasoning (including why this is now
+    // safe after correcting the grains' allowed_methods data). Ingredients
+    // that actually require cooking despite allowed_methods=[] for other
+    // reasons (beef/chicken/pork/salmon/cod/tuna/shrimp) are already
+    // routed through the tempNotes branch above and never reach this check.
+    const skipTimer = c ? isServingStateOnly(c) : false;
     if (tempNotes.length > 0) {
       for (const note of tempNotes) push(note.message, "익힘 확인");
     } else {
       for (const check of c?.completion_checks ?? []) {
-        push(`${ing.name_ko}: ${check}`, "익힘 확인");
+        push(`${ing.name_ko}: ${check}`, skipTimer ? "완료" : "익힘 확인");
       }
     }
   }

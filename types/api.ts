@@ -1,5 +1,7 @@
 // API contract — mirrors 260821/Claude_Code_최종투입패키지_설계명세_v0.2.md §17-20.
 
+import type { AllergenScope, SafetyAction, SafetySeverity, VerificationStatus } from "@/types/domain";
+
 export interface RecipeRequestInput {
   stage_id: string;
   readiness: boolean;
@@ -12,6 +14,13 @@ export interface RecipeRequestInput {
   // spec's request example, but needed to evaluate WARN_OR_BLOCK-type
   // SafetyRules (e.g. SOY_ALLERGEN) against the user's actual allergy state.
   allergies?: string[];
+  // Recipe MVP — Part 2 Topping 분리: a separate, independent ingredient
+  // list from `ingredient_ids` (base). Never merged into `ingredient_ids`
+  // — see lib/validation/validateRecipeInput.ts for exactly which
+  // validation steps treat base vs topping differently (porridge base
+  // eligibility is base-only; existence/verification/allergen/safety/
+  // preparation/cooking checks apply to both).
+  topping_ingredient_ids?: string[];
 }
 
 export interface RecipeValidationResponse {
@@ -30,6 +39,19 @@ export interface ApiErrorDetail {
   code: string;
   message: string;
   rule_id?: string;
+  // Recipe Engine (safety_rules.status passthrough): set whenever this
+  // note came from a SafetyRule row, regardless of BLOCK/WARN outcome — the
+  // rule's evaluation strength never changes based on status (see
+  // docs/schema-freeze.md §2-2), this only lets the client label a
+  // NEEDS_REVIEW-sourced note differently from a VERIFIED one.
+  rule_status?: VerificationStatus;
+  // API Contract QA follow-up: the source SafetyRule's own severity/action,
+  // passed through unchanged (rule_id/rule_status already were). Present
+  // whenever rule_id is present — absent for ingredient-level notes that
+  // don't originate from a safety_rules row (e.g. VERIFICATION_IN_PROGRESS,
+  // COOKING_METHOD_INFO_MISSING).
+  severity?: SafetySeverity;
+  action?: SafetyAction;
 }
 
 export type ApiErrorCode =
@@ -69,11 +91,29 @@ export interface RecipeIngredientView {
   cooking: {
     allowed_methods: string[];
     completion_checks: string[];
+    // Legacy display text — kept verbatim, not derived from recommended_time.
     time_guidance: string | null;
+    // Recipe Engine (migration 0004 time_min/time_max/time_unit): the
+    // structured source of truth for a recommended cooking-time range.
+    // Non-null only when time_unit is set (mirrors the DB check
+    // constraint) — never inferred from time_guidance.
+    recommended_time: { min: number | null; max: number | null; unit: string } | null;
   } | null;
   // Phase 10-5: stage-specific texture guidance (null when not yet
   // registered for this ingredient+stage — never fabricated client-side).
   texture: string | null;
+  // texture_profiles.shape / particle_size (types/domain.ts
+  // TEXTURE_SHAPE_VALUES / TEXTURE_PARTICLE_SIZE_VALUES for the standard
+  // vocabulary). Optional so any existing client ignoring these fields is
+  // unaffected; buildRecipeResponse.ts always sets both (never omits them),
+  // null when there is no textureProfile row or the field itself is unset —
+  // same "never fabricated client-side" rule as `texture`.
+  shape?: string | null;
+  particle_size?: string | null;
+  // Recipe Engine (ingredient_allergens.scope): KR_MFDS_19 = Korea's legal
+  // 19-item labeling list, BROADER_ALLERGEN_CONTEXT = clinically possible
+  // but not legally mandated (see docs/schema-freeze.md §1-1).
+  allergens: { code: string; name_ko: string; scope: AllergenScope }[];
 }
 
 export interface RecipeStorageView {
@@ -97,6 +137,10 @@ export interface RecipeResponse {
   food_form_id: string;
   servings: number | null;
   ingredients: RecipeIngredientView[];
+  // Recipe MVP — Part 2 Topping 분리: same view shape as `ingredients`,
+  // reused as-is (no new type). Always an array — [] when no topping was
+  // selected, never omitted/undefined.
+  toppings: RecipeIngredientView[];
   safety_notes: ApiErrorDetail[];
   storage: RecipeStorageView | null;
 }

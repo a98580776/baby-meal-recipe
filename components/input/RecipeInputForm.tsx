@@ -10,6 +10,7 @@ import {
   getRecentIngredientIdsSnapshot,
   subscribeRecentIngredients,
 } from "@/lib/recipe/recentIngredients";
+import { isBaseSelectable, isAddOnSelectable } from "@/lib/rules/ingredientRole";
 
 interface RecipeInputFormProps {
   stages: Stage[];
@@ -46,6 +47,13 @@ export function RecipeInputForm({
   const [readiness, setReadiness] = useState(false);
   const [selectedIngredientIds, setSelectedIngredientIds] = useState<string[]>([]);
   const [searchOpen, setSearchOpen] = useState(false);
+  // Recipe MVP — Part 2 Topping 분리: base(selectedIngredientIds)와 완전히
+  // 독립된 상태 — "후첨 재료 추가" 부재료 목록이다(API 필드명은 하위호환을
+  // 위해 topping_ingredient_ids 그대로 유지 — docs/ingredient-role-v2-
+  // product-rules.md §3). "토핑식" food_form(전체 제공 형태)과는 별개의
+  // 축이라, food_form 선택과 무관하게 항상 사용 가능하다.
+  const [toppingIngredientIds, setToppingIngredientIds] = useState<string[]>([]);
+  const [toppingSearchOpen, setToppingSearchOpen] = useState(false);
 
   const [formError, setFormError] = useState<string | null>(null);
   const [apiErrors, setApiErrors] = useState<ApiErrorDetail[]>([]);
@@ -64,13 +72,33 @@ export function RecipeInputForm({
     () => selectedIngredientIds.map((id) => ingredientById.get(id)).filter((ing): ing is Ingredient => !!ing),
     [selectedIngredientIds, ingredientById],
   );
+  // Ingredient Role v2 (docs/ingredient-role-v2-product-rules.md §9-10):
+  // "재료 검색"/"후첨 재료 검색"에 role상 허용되지 않는 재료는 아예 노출하지
+  // 않는다(비활성화 배지 대신 완전 숨김). "최근 선택"도 base 전용 목록이라
+  // 동일하게 필터링한다 — 저장된 최근 선택 항목 중 ADD_ON_ONLY(예: 김)가
+  // 남아 있어도 base로 다시 선택되지 않도록 막는다.
+  const baseSearchableIngredients = useMemo(() => ingredients.filter(isBaseSelectable), [ingredients]);
+  const toppingSearchableIngredients = useMemo(() => ingredients.filter(isAddOnSelectable), [ingredients]);
   const recentIngredients = useMemo(
-    () => recentIds.map((id) => ingredientById.get(id)).filter((ing): ing is Ingredient => !!ing),
+    () =>
+      recentIds
+        .map((id) => ingredientById.get(id))
+        .filter((ing): ing is Ingredient => !!ing && isBaseSelectable(ing)),
     [recentIds, ingredientById],
+  );
+  const toppingIngredients = useMemo(
+    () => toppingIngredientIds.map((id) => ingredientById.get(id)).filter((ing): ing is Ingredient => !!ing),
+    [toppingIngredientIds, ingredientById],
   );
 
   function toggleIngredient(id: string) {
     setSelectedIngredientIds((list) =>
+      list.includes(id) ? list.filter((x) => x !== id) : [...list, id],
+    );
+  }
+
+  function toggleTopping(id: string) {
+    setToppingIngredientIds((list) =>
       list.includes(id) ? list.filter((x) => x !== id) : [...list, id],
     );
   }
@@ -94,6 +122,7 @@ export function RecipeInputForm({
       readiness,
       ingredient_ids: selectedIngredientIds,
       food_form_id: foodFormId,
+      topping_ingredient_ids: toppingIngredientIds,
     };
 
     setSubmitting(true);
@@ -116,6 +145,7 @@ export function RecipeInputForm({
         food_form_id: foodFormId,
         readiness: String(readiness),
         ingredient_ids: selectedIngredientIds.join(","),
+        topping_ingredient_ids: toppingIngredientIds.join(","),
       });
 
       router.push(`/recipe?${params.toString()}`);
@@ -246,6 +276,36 @@ export function RecipeInputForm({
         </div>
       </section>
 
+      <section>
+        <h2 className="mb-2 text-base font-semibold">후첨 재료 추가 (선택)</h2>
+
+        <button
+          type="button"
+          onClick={() => setToppingSearchOpen(true)}
+          className="mb-3 w-full rounded-lg border border-gray-300 bg-white px-3 py-3 text-left text-sm text-gray-400"
+        >
+          🔍 후첨 재료를 검색해보세요
+        </button>
+
+        {toppingIngredients.length > 0 && (
+          <div>
+            <p className="mb-1 text-xs font-semibold text-gray-500">선택한 후첨 재료</p>
+            <div className="flex flex-wrap gap-2">
+              {toppingIngredients.map((ing) => (
+                <button
+                  key={ing.id}
+                  type="button"
+                  onClick={() => toggleTopping(ing.id)}
+                  className="rounded-full border border-blue-600 bg-blue-50 px-3 py-1.5 text-sm text-blue-700"
+                >
+                  {ing.name_ko} ×
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </section>
+
       <button
         type="submit"
         disabled={submitting}
@@ -279,10 +339,19 @@ export function RecipeInputForm({
 
       {searchOpen && (
         <IngredientSearchOverlay
-          ingredients={ingredients}
+          ingredients={baseSearchableIngredients}
           selectedIds={selectedIngredientIds}
           onToggle={toggleIngredient}
           onClose={() => setSearchOpen(false)}
+        />
+      )}
+
+      {toppingSearchOpen && (
+        <IngredientSearchOverlay
+          ingredients={toppingSearchableIngredients}
+          selectedIds={toppingIngredientIds}
+          onToggle={toggleTopping}
+          onClose={() => setToppingSearchOpen(false)}
         />
       )}
     </form>

@@ -8,14 +8,8 @@ import type { RecipeLookupData } from "@/lib/rules/types";
  * row already resolved by lib/supabase/queries.ts (설계명세 §18-19: LLM은
  * MVP 핵심 데이터를 결정하지 않는다).
  */
-export function buildRecipeResponse(
-  input: RecipeRequestInput,
-  data: RecipeLookupData,
-  storageRule: StorageRule | null,
-  reheatRule: ReheatRule | null,
-  safetyNotes: ApiErrorDetail[],
-): RecipeResponse {
-  const ingredients: RecipeIngredientView[] = input.ingredient_ids
+function toIngredientViews(ids: string[], data: RecipeLookupData): RecipeIngredientView[] {
+  return ids
     .map((id) => data.ingredients.get(id))
     .filter((r): r is NonNullable<typeof r> => r != null)
     .map((resolved) => ({
@@ -38,16 +32,55 @@ export function buildRecipeResponse(
             allowed_methods: resolved.cookingProfile.allowed_methods,
             completion_checks: resolved.cookingProfile.completion_checks,
             time_guidance: resolved.cookingProfile.time_guidance,
+            recommended_time: resolved.cookingProfile.time_unit
+              ? {
+                  min: resolved.cookingProfile.time_min,
+                  max: resolved.cookingProfile.time_max,
+                  unit: resolved.cookingProfile.time_unit,
+                }
+              : null,
           }
         : null,
       texture: resolved.textureProfile?.texture ?? null,
+      shape: resolved.textureProfile?.shape ?? null,
+      particle_size: resolved.textureProfile?.particle_size ?? null,
+      allergens: resolved.allergens.map((link) => ({
+        code: link.allergen.code,
+        name_ko: link.allergen.name_ko,
+        scope: link.scope,
+      })),
     }));
+}
+
+export function buildRecipeResponse(
+  input: RecipeRequestInput,
+  data: RecipeLookupData,
+  storageRule: StorageRule | null,
+  reheatRule: ReheatRule | null,
+  safetyNotes: ApiErrorDetail[],
+): RecipeResponse {
+  const ingredients = toIngredientViews(input.ingredient_ids, data);
+  // Recipe MVP — Part 2 Topping 분리: same view shape, separate array.
+  // Deduped so a repeated topping id never appears twice in the response,
+  // AND any id already present in ingredient_ids (base) is excluded here —
+  // an ingredient is either a base component or a separately-added topping,
+  // never both. Without this, the same ingredient would appear in both
+  // `ingredients` and `toppings`, and buildCookingSteps.ts (which has no
+  // way to know these two entries describe the same physical food) would
+  // emit it twice: once as a base step (full 조리/익힘 확인 timer) and once
+  // as a topping step — surfacing a "duplicate 재료, one still with a
+  // timer" bug in Cooking Mode that looks like the topping timer fix didn't
+  // apply, when the actual issue is the duplicate base entry.
+  const baseIds = new Set(input.ingredient_ids);
+  const toppingIds = [...new Set(input.topping_ingredient_ids ?? [])].filter((id) => !baseIds.has(id));
+  const toppings = toIngredientViews(toppingIds, data);
 
   return {
     stage_id: input.stage_id,
     food_form_id: input.food_form_id,
     servings: input.servings ?? null,
     ingredients,
+    toppings,
     safety_notes: safetyNotes,
     storage: storageRule
       ? {

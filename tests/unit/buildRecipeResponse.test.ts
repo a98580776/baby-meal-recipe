@@ -56,4 +56,180 @@ describe("buildRecipeResponse", () => {
     const recipe = buildRecipeResponse(input, data, null, null, []);
     expect(recipe.storage).toBeNull();
   });
+
+  it("exposes allergens with their scope (Recipe Engine Step 9)", () => {
+    const salmonData = {
+      stage: stages.stage_2,
+      foodForm: foodForms.porridge,
+      ingredients: new Map([["salmon", ingredients.salmon]]),
+    };
+    const recipe = buildRecipeResponse(
+      { ...input, ingredient_ids: ["salmon"] },
+      salmonData,
+      storageRule,
+      null,
+      [],
+    );
+    const salmon = recipe.ingredients.find((i) => i.id === "salmon");
+    expect(salmon?.allergens).toEqual([{ code: "FISH", name_ko: "FISH", scope: "BROADER_ALLERGEN_CONTEXT" }]);
+  });
+
+  it("returns recommended_time: null when no time_min/max/unit is registered (current seed data)", () => {
+    const recipe = buildRecipeResponse(input, data, storageRule, null, []);
+    for (const ing of recipe.ingredients) {
+      expect(ing.cooking?.recommended_time).toBeNull();
+    }
+  });
+
+  it("surfaces recommended_time as a structured range when time_unit is present, without touching time_guidance", () => {
+    const carrotWithTime = {
+      ...ingredients.carrot,
+      cookingProfile: { ...ingredients.carrot.cookingProfile!, time_min: 5, time_max: 10, time_unit: "분" },
+    };
+    const recipe = buildRecipeResponse(
+      { ...input, ingredient_ids: ["carrot"] },
+      { ...data, ingredients: new Map([["carrot", carrotWithTime]]) },
+      storageRule,
+      null,
+      [],
+    );
+    const carrot = recipe.ingredients.find((i) => i.id === "carrot");
+    expect(carrot?.cooking?.recommended_time).toEqual({ min: 5, max: 10, unit: "분" });
+    expect(carrot?.cooking?.time_guidance).toBeNull();
+  });
+
+  describe("texture_profiles shape/particle_size (texture standard, this session — no seed data yet)", () => {
+    const textureProfile = {
+      id: "texture_carrot_stage_2",
+      stage_id: "stage_2",
+      food_form_id: null,
+      ingredient_id: "carrot",
+      texture: "손가락으로 쉽게 눌러지는 부드러운 질감",
+      shape: "mashed",
+      particle_size: "fine",
+      particle_size_status: "NEEDS_REVIEW" as const,
+      evidence_id: "E009",
+    };
+
+    it("Case 1: exposes shape and particle_size when both are registered", () => {
+      const carrotWithTexture = { ...ingredients.carrot, textureProfile };
+      const recipe = buildRecipeResponse(
+        { ...input, ingredient_ids: ["carrot"] },
+        { ...data, ingredients: new Map([["carrot", carrotWithTexture]]) },
+        storageRule,
+        null,
+        [],
+      );
+      const carrot = recipe.ingredients.find((i) => i.id === "carrot");
+      expect(carrot?.texture).toBe(textureProfile.texture);
+      expect(carrot?.shape).toBe("mashed");
+      expect(carrot?.particle_size).toBe("fine");
+    });
+
+    it("Case 2: texture present but shape/particle_size unset stays null (matches current 7-ingredient seed shape)", () => {
+      const carrotWithTexture = {
+        ...ingredients.carrot,
+        textureProfile: { ...textureProfile, shape: null, particle_size: null },
+      };
+      const recipe = buildRecipeResponse(
+        { ...input, ingredient_ids: ["carrot"] },
+        { ...data, ingredients: new Map([["carrot", carrotWithTexture]]) },
+        storageRule,
+        null,
+        [],
+      );
+      const carrot = recipe.ingredients.find((i) => i.id === "carrot");
+      expect(carrot?.texture).toBe(textureProfile.texture);
+      expect(carrot?.shape).toBeNull();
+      expect(carrot?.particle_size).toBeNull();
+    });
+
+    it("Case 3: no textureProfile row at all leaves texture/shape/particle_size all null without breaking the response", () => {
+      const recipe = buildRecipeResponse(input, data, storageRule, null, []);
+      const carrot = recipe.ingredients.find((i) => i.id === "carrot");
+      expect(carrot?.texture).toBeNull();
+      expect(carrot?.shape).toBeNull();
+      expect(carrot?.particle_size).toBeNull();
+    });
+
+    it("Case 4: adding shape/particle_size does not change any other RecipeIngredientView field", () => {
+      const carrotWithTexture = { ...ingredients.carrot, textureProfile };
+      const before = buildRecipeResponse(input, data, storageRule, null, []);
+      const after = buildRecipeResponse(
+        input,
+        { ...data, ingredients: new Map([...data.ingredients, ["carrot", carrotWithTexture]]) },
+        storageRule,
+        null,
+        [],
+      );
+      const beforeCarrot = before.ingredients.find((i) => i.id === "carrot");
+      const afterCarrot = after.ingredients.find((i) => i.id === "carrot");
+      expect(afterCarrot?.id).toBe(beforeCarrot?.id);
+      expect(afterCarrot?.name_ko).toBe(beforeCarrot?.name_ko);
+      expect(afterCarrot?.verification_status).toBe(beforeCarrot?.verification_status);
+      expect(afterCarrot?.preparation).toEqual(beforeCarrot?.preparation);
+      expect(afterCarrot?.cooking).toEqual(beforeCarrot?.cooking);
+      expect(afterCarrot?.allergens).toEqual(beforeCarrot?.allergens);
+    });
+  });
+
+  describe("Recipe MVP — Part 2 Topping 분리", () => {
+    it("toppings=[] when no topping_ingredient_ids was given", () => {
+      const recipe = buildRecipeResponse(input, data, storageRule, null, []);
+      expect(recipe.toppings).toEqual([]);
+    });
+
+    it("builds a separate toppings array using the same RecipeIngredientView shape", () => {
+      const toppingData = {
+        ...data,
+        ingredients: new Map([...data.ingredients, ["seaweed", ingredients.seaweed]]),
+      };
+      const recipe = buildRecipeResponse(
+        { ...input, topping_ingredient_ids: ["seaweed"] },
+        toppingData,
+        storageRule,
+        null,
+        [],
+      );
+      expect(recipe.ingredients.map((i) => i.id)).toEqual(["carrot", "beef"]);
+      expect(recipe.toppings).toHaveLength(1);
+      expect(recipe.toppings[0].id).toBe("seaweed");
+    });
+
+    it("dedupes a duplicated topping id", () => {
+      const toppingData = {
+        ...data,
+        ingredients: new Map([...data.ingredients, ["seaweed", ingredients.seaweed]]),
+      };
+      const recipe = buildRecipeResponse(
+        { ...input, topping_ingredient_ids: ["seaweed", "seaweed"] },
+        toppingData,
+        storageRule,
+        null,
+        [],
+      );
+      expect(recipe.toppings).toHaveLength(1);
+    });
+
+    it("UI/UX QA follow-up — 김이 재확인: 같은 id가 ingredient_ids와 topping_ingredient_ids 양쪽에 있으면 base로만 취급하고 toppings에서는 제외한다", () => {
+      // Without this, buildCookingSteps.ts would emit the same ingredient
+      // twice — once as a base step (keeps its normal timer) and once as a
+      // topping step (no timer) — which looks in Cooking Mode like the
+      // topping timer fix "didn't work", when the real issue is the
+      // duplicate base entry riding along.
+      const toppingData = {
+        ...data,
+        ingredients: new Map([...data.ingredients, ["seaweed", ingredients.seaweed]]),
+      };
+      const recipe = buildRecipeResponse(
+        { ...input, ingredient_ids: ["carrot", "beef", "seaweed"], topping_ingredient_ids: ["seaweed"] },
+        toppingData,
+        storageRule,
+        null,
+        [],
+      );
+      expect(recipe.ingredients.map((i) => i.id)).toEqual(["carrot", "beef", "seaweed"]);
+      expect(recipe.toppings).toEqual([]);
+    });
+  });
 });

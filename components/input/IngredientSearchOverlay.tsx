@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import type { Ingredient } from "@/types/domain";
 import { searchIngredients } from "@/lib/ingredients/searchIngredients";
+import { verificationStatusBadgeText } from "@/lib/ingredients/verificationStatusLabel";
 
 interface IngredientSearchOverlayProps {
   ingredients: Ingredient[];
@@ -13,8 +14,7 @@ interface IngredientSearchOverlayProps {
 
 function statusLabel(ing: Ingredient): { text: string; disabled: boolean } {
   if (ing.verification_status === "UNSUPPORTED") return { text: "준비중", disabled: true };
-  if (ing.verification_status === "NEEDS_REVIEW") return { text: "검증중", disabled: false };
-  return { text: "준비됨", disabled: false };
+  return { text: verificationStatusBadgeText(ing.verification_status) ?? "준비됨", disabled: false };
 }
 
 /**
@@ -35,10 +35,13 @@ export function IngredientSearchOverlay({
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-white">
       <div className="flex items-center gap-3 border-b border-gray-200 p-4">
-        <button type="button" onClick={onClose} className="text-lg text-gray-700" aria-label="닫기">
+        <button type="button" onClick={onClose} className="text-lg text-gray-700" aria-label="선택 취소하고 닫기">
           ←
         </button>
-        <span className="text-base font-semibold">재료 검색</span>
+        <span className="flex-1 text-base font-semibold">재료 검색</span>
+        <button type="button" onClick={onClose} className="text-sm font-semibold text-blue-600">
+          확인{selectedIds.length > 0 ? ` (${selectedIds.length})` : ""}
+        </button>
       </div>
 
       <div className="p-4">

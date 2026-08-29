@@ -6,6 +6,40 @@ import { useSearchParams } from "next/navigation";
 import type { ApiErrorResponse, RecipeResponse } from "@/types/api";
 import { parseInputFromParams } from "@/lib/recipe/parseRequestParams";
 import { buildCookingSteps, type CookingStep } from "@/lib/recipe/buildCookingSteps";
+import { buildStepInfoRows, type StepInfoRow } from "@/lib/recipe/buildStepInfoRows";
+
+function StepInfoTable({ rows }: { rows: StepInfoRow[] }) {
+  if (rows.length === 0) return null;
+  return (
+    <div className="w-full rounded-lg border border-gray-200 text-sm">
+      {rows.map((row, i) => (
+        <div
+          key={row.label}
+          className={`flex items-center justify-between px-3 py-2 ${i > 0 ? "border-t border-gray-100" : ""}`}
+        >
+          <span className="text-gray-500">{row.label}</span>
+          <span className="text-right font-medium text-gray-800">{row.value}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Fixed-ratio placeholder for a future real cooking photo (모바일 UX 개선
+ * §7) — no upload/storage in this pass, only the layout slot so a real
+ * <img> can drop in later without another layout change.
+ */
+function CookingPhotoPlaceholder() {
+  return (
+    <div className="flex aspect-video w-full shrink-0 flex-col items-center justify-center gap-1 rounded-lg bg-gray-100 text-gray-400">
+      <span className="text-2xl" aria-hidden="true">
+        📷
+      </span>
+      <span className="text-xs">조리 사진을 넣을 자리</span>
+    </div>
+  );
+}
 
 function formatElapsed(totalMs: number): string {
   const centiseconds = Math.floor(totalMs / 10);
@@ -29,7 +63,16 @@ function formatElapsed(totalMs: number): string {
  * every 시작 press `start` is recomputed as `now - elapsedMs`, so resuming
  * after 중지 continues from the frozen value instead of resetting it.
  */
-function StepTimer({ timeGuidance }: { timeGuidance: string | null }) {
+function StepTimer({
+  timeGuidance,
+}: {
+  // Legacy free-text cooking-time caption (cooking_profiles.time_guidance).
+  // The structured recommended-time range is shown once, in the step's
+  // StepInfoTable above this timer — not duplicated here. Any required
+  // safety temperature is a separate CONTINUE_COOKING safety_notes message,
+  // also surfaced in the same table, not rendered again here.
+  timeGuidance: string | null;
+}) {
   const [elapsedMs, setElapsedMs] = useState(0);
   const [running, setRunning] = useState(false);
 
@@ -45,7 +88,7 @@ function StepTimer({ timeGuidance }: { timeGuidance: string | null }) {
 
   return (
     <div className="flex flex-col items-center gap-2">
-      {timeGuidance && <p className="text-sm text-gray-500">권장 조리시간: {timeGuidance}</p>}
+      {timeGuidance && <p className="text-xs text-gray-500">{timeGuidance}</p>}
       <p className="text-2xl font-mono font-semibold text-gray-700">⏱ {formatElapsed(elapsedMs)}</p>
       <div className="flex gap-2">
         <button
@@ -150,7 +193,7 @@ export function CookingModeView() {
     );
   }
 
-  const { steps } = state;
+  const { steps, recipe } = state;
 
   if (steps.length === 0) {
     return (
@@ -182,23 +225,37 @@ export function CookingModeView() {
   }
 
   const step = steps[stepIndex];
+  const infoRows = buildStepInfoRows(step, recipe);
 
   return (
     <div className="flex min-h-dvh flex-col px-6 py-8">
-      <p className="mb-8 text-sm font-medium text-gray-500">
+      <p className="mb-4 shrink-0 text-sm font-medium text-gray-500">
         STEP {stepIndex + 1} / {steps.length}
       </p>
-      <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
+      <div className="flex flex-1 flex-col items-center justify-center gap-4 overflow-y-auto py-2 text-center">
+        <p className="text-xs font-semibold text-gray-400">{step.ingredientName}</p>
+        <CookingPhotoPlaceholder />
         <p className="text-xl font-semibold leading-relaxed">{step.instruction}</p>
+        <StepInfoTable rows={infoRows} />
         {step.timerEnabled && <StepTimer key={step.id} timeGuidance={step.timeGuidance} />}
       </div>
-      <button
-        type="button"
-        onClick={() => setStepIndex((i) => i + 1)}
-        className="w-full rounded-lg bg-blue-600 py-4 text-base font-semibold text-white"
-      >
-        {step.actionLabel}
-      </button>
+      <div className="flex shrink-0 gap-3">
+        <button
+          type="button"
+          onClick={() => setStepIndex((i) => Math.max(0, i - 1))}
+          disabled={stepIndex === 0}
+          className="flex-1 rounded-lg border border-gray-300 py-4 text-base font-semibold text-gray-700 disabled:opacity-40"
+        >
+          이전
+        </button>
+        <button
+          type="button"
+          onClick={() => setStepIndex((i) => i + 1)}
+          className="flex-1 rounded-lg bg-blue-600 py-4 text-base font-semibold text-white"
+        >
+          {step.actionLabel}
+        </button>
+      </div>
     </div>
   );
 }

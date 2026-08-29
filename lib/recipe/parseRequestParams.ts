@@ -17,6 +17,7 @@ export function parseInputFromParams(params: URLSearchParams): RecipeRequestInpu
   const servingsParam = params.get("servings");
   const exclusionsParam = params.get("exclusions");
   const allergiesParam = params.get("allergies");
+  const toppingParam = params.get("topping_ingredient_ids");
 
   return {
     stage_id,
@@ -26,5 +27,6 @@ export function parseInputFromParams(params: URLSearchParams): RecipeRequestInpu
     servings: servingsParam ? Number(servingsParam) : null,
     exclusions: exclusionsParam ? exclusionsParam.split(",").filter(Boolean) : [],
     allergies: allergiesParam ? allergiesParam.split(",").filter(Boolean) : [],
+    topping_ingredient_ids: toppingParam ? toppingParam.split(",").filter(Boolean) : [],
   };
 }

@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
   Allergen,
+  AllergenScope,
   CookingProfile,
   FoodForm,
   Ingredient,
@@ -55,7 +56,7 @@ async function resolveIngredient(
       ? supabase.from("cooking_profiles").select("*").eq("id", ingredient.cooking_profile_id).maybeSingle()
       : Promise.resolve({ data: null, error: null }),
     supabase.from("ingredient_safety_rules").select("safety_rules(*)").eq("ingredient_id", ingredient.id),
-    supabase.from("ingredient_allergens").select("allergens(*)").eq("ingredient_id", ingredient.id),
+    supabase.from("ingredient_allergens").select("scope, allergens(*)").eq("ingredient_id", ingredient.id),
     // Phase 10-5: stage-specific texture, only looked up when the caller
     // knows which stage the recipe is for (recipe generation). The
     // stage-agnostic ingredient-detail endpoint passes no stageId, so
@@ -80,8 +81,8 @@ async function resolveIngredient(
     (rulesRes.data ?? []) as unknown as Array<{ safety_rules: SafetyRule }>
   ).map((row) => row.safety_rules);
   const allergens = (
-    (allergensRes.data ?? []) as unknown as Array<{ allergens: Allergen }>
-  ).map((row) => row.allergens);
+    (allergensRes.data ?? []) as unknown as Array<{ scope: AllergenScope; allergens: Allergen }>
+  ).map((row) => ({ allergen: row.allergens, scope: row.scope }));
 
   return {
     ingredient,

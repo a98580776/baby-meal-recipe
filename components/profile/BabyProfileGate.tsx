@@ -43,17 +43,19 @@ export function BabyProfileGate({ stages }: BabyProfileGateProps) {
     setEditing(false);
   }
 
-  if (!profile || editing) {
-    return <BabyProfileForm initialProfile={profile} stages={stages} onComplete={handleProfileComplete} />;
-  }
-
   return (
-    <BabyHome
-      profile={profile}
-      ageDays={ageDays ?? 0}
-      stages={stages}
-      recommendedStageId={recommendedStageId}
-      onEdit={() => setEditing(true)}
-    />
+    <div className="flex flex-1 flex-col">
+      {!profile || editing ? (
+        <BabyProfileForm initialProfile={profile} stages={stages} onComplete={handleProfileComplete} />
+      ) : (
+        <BabyHome
+          profile={profile}
+          ageDays={ageDays ?? 0}
+          stages={stages}
+          recommendedStageId={recommendedStageId}
+          onEdit={() => setEditing(true)}
+        />
+      )}
+    </div>
   );
 }

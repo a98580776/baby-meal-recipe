@@ -7,7 +7,7 @@ export default async function Home() {
   const stages = await getStages(supabase);
 
   return (
-    <div className="mx-auto max-w-lg px-4 py-6">
+    <div className="mx-auto flex min-h-dvh max-w-lg flex-col px-4 py-6">
       <BabyProfileGate stages={stages} />
     </div>
   );

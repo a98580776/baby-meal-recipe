@@ -23,7 +23,13 @@ export async function POST(request: Request) {
 
   try {
     const supabase = await createClient();
-    const data = await getRecipeLookupData(supabase, input);
+    // Recipe MVP — Part 2 Topping 분리: getRecipeLookupData 자체는 수정하지
+    // 않고, base+topping을 합친 id 목록을 넘겨 한 번에 조회한다(queries.ts는
+    // "topping"이라는 개념을 몰라도 된다 — 순수 id resolver로 그대로 둔다).
+    const data = await getRecipeLookupData(supabase, {
+      ...input,
+      ingredient_ids: [...input.ingredient_ids, ...(input.topping_ingredient_ids ?? [])],
+    });
     const result = validateRecipeInput(input, data);
     return NextResponse.json(result);
   } catch {

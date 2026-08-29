@@ -30,7 +30,7 @@ export function BabyHome({ profile, ageDays, stages, recommendedStageId, onEdit 
   }
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-1 flex-col">
       <div className="flex justify-end">
         <div className="relative">
           <button
@@ -51,42 +51,37 @@ export function BabyHome({ profile, ageDays, stages, recommendedStageId, onEdit 
               >
                 아기 정보 수정
               </button>
-              <button
-                type="button"
-                onClick={() => handleMenuAction(onEdit)}
-                className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
-              >
-                사진 변경
-              </button>
             </div>
           )}
         </div>
       </div>
 
-      <div className="flex flex-col items-center gap-2 text-center">
-        {profile.photoDataUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={profile.photoDataUrl}
-            alt=""
-            className="h-24 w-24 rounded-full object-cover"
-          />
-        ) : (
-          <div className="h-24 w-24 rounded-full bg-gray-200" />
-        )}
-        <p className="text-lg font-bold text-gray-900">{profile.name}</p>
-        <p className="text-sm text-gray-600">
-          {formatAgeSummary(ageDays)} · {confirmedStage?.name_ko ?? "단계 미확인"}
-          {isRecommended && <span className="ml-1 text-amber-500">⭐</span>}
-        </p>
-      </div>
+      <div className="flex flex-1 flex-col items-center justify-center gap-8 py-6">
+        <div className="flex flex-col items-center gap-2 text-center">
+          {profile.photoDataUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={profile.photoDataUrl}
+              alt=""
+              className="h-36 w-36 rounded-full object-cover"
+            />
+          ) : (
+            <div className="h-36 w-36 rounded-full bg-gray-200" />
+          )}
+          <p className="text-lg font-bold text-gray-900">{profile.name}</p>
+          <p className="text-sm text-gray-600">
+            {formatAgeSummary(ageDays)} · {confirmedStage?.name_ko ?? "단계 미확인"}
+            {isRecommended && <span className="ml-1 text-amber-500">⭐</span>}
+          </p>
+        </div>
 
-      <Link
-        href="/plan"
-        className="w-full rounded-xl bg-blue-600 py-4 text-center text-lg font-semibold text-white"
-      >
-        🍚 오늘 이유식 만들기
-      </Link>
+        <Link
+          href="/plan"
+          className="w-full rounded-xl bg-blue-600 py-4 text-center text-lg font-semibold text-white"
+        >
+          🍚 오늘 이유식 만들기
+        </Link>
+      </div>
     </div>
   );
 }

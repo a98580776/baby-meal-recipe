@@ -59,7 +59,7 @@ export function BabyProfileForm({ initialProfile, stages, onComplete }: BabyProf
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+    <form onSubmit={handleSubmit} className="flex flex-1 flex-col justify-center gap-6 py-6">
       <div>
         <h1 className="mb-1 text-xl font-bold">아기 정보를 알려주세요</h1>
         <p className="text-sm text-gray-500">생년월일을 기준으로 이유식 단계를 추천해드려요.</p>
@@ -68,7 +68,7 @@ export function BabyProfileForm({ initialProfile, stages, onComplete }: BabyProf
       <div className="flex flex-col items-center gap-2">
         <label
           htmlFor="photo"
-          className="flex h-24 w-24 cursor-pointer items-center justify-center overflow-hidden rounded-full border border-dashed border-gray-300 bg-gray-50 text-xs text-gray-400"
+          className="flex h-36 w-36 cursor-pointer items-center justify-center overflow-hidden rounded-full border border-dashed border-gray-300 bg-gray-50 text-xs text-gray-400"
         >
           {photoDataUrl ? (
             // eslint-disable-next-line @next/next/no-img-element

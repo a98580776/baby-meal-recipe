@@ -25,7 +25,12 @@ export async function POST(request: Request) {
 
   try {
     const supabase = await createClient();
-    const data = await getRecipeLookupData(supabase, input);
+    // Recipe MVP — Part 2 Topping 분리: base+topping을 합친 id 목록으로 한
+    // 번에 조회 (queries.ts/getRecipeLookupData 자체는 무수정).
+    const data = await getRecipeLookupData(supabase, {
+      ...input,
+      ingredient_ids: [...input.ingredient_ids, ...(input.topping_ingredient_ids ?? [])],
+    });
     const validation = validateRecipeInput(input, data);
 
     // Final Safety Validation gate (설계명세 §18 파이프라인 마지막 단계):

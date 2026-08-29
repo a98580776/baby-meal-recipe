@@ -3,10 +3,87 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import type { ApiErrorResponse, RecipeResponse } from "@/types/api";
-import type { FoodForm, Stage } from "@/types/domain";
+import type { ApiErrorDetail, ApiErrorResponse, RecipeResponse } from "@/types/api";
+import type { FoodForm, SafetyAction, SafetySeverity, Stage } from "@/types/domain";
 import { parseInputFromParams } from "@/lib/recipe/parseRequestParams";
 import { recordRecentIngredients } from "@/lib/recipe/recentIngredients";
+import { formatRecommendedTime } from "@/lib/recipe/formatRecommendedTime";
+import { isNoCookingNeededFromView } from "@/lib/recipe/cookingTimeStatus";
+import { particleSizeLabel, shapeLabel } from "@/lib/recipe/textureLabels";
+import { verificationStatusBadgeText } from "@/lib/ingredients/verificationStatusLabel";
+
+// Visual weight only — CRITICAL/HIGH read as the stronger warning style
+// already used elsewhere in this screen, MEDIUM/INFO (e.g. the
+// BROADER_ALLERGEN_CONTEXT allergen rules) as a milder note. Notes with no
+// severity (ingredient-level notes like VERIFICATION_IN_PROGRESS, not
+// sourced from a safety_rules row) get the original single amber style.
+function safetyNoteStyle(severity: SafetySeverity | undefined): string {
+  switch (severity) {
+    case "CRITICAL":
+    case "HIGH":
+      return "border-amber-400 bg-amber-100 text-amber-900";
+    case "MEDIUM":
+    case "INFO":
+      return "border-gray-200 bg-gray-50 text-gray-600";
+    default:
+      return "border-amber-300 bg-amber-50 text-amber-800";
+  }
+}
+
+// Icon only reflects the rule's action — never shown to the user as the raw
+// rule_id/action code.
+function safetyNoteIcon(action: SafetyAction | undefined): string {
+  switch (action) {
+    case "REMOVE_BONE":
+    case "REMOVE_FISH_BONES":
+      return "🦴";
+    case "CONTINUE_COOKING":
+      return "🌡️";
+    case "WARN_OR_BLOCK":
+      return "🥜";
+    case "WARN":
+      return "❗";
+    default:
+      return "ℹ️";
+  }
+}
+
+function SafetyNoteItem({ note }: { note: ApiErrorDetail }) {
+  return (
+    <li className={`flex items-start gap-2 rounded-lg border p-3 text-sm ${safetyNoteStyle(note.severity)}`}>
+      <span aria-hidden="true">{safetyNoteIcon(note.action)}</span>
+      <span className="flex-1">
+        {note.message}
+        {note.rule_status === "NEEDS_REVIEW" && (
+          <span className="ml-1.5 rounded-full bg-amber-200 px-1.5 py-0.5 align-middle text-[10px] font-medium text-amber-800">
+            확인 중
+          </span>
+        )}
+      </span>
+    </li>
+  );
+}
+
+const SCOPE_LABEL: Record<"KR_MFDS_19" | "BROADER_ALLERGEN_CONTEXT", string> = {
+  KR_MFDS_19: "법정 표시대상",
+  BROADER_ALLERGEN_CONTEXT: "알레르기 정보",
+};
+
+const SCOPE_BADGE_STYLE: Record<"KR_MFDS_19" | "BROADER_ALLERGEN_CONTEXT", string> = {
+  KR_MFDS_19: "bg-red-100 text-red-700",
+  BROADER_ALLERGEN_CONTEXT: "bg-gray-100 text-gray-500",
+};
+
+// UI/UX QA follow-up: VERIFIED needs no badge, INFERRED and NEEDS_REVIEW are
+// two distinct confidence levels and must not collapse into the same label
+// — wording comes from verificationStatusBadgeText, the same source
+// IngredientSearchOverlay uses, so the two screens never drift apart again.
+function VerificationBadge({ status }: { status: string }) {
+  const text = verificationStatusBadgeText(status);
+  if (!text) return null;
+  const className = status === "NEEDS_REVIEW" ? "text-amber-600" : "text-gray-500";
+  return <span className={`ml-1 text-xs ${className}`}>{text}</span>;
+}
 
 type LoadState =
   | { status: "loading" }
@@ -129,13 +206,74 @@ export function RecipeView() {
               className="rounded-full border border-gray-300 bg-white px-3 py-1 text-sm text-gray-700"
             >
               {ing.name_ko}
-              {ing.verification_status === "NEEDS_REVIEW" && (
-                <span className="ml-1 text-xs text-amber-600">검증중</span>
-              )}
+              <VerificationBadge status={ing.verification_status} />
             </li>
           ))}
         </ul>
       </section>
+
+      {recipe.toppings.length > 0 && (
+        <section className="mb-6">
+          {/* Ingredient Role v2 (docs/ingredient-role-v2-product-rules.md §3):
+              "토핑"은 food_forms.topping("토핑식")과 이름이 겹쳐 혼동을
+              일으키므로, 재료 role을 가리키는 이 섹션은 "후첨 재료"로 표기한다. */}
+          <h2 className="mb-2 text-base font-semibold">후첨 재료</h2>
+          <div className="flex flex-col gap-3">
+            {recipe.toppings.map((ing) => {
+              const p = ing.preparation;
+              const prepItems = p
+                ? [p.wash_rule, p.peel_rule, p.seed_removal_rule, p.core_tough_part_rule, p.bone_removal_rule, p.fishbone_removal_rule, p.cutting_guidance].filter(
+                    (v): v is string => !!v,
+                  )
+                : [];
+              const c = ing.cooking;
+              return (
+                <div key={ing.id} className="rounded-lg border border-gray-200 p-3">
+                  <p className="mb-1 text-sm font-semibold">
+                    {ing.name_ko}
+                    <VerificationBadge status={ing.verification_status} />
+                  </p>
+                  {prepItems.length > 0 && (
+                    <ul className="list-disc pl-5 text-sm text-gray-700">
+                      {prepItems.map((item, i) => (
+                        <li key={i}>{item}</li>
+                      ))}
+                    </ul>
+                  )}
+                  {c && c.allowed_methods.length > 0 && (
+                    <p className="mt-1 text-sm text-gray-700">조리 방법: {c.allowed_methods.join(", ")}</p>
+                  )}
+                  {c && c.completion_checks.length > 0 && (
+                    <ul className="mt-1 list-disc pl-5 text-sm text-gray-700">
+                      {c.completion_checks.map((check, i) => (
+                        <li key={i}>{check}</li>
+                      ))}
+                    </ul>
+                  )}
+                  {ing.texture && <p className="mt-1 text-sm text-gray-700">{ing.texture}</p>}
+                  {ing.allergens.length > 0 && (
+                    <ul className="mt-1 flex flex-wrap gap-2">
+                      {ing.allergens.map((a) => (
+                        <li
+                          key={a.code}
+                          className="flex items-center gap-1.5 rounded-full border border-gray-300 bg-white px-3 py-1 text-sm text-gray-700"
+                        >
+                          {a.name_ko}
+                          <span
+                            className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${SCOPE_BADGE_STYLE[a.scope]}`}
+                          >
+                            {SCOPE_LABEL[a.scope]}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       <section className="mb-6">
         <h2 className="mb-2 text-base font-semibold">재료 손질</h2>
@@ -170,6 +308,16 @@ export function RecipeView() {
         <div className="flex flex-col gap-3">
           {recipe.ingredients.map((ing) => {
             const c = ing.cooking;
+            // Structural signal only (rule/action), no message string search
+            // beyond the ingredient-name-prefix association buildCookingSteps.ts
+            // already uses — ApiErrorDetail carries no ingredient_id field.
+            const safetyTempNote = recipe.safety_notes.find(
+              (n) => n.action === "CONTINUE_COOKING" && n.message.startsWith(`${ing.name_ko}:`),
+            );
+            const recommendedTimeText =
+              c?.recommended_time && !isNoCookingNeededFromView(c)
+                ? formatRecommendedTime(c.recommended_time)
+                : null;
             return (
               <div key={ing.id} className="rounded-lg border border-gray-200 p-3">
                 <p className="mb-1 text-sm font-semibold">{ing.name_ko}</p>
@@ -185,7 +333,16 @@ export function RecipeView() {
                         ))}
                       </ul>
                     )}
-                    {!c.time_guidance && (
+                    {recommendedTimeText && (
+                      <p className="mt-1 text-sm text-gray-700">권장 조리시간: {recommendedTimeText}</p>
+                    )}
+                    {c.time_guidance && <p className="mt-1 text-xs text-gray-500">{c.time_guidance}</p>}
+                    {safetyTempNote && (
+                      <p className="mt-1 text-sm font-medium text-amber-700">
+                        안전 확인: {safetyTempNote.message.slice(`${ing.name_ko}:`.length).trim()}
+                      </p>
+                    )}
+                    {!recommendedTimeText && !c.time_guidance && !safetyTempNote && (
                       <p className="mt-1 text-xs text-gray-400">
                         공식적으로 확인된 조리 시간이 없어 상태를 직접 확인해주세요.
                       </p>
@@ -203,23 +360,74 @@ export function RecipeView() {
       <section className="mb-6">
         <h2 className="mb-2 text-base font-semibold">질감 · 제공 형태</h2>
         <div className="flex flex-col gap-3">
-          {recipe.ingredients.map((ing) => (
-            <div key={ing.id} className="rounded-lg border border-gray-200 p-3">
-              <p className="mb-1 text-sm font-semibold">{ing.name_ko}</p>
-              {ing.texture ? (
-                <p className="text-sm text-gray-700">{ing.texture}</p>
-              ) : (
-                <p className="text-sm text-gray-400">
-                  질감 정보가 아직 등록되지 않았습니다. 아기의 발달 단계와 씹는 능력에 맞춰 조정해주세요.
-                </p>
-              )}
-            </div>
-          ))}
+          {recipe.ingredients.map((ing) => {
+            // shape/particle_size: 카드 상단의 축약 배지(요약) — null이면 배지 자체를 숨긴다
+            // ("정보가 아직 등록되지 않았습니다" 같은 폴백 문구를 붙이지 않는다). texture
+            // 자유 텍스트는 기존 UI(폴백 문구 포함)를 그대로 유지한다.
+            const sLabel = shapeLabel(ing.shape);
+            const pLabel = particleSizeLabel(ing.particle_size);
+            return (
+              <div key={ing.id} className="rounded-lg border border-gray-200 p-3">
+                <p className="mb-1 text-sm font-semibold">{ing.name_ko}</p>
+                {(sLabel || pLabel) && (
+                  <div className="mb-1.5 flex flex-wrap gap-2">
+                    {sLabel && (
+                      <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
+                        제공 형태: {sLabel}
+                      </span>
+                    )}
+                    {pLabel && (
+                      <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
+                        입자 크기: {pLabel}
+                      </span>
+                    )}
+                  </div>
+                )}
+                {ing.texture ? (
+                  <p className="text-sm text-gray-700">{ing.texture}</p>
+                ) : (
+                  <p className="text-sm text-gray-400">
+                    질감 정보가 아직 등록되지 않았습니다. 아기의 발달 단계와 씹는 능력에 맞춰 조정해주세요.
+                  </p>
+                )}
+              </div>
+            );
+          })}
         </div>
         <p className="mt-2 rounded-lg border border-gray-200 p-3 text-xs text-gray-500">
           재료별 정확한 입자 크기(mm/cm)는 아직 검증된 데이터로 등록되지 않았습니다.
         </p>
       </section>
+
+      {recipe.ingredients.some((ing) => ing.allergens.length > 0) && (
+        <section className="mb-6">
+          <h2 className="mb-2 text-base font-semibold">알레르겐</h2>
+          <div className="flex flex-col gap-3">
+            {recipe.ingredients
+              .filter((ing) => ing.allergens.length > 0)
+              .map((ing) => (
+                <div key={ing.id} className="rounded-lg border border-gray-200 p-3">
+                  <p className="mb-1 text-sm font-semibold">{ing.name_ko}</p>
+                  <ul className="flex flex-wrap gap-2">
+                    {ing.allergens.map((a) => (
+                      <li
+                        key={a.code}
+                        className="flex items-center gap-1.5 rounded-full border border-gray-300 bg-white px-3 py-1 text-sm text-gray-700"
+                      >
+                        {a.name_ko}
+                        <span
+                          className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${SCOPE_BADGE_STYLE[a.scope]}`}
+                        >
+                          {SCOPE_LABEL[a.scope]}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+          </div>
+        </section>
+      )}
 
       {recipe.storage && (
         <section className="mb-6">
@@ -246,9 +454,9 @@ export function RecipeView() {
       {recipe.safety_notes.length > 0 && (
         <section className="mb-6">
           <h2 className="mb-2 text-base font-semibold">⚠️ 주의할 점</h2>
-          <ul className="list-disc rounded-lg border border-amber-300 bg-amber-50 p-3 pl-8 text-sm text-amber-800">
+          <ul className="flex flex-col gap-2">
             {recipe.safety_notes.map((note, i) => (
-              <li key={i}>{note.message}</li>
+              <SafetyNoteItem key={i} note={note} />
             ))}
           </ul>
         </section>

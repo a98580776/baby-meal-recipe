@@ -2,7 +2,15 @@
 // objects so lib/validation and lib/rules can be unit-tested without a
 // network round-trip to Supabase. Keep in sync with seed.sql by hand — this
 // file must not fabricate values seed.sql does not also contain.
-import type { FoodForm, SafetyRule, Stage } from "@/types/domain";
+import type {
+  AllergenScope,
+  FoodForm,
+  IngredientRole,
+  IngredientRoleStatus,
+  IngredientRoleV2,
+  SafetyRule,
+  Stage,
+} from "@/types/domain";
 import type { ResolvedIngredient } from "@/lib/rules/types";
 
 export const stages: Record<string, Stage> = {
@@ -101,6 +109,55 @@ const safetyRules: Record<string, SafetyRule> = {
     evidence_id: null,
     status: "VERIFIED",
   },
+  // migration 0004 — mirrors real seed.sql exactly: status is NEEDS_REVIEW
+  // because evidence E011's stated applicability (KR_MFDS_19 + 영유아
+  // 다빈도 원인식품) doesn't directly back a BROADER_ALLERGEN_CONTEXT claim
+  // (docs/schema-freeze.md §2-2 policy C). Used to test that BLOCK/WARN
+  // strength is unaffected by status.
+  FISH_ALLERGEN: {
+    id: "FISH_ALLERGEN",
+    rule_type: "allergen",
+    severity: "MEDIUM",
+    condition_json: { allergen: "FISH" },
+    action: "WARN_OR_BLOCK",
+    evidence_id: "E011",
+    status: "NEEDS_REVIEW",
+  },
+  // migration 0004 — mirrors real seed.sql exactly (§2 QA follow-up:
+  // beef/chicken's base fixtures were missing these until now; salmon's
+  // FISH_ALLERGEN was updated earlier but beef/chicken were not).
+  MEAT_POULTRY_TEMP_MFDS: {
+    id: "MEAT_POULTRY_TEMP_MFDS",
+    rule_type: "cooking_temperature",
+    severity: "CRITICAL",
+    condition_json: {
+      category: "meat_poultry",
+      min_internal_temp_c: 75,
+      hold_time_min: 1,
+      source_standard: "KR_MFDS",
+    },
+    action: "CONTINUE_COOKING",
+    evidence_id: "E013",
+    status: "VERIFIED",
+  },
+  BEEF_ALLERGEN: {
+    id: "BEEF_ALLERGEN",
+    rule_type: "allergen",
+    severity: "HIGH",
+    condition_json: { allergen: "BEEF" },
+    action: "WARN_OR_BLOCK",
+    evidence_id: "E011",
+    status: "VERIFIED",
+  },
+  CHICKEN_ALLERGEN: {
+    id: "CHICKEN_ALLERGEN",
+    rule_type: "allergen",
+    severity: "HIGH",
+    condition_json: { allergen: "CHICKEN" },
+    action: "WARN_OR_BLOCK",
+    evidence_id: "E011",
+    status: "VERIFIED",
+  },
 };
 
 function resolved(
@@ -108,10 +165,16 @@ function resolved(
   name_ko: string,
   category: string,
   verification_status: ResolvedIngredient["ingredient"]["verification_status"],
+  ingredient_role: IngredientRole,
   prep: ResolvedIngredient["preparationProfile"],
   cook: ResolvedIngredient["cookingProfile"],
   ruleIds: string[],
-  allergenCodes: string[] = [],
+  allergenLinks: Array<{ code: string; scope?: AllergenScope }> = [],
+  // v2 role/status (docs/ingredient-role-v2-product-rules.md §13) — required,
+  // no default, so every fixture must state its v2 mapping explicitly rather
+  // than silently inheriting a placeholder value.
+  ingredient_role_v2: IngredientRoleV2,
+  ingredient_role_status: IngredientRoleStatus,
 ): ResolvedIngredient {
   return {
     ingredient: {
@@ -120,6 +183,9 @@ function resolved(
       name_en: null,
       category,
       verification_status,
+      ingredient_role,
+      ingredient_role_v2,
+      ingredient_role_status,
       preparation_profile_id: prep?.id ?? null,
       cooking_profile_id: cook?.id ?? null,
       texture_profile_id: null,
@@ -132,18 +198,34 @@ function resolved(
     // fixtures — tests that need texture build their own ResolvedIngredient.
     textureProfile: null,
     safetyRules: ruleIds.map((rid) => safetyRules[rid]),
-    allergens: allergenCodes.map((code) => ({ id: code, code, name_ko: code, country: "KR", version: null })),
+    allergens: allergenLinks.map(({ code, scope = "KR_MFDS_19" }) => ({
+      allergen: { id: code, code, name_ko: code, country: "KR", version: null },
+      scope,
+    })),
   };
 }
 
 export const ingredients: Record<string, ResolvedIngredient> = {
-  broccoli: resolved("broccoli", "브로콜리", "vegetable", "UNSUPPORTED", null, null, []),
+  broccoli: resolved(
+    "broccoli",
+    "브로콜리",
+    "vegetable",
+    "UNSUPPORTED",
+    "REVIEW",
+    null,
+    null,
+    [],
+    [],
+    "BASE_ONLY",
+    "REVIEW",
+  ),
 
   carrot: resolved(
     "carrot",
     "당근",
     "vegetable",
     "NEEDS_REVIEW",
+    "BASE_AND_TOPPING",
     {
       id: "prep_carrot",
       wash_rule: "흐르는 물로 세척",
@@ -164,10 +246,16 @@ export const ingredients: Record<string, ResolvedIngredient> = {
       time_guidance: null,
       time_status: "UNSUPPORTED",
       evidence_id: null,
+      time_min: null,
+      time_max: null,
+      time_unit: null,
       whole_cut_temperature_rule_id: null,
       whole_cut_rest_seconds: null,
     },
     ["CHOKING_HARD_RAW"],
+    [],
+    "BASE_AND_ADD_ON",
+    "CONFIRMED",
   ),
 
   chicken: resolved(
@@ -175,6 +263,7 @@ export const ingredients: Record<string, ResolvedIngredient> = {
     "닭고기",
     "poultry",
     "NEEDS_REVIEW",
+    "BASE_AND_TOPPING",
     {
       id: "prep_chicken",
       wash_rule: "생닭은 세척하지 않음(교차오염 방지)",
@@ -195,10 +284,16 @@ export const ingredients: Record<string, ResolvedIngredient> = {
       time_guidance: null,
       time_status: "UNSUPPORTED",
       evidence_id: "E004",
+      time_min: null,
+      time_max: null,
+      time_unit: null,
       whole_cut_temperature_rule_id: null,
       whole_cut_rest_seconds: null,
     },
-    ["POULTRY_TEMP", "BONE_REMOVE"],
+    ["POULTRY_TEMP", "BONE_REMOVE", "MEAT_POULTRY_TEMP_MFDS", "CHICKEN_ALLERGEN"],
+    [{ code: "CHICKEN" }],
+    "BASE_AND_ADD_ON",
+    "CONFIRMED",
   ),
 
   beef: resolved(
@@ -206,6 +301,7 @@ export const ingredients: Record<string, ResolvedIngredient> = {
     "소고기",
     "meat",
     "NEEDS_REVIEW",
+    "BASE_AND_TOPPING",
     {
       id: "prep_beef",
       wash_rule: "별도 세척 불필요",
@@ -228,10 +324,16 @@ export const ingredients: Record<string, ResolvedIngredient> = {
       evidence_id: "E004",
       // Phase 10-4-2 decision B structure — whole-cut temp/rest stay
       // unregistered until primary-source verification succeeds.
+      time_min: null,
+      time_max: null,
+      time_unit: null,
       whole_cut_temperature_rule_id: null,
       whole_cut_rest_seconds: null,
     },
-    ["GROUND_MEAT_TEMP"],
+    ["GROUND_MEAT_TEMP", "MEAT_POULTRY_TEMP_MFDS", "BEEF_ALLERGEN"],
+    [{ code: "BEEF" }],
+    "BASE_AND_ADD_ON",
+    "CONFIRMED",
   ),
 
   salmon: resolved(
@@ -239,6 +341,7 @@ export const ingredients: Record<string, ResolvedIngredient> = {
     "연어",
     "fish",
     "NEEDS_REVIEW",
+    "BASE_AND_TOPPING",
     {
       id: "prep_salmon",
       wash_rule: null,
@@ -259,17 +362,29 @@ export const ingredients: Record<string, ResolvedIngredient> = {
       time_guidance: null,
       time_status: "UNSUPPORTED",
       evidence_id: "E004",
+      time_min: null,
+      time_max: null,
+      time_unit: null,
       whole_cut_temperature_rule_id: null,
       whole_cut_rest_seconds: null,
     },
-    ["FISH_TEMP", "FISHBONE_REMOVE", "RAW_FISH_BLOCK"],
+    ["FISH_TEMP", "FISHBONE_REMOVE", "RAW_FISH_BLOCK", "FISH_ALLERGEN"],
+    [{ code: "FISH", scope: "BROADER_ALLERGEN_CONTEXT" }],
+    "BASE_AND_ADD_ON",
+    "CONFIRMED",
   ),
 
+  // P0-1 fix (docs/p0-safety-fixes-investigation.md §4, 옵션 B): prep/cook
+  // 데이터가 전무하고 신뢰할 수 있는 조리법 출처를 찾지 못해, "빈 조리
+  // 단계"로 조용히 서비스하는 대신 verification_status를 UNSUPPORTED로
+  // 전환해 broccoli와 동일하게 명확히 차단한다. SOY 알레르기 연결은
+  // 그대로 유지(알레르기 정보 자체는 정상이므로).
   tofu: resolved(
     "tofu",
     "두부",
     "soy",
-    "NEEDS_REVIEW",
+    "UNSUPPORTED",
+    "REVIEW",
     {
       id: "prep_tofu",
       wash_rule: null,
@@ -290,11 +405,16 @@ export const ingredients: Record<string, ResolvedIngredient> = {
       time_guidance: null,
       time_status: "NEEDS_REVIEW",
       evidence_id: null,
+      time_min: null,
+      time_max: null,
+      time_unit: null,
       whole_cut_temperature_rule_id: null,
       whole_cut_rest_seconds: null,
     },
     ["SOY_ALLERGEN"],
-    ["SOY"],
+    [{ code: "SOY" }],
+    "BASE_ONLY",
+    "REVIEW",
   ),
 
   apple: resolved(
@@ -302,6 +422,7 @@ export const ingredients: Record<string, ResolvedIngredient> = {
     "사과",
     "fruit",
     "NEEDS_REVIEW",
+    "BASE_AND_TOPPING",
     {
       id: "prep_apple",
       wash_rule: "흐르는 물로 세척",
@@ -322,9 +443,175 @@ export const ingredients: Record<string, ResolvedIngredient> = {
       time_guidance: null,
       time_status: "UNSUPPORTED",
       evidence_id: null,
+      time_min: null,
+      time_max: null,
+      time_unit: null,
       whole_cut_temperature_rule_id: null,
       whole_cut_rest_seconds: null,
     },
     ["CHOKING_HARD_RAW"],
+    [],
+    "BASE_AND_ADD_ON",
+    "CONFIRMED",
+  ),
+
+  rice: resolved(
+    "rice",
+    "쌀",
+    "grain",
+    "INFERRED",
+    "BASE_ONLY",
+    {
+      id: "prep_rice",
+      wash_rule: "원재료 특성에 맞게 세척",
+      peel_rule: null,
+      seed_removal_rule: null,
+      core_tough_part_rule: null,
+      bone_removal_rule: null,
+      fishbone_removal_rule: null,
+      cutting_guidance: "원재료 특성에 맞게 세척·조리하고 초기에는 부드럽게 제공",
+      status: "INFERRED",
+      evidence_id: "E010",
+    },
+    {
+      id: "cook_rice",
+      allowed_methods: ["boil"],
+      temperature_rule_id: null,
+      completion_checks: ["쌀알이 충분히 퍼지고 쉽게 으깨짐"],
+      time_guidance: "추천 20~30분 (시작 기준) — 불린 쌀, 죽 끓이기",
+      time_status: "INFERRED",
+      evidence_id: "E010",
+      time_min: 20,
+      time_max: 30,
+      time_unit: "분",
+      whole_cut_temperature_rule_id: null,
+      whole_cut_rest_seconds: null,
+    },
+    [],
+    [],
+    "BASE_ONLY",
+    "CONFIRMED",
+  ),
+
+  corn: resolved(
+    "corn",
+    "옥수수",
+    "grain",
+    "INFERRED",
+    "REVIEW",
+    {
+      id: "prep_corn",
+      wash_rule: "원재료 특성에 맞게 세척",
+      peel_rule: null,
+      seed_removal_rule: null,
+      core_tough_part_rule: null,
+      bone_removal_rule: null,
+      fishbone_removal_rule: null,
+      cutting_guidance: "원재료 특성에 맞게 세척·조리하고 초기에는 부드럽게 제공",
+      status: "INFERRED",
+      evidence_id: "E010",
+    },
+    {
+      id: "cook_corn",
+      allowed_methods: ["steam", "boil"],
+      temperature_rule_id: null,
+      // 0010_corn_completion_checks_cleanup: shape 문구("필요 시 갈아 제공") 제거,
+      // texture_profiles.shape='mashed'가 대신 표현(Cooking Mode buildStepInfoRows.ts).
+      completion_checks: ["알이 부드러움"],
+      time_guidance: "추천 8~12분 (시작 기준) — 알을 충분히 익히기",
+      time_status: "INFERRED",
+      evidence_id: "E010",
+      time_min: 8,
+      time_max: 12,
+      time_unit: "분",
+      whole_cut_temperature_rule_id: null,
+      whole_cut_rest_seconds: null,
+    },
+    ["CHOKING_HARD_RAW"],
+    [],
+    "BASE_ONLY",
+    "REVIEW",
+  ),
+
+  seaweed: resolved(
+    "seaweed",
+    "김",
+    "seaweed",
+    "INFERRED",
+    "TOPPING_ONLY",
+    {
+      id: "prep_seaweed",
+      wash_rule: null,
+      peel_rule: null,
+      seed_removal_rule: null,
+      core_tough_part_rule: null,
+      bone_removal_rule: null,
+      fishbone_removal_rule: null,
+      cutting_guidance: "재료의 질긴 부분·씨·껍질 등은 제공 형태와 재료 상태에 따라 확인",
+      status: "INFERRED",
+      evidence_id: "E010",
+    },
+    {
+      id: "cook_seaweed",
+      allowed_methods: [],
+      temperature_rule_id: null,
+      completion_checks: ["질긴 큰 조각 없이 잘게 부순 상태"],
+      time_guidance: "추천 1~2분 (시작 기준) — 필요 시 살짝 가열/구워 수분 제거",
+      time_status: "INFERRED",
+      evidence_id: "E010",
+      time_min: 1,
+      time_max: 2,
+      time_unit: "분",
+      whole_cut_temperature_rule_id: null,
+      whole_cut_rest_seconds: null,
+    },
+    [],
+    [],
+    "ADD_ON_ONLY",
+    "CONFIRMED",
+  ),
+
+  // Ingredient Role v2 — MIX_IN 특성 테스트용 (docs/ingredient-role-v2-
+  // product-rules.md §8: onion은 ingredient_role_v2=BASE_ONLY/status=CONFIRMED
+  // 로 저장되고, MIX_IN 특성은 lib/rules/ingredientRole.ts의
+  // MIX_IN_CHARACTER_IDS로만 보존됨). Legacy 5-role(ingredient_role)은
+  // MIX_IN_ONLY로 남아있다 — 컬럼이 아직 DB에 존재하기 때문. prep/cook 값은
+  // seed.sql의 prep_onion/cook_onion 그대로.
+  onion: resolved(
+    "onion",
+    "양파",
+    "vegetable",
+    "INFERRED",
+    "MIX_IN_ONLY",
+    {
+      id: "prep_onion",
+      wash_rule: null,
+      peel_rule: null,
+      seed_removal_rule: null,
+      core_tough_part_rule: null,
+      bone_removal_rule: null,
+      fishbone_removal_rule: null,
+      cutting_guidance: "재료의 질긴 부분·씨·껍질 등은 제공 형태와 재료 상태에 따라 확인",
+      status: "INFERRED",
+      evidence_id: "E010",
+    },
+    {
+      id: "cook_onion",
+      allowed_methods: ["steam", "boil"],
+      temperature_rule_id: null,
+      completion_checks: ["투명하고 충분히 부드러움"],
+      time_guidance: "추천 8~12분 (시작 기준) — 잘게 썬 양파, 찌기/볶지 않고 익히기",
+      time_status: "INFERRED",
+      evidence_id: "E010",
+      time_min: 8,
+      time_max: 12,
+      time_unit: "분",
+      whole_cut_temperature_rule_id: null,
+      whole_cut_rest_seconds: null,
+    },
+    [],
+    [],
+    "BASE_ONLY",
+    "CONFIRMED",
   ),
 };

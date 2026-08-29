@@ -1,8 +1,8 @@
 import type {
-  Allergen,
   CookingProfile,
   FoodForm,
   Ingredient,
+  IngredientAllergenLink,
   PreparationProfile,
   SafetyRule,
   Stage,
@@ -21,7 +21,7 @@ export interface ResolvedIngredient {
   // stage-agnostic ingredient-detail lookup.
   textureProfile: TextureProfile | null;
   safetyRules: SafetyRule[];
-  allergens: Allergen[];
+  allergens: IngredientAllergenLink[];
 }
 
 export interface RecipeLookupData {

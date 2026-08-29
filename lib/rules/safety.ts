@@ -23,6 +23,18 @@ export function evaluateIngredientSafety(
   const name = resolved.ingredient.name_ko;
   const nameEunNeun = withEunNeun(name);
 
+  // migration 0004: some ingredients (beef/chicken/pork/salmon/cod/tuna/
+  // shrimp) carry two CONTINUE_COOKING temperature rules from different
+  // official sources (legacy USDA-based rule + this service's adopted
+  // KR MFDS rule). Both stay linked in the DB, but only the MFDS one is
+  // user-facing — showing two different temperature numbers for the same
+  // ingredient would read as contradictory, not as "extra safety".
+  const hasMfdsTempRule = resolved.safetyRules.some(
+    (rule) =>
+      rule.action === "CONTINUE_COOKING" &&
+      (rule.condition_json as { source_standard?: string }).source_standard === "KR_MFDS",
+  );
+
   for (const rule of resolved.safetyRules) {
     switch (rule.action) {
       case "BLOCK_INGREDIENT": {
@@ -30,6 +42,9 @@ export function evaluateIngredientSafety(
           code: "SAFETY_BLOCKED",
           message: `${nameEunNeun} 현재 조건에서 사용할 수 없습니다.`,
           rule_id: rule.id,
+          rule_status: rule.status,
+          severity: rule.severity,
+          action: rule.action,
         });
         break;
       }
@@ -44,6 +59,26 @@ export function evaluateIngredientSafety(
             code: "SAFETY_BLOCKED",
             message: `${nameEunNeun} 안전하게 조리하는 방법이 확인되지 않아 이 형태로 제공할 수 없습니다.`,
             rule_id: rule.id,
+            rule_status: rule.status,
+            severity: rule.severity,
+            action: rule.action,
+          });
+        } else {
+          // P0-5 fix (docs/p0-safety-fixes-investigation.md §3): a
+          // cookingProfile existing removes the *raw* hazard (the pipeline
+          // always cooks it), but the choking hazard this rule exists for
+          // doesn't disappear just because the ingredient CAN be cooked —
+          // it still must actually be served soft/mashed/small, not whole
+          // or hard. Before this fix, this branch did nothing at all, so
+          // CHOKING_HARD_RAW silently never reached the user for any
+          // ingredient with a cooking_profile (most of them).
+          warnings.push({
+            code: "SAFETY_FORM_WARNING",
+            message: `${nameEunNeun} 질식 위험이 있는 재료입니다. 충분히 익혀 잘게 다지거나 으깨어 제공하고, 생으로 또는 딱딱한 통조각 형태로 제공하지 마세요.`,
+            rule_id: rule.id,
+            rule_status: rule.status,
+            severity: rule.severity,
+            action: rule.action,
           });
         }
         break;
@@ -55,12 +90,18 @@ export function evaluateIngredientSafety(
             code: "VALIDATION_FAILED",
             message: `${name}의 뼈 제거 손질 정보가 없어 안전하게 제공할 수 없습니다.`,
             rule_id: rule.id,
+            rule_status: rule.status,
+            severity: rule.severity,
+            action: rule.action,
           });
         } else {
           warnings.push({
             code: "SAFETY_PREP_REQUIRED",
             message: `${name}: ${resolved.preparationProfile.bone_removal_rule}`,
             rule_id: rule.id,
+            rule_status: rule.status,
+            severity: rule.severity,
+            action: rule.action,
           });
         }
         break;
@@ -72,20 +113,32 @@ export function evaluateIngredientSafety(
             code: "VALIDATION_FAILED",
             message: `${name}의 가시 제거 손질 정보가 없어 안전하게 제공할 수 없습니다.`,
             rule_id: rule.id,
+            rule_status: rule.status,
+            severity: rule.severity,
+            action: rule.action,
           });
         } else {
           warnings.push({
             code: "SAFETY_PREP_REQUIRED",
             message: `${name}: ${resolved.preparationProfile.fishbone_removal_rule}`,
             rule_id: rule.id,
+            rule_status: rule.status,
+            severity: rule.severity,
+            action: rule.action,
           });
         }
         break;
       }
 
       case "CONTINUE_COOKING": {
-        const threshold = (rule.condition_json as { min_internal_temp_c?: number })
-          .min_internal_temp_c;
+        const condition = rule.condition_json as {
+          min_internal_temp_c?: number;
+          source_standard?: string;
+        };
+        if (hasMfdsTempRule && condition.source_standard !== "KR_MFDS") {
+          break;
+        }
+        const threshold = condition.min_internal_temp_c;
         warnings.push({
           code: "SAFETY_COOKING_REQUIRED",
           message:
@@ -93,11 +146,19 @@ export function evaluateIngredientSafety(
               ? `${name}: 내부 온도 ${threshold}°C 이상까지 완전히 익혀야 합니다.`
               : `${name}: 충분히 익혀야 합니다.`,
           rule_id: rule.id,
+          rule_status: rule.status,
+          severity: rule.severity,
+          action: rule.action,
         });
         break;
       }
 
       case "WARN_OR_BLOCK": {
+        // NEEDS_REVIEW rules (e.g. the 4 BROADER_ALLERGEN_CONTEXT allergen
+        // rules from migration 0004) are evaluated with exactly the same
+        // BLOCK/WARN strength as VERIFIED ones — status never weakens a
+        // safety outcome, it only rides along on rule_status so the client
+        // can label the note (docs/schema-freeze.md §2-2 policy C).
         const allergen = (rule.condition_json as { allergen?: string }).allergen;
         const declared = allergen != null && declaredAllergies.includes(allergen);
         if (declared) {
@@ -105,12 +166,18 @@ export function evaluateIngredientSafety(
             code: "SAFETY_BLOCKED",
             message: `${nameEunNeun} 등록하신 알레르기(${allergen})와 관련되어 제외됩니다.`,
             rule_id: rule.id,
+            rule_status: rule.status,
+            severity: rule.severity,
+            action: rule.action,
           });
         } else {
           warnings.push({
             code: "SAFETY_ALLERGEN_WARNING",
             message: `${name}에는 알레르기 유발 성분(${allergen ?? "미상"})이 포함되어 있습니다.`,
             rule_id: rule.id,
+            rule_status: rule.status,
+            severity: rule.severity,
+            action: rule.action,
           });
         }
         break;
@@ -121,6 +188,9 @@ export function evaluateIngredientSafety(
           code: "SAFETY_WARNING",
           message: `${name}: 주의가 필요합니다.`,
           rule_id: rule.id,
+          rule_status: rule.status,
+          severity: rule.severity,
+          action: rule.action,
         });
         break;
       }
