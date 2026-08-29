@@ -22,6 +22,7 @@ export function evaluateIngredientSafety(
   const warnings: ApiErrorDetail[] = [];
   const name = resolved.ingredient.name_ko;
   const nameEunNeun = withEunNeun(name);
+  const ingredientId = resolved.ingredient.id;
 
   // migration 0004: some ingredients (beef/chicken/pork/salmon/cod/tuna/
   // shrimp) carry two CONTINUE_COOKING temperature rules from different
@@ -45,6 +46,7 @@ export function evaluateIngredientSafety(
           rule_status: rule.status,
           severity: rule.severity,
           action: rule.action,
+          ingredient_id: ingredientId,
         });
         break;
       }
@@ -62,6 +64,7 @@ export function evaluateIngredientSafety(
             rule_status: rule.status,
             severity: rule.severity,
             action: rule.action,
+            ingredient_id: ingredientId,
           });
         } else {
           // P0-5 fix (docs/p0-safety-fixes-investigation.md §3): a
@@ -79,6 +82,7 @@ export function evaluateIngredientSafety(
             rule_status: rule.status,
             severity: rule.severity,
             action: rule.action,
+            ingredient_id: ingredientId,
           });
         }
         break;
@@ -93,6 +97,7 @@ export function evaluateIngredientSafety(
             rule_status: rule.status,
             severity: rule.severity,
             action: rule.action,
+            ingredient_id: ingredientId,
           });
         } else {
           warnings.push({
@@ -102,6 +107,7 @@ export function evaluateIngredientSafety(
             rule_status: rule.status,
             severity: rule.severity,
             action: rule.action,
+            ingredient_id: ingredientId,
           });
         }
         break;
@@ -116,6 +122,7 @@ export function evaluateIngredientSafety(
             rule_status: rule.status,
             severity: rule.severity,
             action: rule.action,
+            ingredient_id: ingredientId,
           });
         } else {
           warnings.push({
@@ -125,6 +132,7 @@ export function evaluateIngredientSafety(
             rule_status: rule.status,
             severity: rule.severity,
             action: rule.action,
+            ingredient_id: ingredientId,
           });
         }
         break;
@@ -149,6 +157,7 @@ export function evaluateIngredientSafety(
           rule_status: rule.status,
           severity: rule.severity,
           action: rule.action,
+          ingredient_id: ingredientId,
         });
         break;
       }
@@ -169,6 +178,7 @@ export function evaluateIngredientSafety(
             rule_status: rule.status,
             severity: rule.severity,
             action: rule.action,
+            ingredient_id: ingredientId,
           });
         } else {
           warnings.push({
@@ -178,6 +188,7 @@ export function evaluateIngredientSafety(
             rule_status: rule.status,
             severity: rule.severity,
             action: rule.action,
+            ingredient_id: ingredientId,
           });
         }
         break;
@@ -191,6 +202,7 @@ export function evaluateIngredientSafety(
           rule_status: rule.status,
           severity: rule.severity,
           action: rule.action,
+          ingredient_id: ingredientId,
         });
         break;
       }

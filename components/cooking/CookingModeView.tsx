@@ -7,6 +7,7 @@ import type { ApiErrorResponse, RecipeResponse } from "@/types/api";
 import { parseInputFromParams } from "@/lib/recipe/parseRequestParams";
 import { buildCookingSteps, type CookingStep } from "@/lib/recipe/buildCookingSteps";
 import { buildStepInfoRows, type StepInfoRow } from "@/lib/recipe/buildStepInfoRows";
+import { SafetyNoteItem } from "@/components/shared/SafetyNoteItem";
 
 function StepInfoTable({ rows }: { rows: StepInfoRow[] }) {
   if (rows.length === 0) return null;
@@ -232,6 +233,19 @@ export function CookingModeView() {
       <p className="mb-4 shrink-0 text-sm font-medium text-gray-500">
         STEP {stepIndex + 1} / {steps.length}
       </p>
+      {step.safetyWarnings.length > 0 && (
+        // C1 (docs/phase11-ux-product-review.md): 이 재료가 처음 등장하는
+        // STEP에서만 채워지므로(lib/recipe/buildCookingSteps.ts) 같은
+        // 경고가 이후 STEP에서 반복되지 않는다. STEP 헤더 바로 아래,
+        // 스크롤 영역 밖(shrink-0)에 둬 스크롤 없이 항상 보이게 한다 —
+        // 일반 정보 테이블(StepInfoTable)과 시각적으로 분리해 TIP처럼
+        // 보이지 않도록 한다.
+        <ul className="mb-3 flex shrink-0 flex-col gap-2">
+          {step.safetyWarnings.map((note, i) => (
+            <SafetyNoteItem key={i} note={note} />
+          ))}
+        </ul>
+      )}
       <div className="flex flex-1 flex-col items-center justify-center gap-4 overflow-y-auto py-2 text-center">
         <p className="text-xs font-semibold text-gray-400">{step.ingredientName}</p>
         <CookingPhotoPlaceholder />

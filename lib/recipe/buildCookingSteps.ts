@@ -1,4 +1,4 @@
-import type { RecipeResponse } from "@/types/api";
+import type { ApiErrorDetail, RecipeResponse } from "@/types/api";
 import { isServingStateOnly } from "@/lib/recipe/cookingTimeStatus";
 
 export interface CookingStep {
@@ -20,6 +20,16 @@ export interface CookingStep {
   // doneness checks). false for prep steps (세척/손질/자르기/으깨기) and the
   // 조리 방법 description step, which have no time dimension to track.
   timerEnabled: boolean;
+  // C1 (docs/phase11-ux-product-review.md): this ingredient's safety_notes
+  // OTHER than CONTINUE_COOKING (which already gets its own dedicated
+  // 익힘확인 step above) — e.g. BLOCK_FORM choking-risk warnings,
+  // WARN_OR_BLOCK allergen warnings. Only set on the FIRST step generated
+  // for this ingredient, so Cooking Mode shows each warning exactly once
+  // (at the ingredient's introduction) instead of repeating it on every
+  // subsequent step of the same ingredient. Judgment itself (BLOCK vs WARN,
+  // which rule fires) is untouched — this only carries the already-computed
+  // safety_notes through to Cooking Mode, same source RecipeView.tsx reads.
+  safetyWarnings: ApiErrorDetail[];
 }
 
 /**
@@ -41,6 +51,7 @@ export function buildCookingSteps(recipe: RecipeResponse): CookingStep[] {
   const entries = [...recipe.ingredients, ...recipe.toppings];
   for (const ing of entries) {
     let index = 0;
+    const stepsStartIndex = steps.length;
     const push = (instruction: string, actionLabel: CookingStep["actionLabel"] = "완료") => {
       steps.push({
         id: `${ing.id}-${index++}`,
@@ -51,6 +62,7 @@ export function buildCookingSteps(recipe: RecipeResponse): CookingStep[] {
         timeGuidance: actionLabel === "익힘 확인" ? (ing.cooking?.time_guidance ?? null) : null,
         recommendedTime: actionLabel === "익힘 확인" ? (ing.cooking?.recommended_time ?? null) : null,
         timerEnabled: actionLabel === "익힘 확인",
+        safetyWarnings: [],
       });
     };
 
@@ -105,6 +117,17 @@ export function buildCookingSteps(recipe: RecipeResponse): CookingStep[] {
     // 품질 팁이라 타이머 없는 "완료" 액션으로 마지막에 붙인다.
     if (c?.rest_guidance) {
       push(`${ing.name_ko}: ${c.rest_guidance}`);
+    }
+
+    // C1: CONTINUE_COOKING 외의 안전 노트(질식 위험/알레르기 등)를 이
+    // 재료의 첫 STEP에 한 번만 붙인다 — ingredient_id로 매칭(메시지 문구는
+    // action마다 "이름:"/"이름은(는)"/"이름에는"으로 제각각이라 문자열
+    // prefix로는 안정적으로 매칭할 수 없음, lib/rules/safety.ts는 무변경).
+    const otherNotes = recipe.safety_notes.filter(
+      (n) => n.action !== "CONTINUE_COOKING" && n.ingredient_id === ing.id,
+    );
+    if (otherNotes.length > 0 && steps.length > stepsStartIndex) {
+      steps[stepsStartIndex].safetyWarnings = otherNotes;
     }
   }
 

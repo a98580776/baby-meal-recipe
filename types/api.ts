@@ -59,6 +59,13 @@ export interface ApiErrorDetail {
   // COOKING_METHOD_INFO_MISSING).
   severity?: SafetySeverity;
   action?: SafetyAction;
+  // C1 (docs/phase11-ux-product-review.md): the ingredient this note is
+  // about, set by lib/rules/safety.ts. Additive only — existing readers
+  // that match on the "{name}: " message-prefix convention are unaffected;
+  // this lets Cooking Mode associate a note with its ingredient's step
+  // without depending on message text formatting (which isn't consistent
+  // across actions — some use "{name}:", others "{name}은(는)/에는").
+  ingredient_id?: string;
 }
 
 export type ApiErrorCode =

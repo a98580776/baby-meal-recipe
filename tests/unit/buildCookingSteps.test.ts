@@ -359,4 +359,42 @@ describe("buildCookingSteps", () => {
     expect(tempStep?.actionLabel).toBe("익힘 확인");
     expect(tempStep?.timerEnabled).toBe(true);
   });
+
+  describe("C1 — Cooking Mode 안전 경고 (docs/phase11-ux-product-review.md)", () => {
+    it("BLOCK_FORM(질식 위험) 경고가 재료의 첫 STEP에만 붙고, 이후 STEP엔 없다", () => {
+      // carrot fixture는 CHOKING_HARD_RAW(BLOCK_FORM)를 갖고 cookingProfile도
+      // 있어 SAFETY_FORM_WARNING(경고, 차단 아님)이 발생한다.
+      const steps = buildCookingSteps(makeRecipe(["carrot"]));
+      const carrotSteps = steps.filter((s) => s.ingredientId === "carrot");
+      expect(carrotSteps.length).toBeGreaterThan(1);
+      expect(carrotSteps[0].safetyWarnings).toHaveLength(1);
+      expect(carrotSteps[0].safetyWarnings[0].action).toBe("BLOCK_FORM");
+      for (const step of carrotSteps.slice(1)) {
+        expect(step.safetyWarnings).toHaveLength(0);
+      }
+    });
+
+    it("CONTINUE_COOKING 노트는 safetyWarnings에 중복 포함되지 않는다 — 이미 전용 익힘확인 STEP으로 노출된다", () => {
+      // beef: MEAT_POULTRY_TEMP_MFDS(CONTINUE_COOKING) + BEEF_ALLERGEN(WARN_OR_BLOCK).
+      const steps = buildCookingSteps(makeRecipe(["beef"]));
+      const beefSteps = steps.filter((s) => s.ingredientId === "beef");
+      const allWarnings = beefSteps.flatMap((s) => s.safetyWarnings);
+      expect(allWarnings.some((w) => w.action === "CONTINUE_COOKING")).toBe(false);
+      expect(allWarnings.filter((w) => w.action === "WARN_OR_BLOCK")).toHaveLength(1);
+    });
+
+    it("서로 다른 재료의 경고가 섞이지 않는다 — 각 재료의 경고는 그 재료 자신의 첫 STEP에만 붙는다", () => {
+      const steps = buildCookingSteps(makeRecipe(["carrot", "beef"]));
+      const carrotFirst = steps.find((s) => s.ingredientId === "carrot");
+      const beefFirst = steps.find((s) => s.ingredientId === "beef");
+      expect(carrotFirst?.safetyWarnings.every((w) => w.action === "BLOCK_FORM")).toBe(true);
+      expect(beefFirst?.safetyWarnings.every((w) => w.action === "WARN_OR_BLOCK")).toBe(true);
+    });
+
+    it("safety_rules가 없는 재료(rice)는 safetyWarnings가 항상 빈 배열이다", () => {
+      const steps = buildCookingSteps(makeRecipe(["rice"]));
+      expect(steps.length).toBeGreaterThan(0);
+      expect(steps.every((s) => s.safetyWarnings.length === 0)).toBe(true);
+    });
+  });
 });

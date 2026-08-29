@@ -15,6 +15,7 @@ function makeStep(overrides: Partial<CookingStep> = {}): CookingStep {
     timeGuidance: null,
     recommendedTime: null,
     timerEnabled: false,
+    safetyWarnings: [],
     ...overrides,
   };
 }

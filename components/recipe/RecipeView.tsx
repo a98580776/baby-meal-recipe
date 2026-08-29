@@ -3,66 +3,15 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import type { ApiErrorDetail, ApiErrorResponse, RecipeResponse } from "@/types/api";
-import type { FoodForm, SafetyAction, SafetySeverity, Stage } from "@/types/domain";
+import type { ApiErrorResponse, RecipeResponse } from "@/types/api";
+import type { FoodForm, Stage } from "@/types/domain";
 import { parseInputFromParams } from "@/lib/recipe/parseRequestParams";
 import { recordRecentIngredients } from "@/lib/recipe/recentIngredients";
 import { formatRecommendedTime } from "@/lib/recipe/formatRecommendedTime";
 import { isNoCookingNeededFromView } from "@/lib/recipe/cookingTimeStatus";
 import { particleSizeLabel, shapeLabel } from "@/lib/recipe/textureLabels";
 import { verificationStatusBadgeText } from "@/lib/ingredients/verificationStatusLabel";
-
-// Visual weight only — CRITICAL/HIGH read as the stronger warning style
-// already used elsewhere in this screen, MEDIUM/INFO (e.g. the
-// BROADER_ALLERGEN_CONTEXT allergen rules) as a milder note. Notes with no
-// severity (ingredient-level notes like VERIFICATION_IN_PROGRESS, not
-// sourced from a safety_rules row) get the original single amber style.
-function safetyNoteStyle(severity: SafetySeverity | undefined): string {
-  switch (severity) {
-    case "CRITICAL":
-    case "HIGH":
-      return "border-amber-400 bg-amber-100 text-amber-900";
-    case "MEDIUM":
-    case "INFO":
-      return "border-gray-200 bg-gray-50 text-gray-600";
-    default:
-      return "border-amber-300 bg-amber-50 text-amber-800";
-  }
-}
-
-// Icon only reflects the rule's action — never shown to the user as the raw
-// rule_id/action code.
-function safetyNoteIcon(action: SafetyAction | undefined): string {
-  switch (action) {
-    case "REMOVE_BONE":
-    case "REMOVE_FISH_BONES":
-      return "🦴";
-    case "CONTINUE_COOKING":
-      return "🌡️";
-    case "WARN_OR_BLOCK":
-      return "🥜";
-    case "WARN":
-      return "❗";
-    default:
-      return "ℹ️";
-  }
-}
-
-function SafetyNoteItem({ note }: { note: ApiErrorDetail }) {
-  return (
-    <li className={`flex items-start gap-2 rounded-lg border p-3 text-sm ${safetyNoteStyle(note.severity)}`}>
-      <span aria-hidden="true">{safetyNoteIcon(note.action)}</span>
-      <span className="flex-1">
-        {note.message}
-        {note.rule_status === "NEEDS_REVIEW" && (
-          <span className="ml-1.5 rounded-full bg-amber-200 px-1.5 py-0.5 align-middle text-[10px] font-medium text-amber-800">
-            확인 중
-          </span>
-        )}
-      </span>
-    </li>
-  );
-}
+import { SafetyNoteItem } from "@/components/shared/SafetyNoteItem";
 
 const SCOPE_LABEL: Record<"KR_MFDS_19" | "BROADER_ALLERGEN_CONTEXT", string> = {
   KR_MFDS_19: "법정 표시대상",
@@ -431,6 +380,20 @@ export function RecipeView() {
         </section>
       )}
 
+      {/* H1 (docs/phase11-ux-product-review.md): CLAUDE.md §11 표시 순서
+          ("...주의사항→보관")에 맞춰 주의할 점을 보관보다 먼저 배치한다.
+          표시 순서만 변경 — 데이터/로직 무변경. */}
+      {recipe.safety_notes.length > 0 && (
+        <section className="mb-6">
+          <h2 className="mb-2 text-base font-semibold">⚠️ 주의할 점</h2>
+          <ul className="flex flex-col gap-2">
+            {recipe.safety_notes.map((note, i) => (
+              <SafetyNoteItem key={i} note={note} />
+            ))}
+          </ul>
+        </section>
+      )}
+
       {recipe.storage && (
         <section className="mb-6">
           <h2 className="mb-2 text-base font-semibold">보관</h2>
@@ -450,17 +413,6 @@ export function RecipeView() {
               </div>
             )}
           </div>
-        </section>
-      )}
-
-      {recipe.safety_notes.length > 0 && (
-        <section className="mb-6">
-          <h2 className="mb-2 text-base font-semibold">⚠️ 주의할 점</h2>
-          <ul className="flex flex-col gap-2">
-            {recipe.safety_notes.map((note, i) => (
-              <SafetyNoteItem key={i} note={note} />
-            ))}
-          </ul>
         </section>
       )}
 

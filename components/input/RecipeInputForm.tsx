@@ -3,7 +3,7 @@
 import { useMemo, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import type { ApiErrorDetail, RecipeRequestInput, RecipeValidationResponse } from "@/types/api";
-import type { FoodForm, Ingredient, Stage } from "@/types/domain";
+import type { Allergen, FoodForm, Ingredient, Stage } from "@/types/domain";
 import { IngredientSearchOverlay } from "@/components/input/IngredientSearchOverlay";
 import {
   getRecentIngredientIdsServerSnapshot,
@@ -17,6 +17,7 @@ interface RecipeInputFormProps {
   stages: Stage[];
   foodForms: FoodForm[];
   ingredients: Ingredient[];
+  allergens: Allergen[];
   // Fresh, age-based system suggestion (재계산됨) — only drives the "추천"
   // badge/helper text below. 인수인계 §9 "추천값과 사용자가 최종 선택한
   // 단계값을 분리".
@@ -38,6 +39,7 @@ export function RecipeInputForm({
   stages,
   foodForms,
   ingredients,
+  allergens,
   recommendedStageId = null,
   initialStageId = null,
 }: RecipeInputFormProps) {
@@ -60,6 +62,11 @@ export function RecipeInputForm({
   // 아래 selectedIngredients 기반 렌더링에서 자연히 숨겨지고, 값은 남아있어도
   // 서버 검증(validateRecipeInput 3-2)이 선택되지 않은 재료의 입력을 무시한다.
   const [meatForms, setMeatForms] = useState<Record<string, MeatForm>>({});
+  // C2 — 알레르기 입력 (docs/phase11-ux-product-review.md). allergens.code
+  // (Allergen.code, 예: "SOY")를 그대로 RecipeRequestInput.allergies에
+  // 전달 — lib/rules/safety.ts의 declaredAllergies 매칭이 이 코드 값을
+  // 그대로 기대하므로 별도 변환 없이 재사용한다.
+  const [selectedAllergyCodes, setSelectedAllergyCodes] = useState<string[]>([]);
 
   const [formError, setFormError] = useState<string | null>(null);
   const [apiErrors, setApiErrors] = useState<ApiErrorDetail[]>([]);
@@ -109,6 +116,12 @@ export function RecipeInputForm({
     );
   }
 
+  function toggleAllergy(code: string) {
+    setSelectedAllergyCodes((list) =>
+      list.includes(code) ? list.filter((x) => x !== code) : [...list, code],
+    );
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setFormError(null);
@@ -130,6 +143,7 @@ export function RecipeInputForm({
       food_form_id: foodFormId,
       topping_ingredient_ids: toppingIngredientIds,
       ...(Object.keys(meatForms).length > 0 ? { meat_forms: meatForms } : {}),
+      ...(selectedAllergyCodes.length > 0 ? { allergies: selectedAllergyCodes } : {}),
     };
 
     setSubmitting(true);
@@ -157,6 +171,9 @@ export function RecipeInputForm({
       const meatFormsEntries = Object.entries(meatForms).filter(([id]) => selectedIngredientIds.includes(id));
       if (meatFormsEntries.length > 0) {
         params.set("meat_forms", meatFormsEntries.map(([id, value]) => `${id}:${value}`).join(","));
+      }
+      if (selectedAllergyCodes.length > 0) {
+        params.set("allergies", selectedAllergyCodes.join(","));
       }
 
       router.push(`/recipe?${params.toString()}`);
@@ -344,6 +361,32 @@ export function RecipeInputForm({
             </div>
           </div>
         )}
+      </section>
+
+      <section>
+        <h2 className="mb-2 text-base font-semibold">알레르기 (선택)</h2>
+        <p className="mb-2 text-xs text-gray-500">
+          해당하는 항목을 선택하면 관련 재료에 안전 경고가 표시됩니다.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {allergens.map((a) => {
+            const selected = selectedAllergyCodes.includes(a.code);
+            return (
+              <button
+                key={a.code}
+                type="button"
+                onClick={() => toggleAllergy(a.code)}
+                className={`rounded-full border px-3 py-1.5 text-sm ${
+                  selected
+                    ? "border-red-600 bg-red-50 text-red-700"
+                    : "border-gray-300 bg-white text-gray-700"
+                }`}
+              >
+                {a.name_ko}
+              </button>
+            );
+          })}
+        </div>
       </section>
 
       <button
