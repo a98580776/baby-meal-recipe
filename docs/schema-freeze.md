@@ -216,3 +216,127 @@ P0 안전성 이슈 5건 중 4건을 조사·확정해 처리했다. 근거·조
 `CHOKING_HARD_RAW`(E002/CDC/TIER_1/VERIFIED)의 의미를 completion_checks 텍스트에도 반영하는
 콘텐츠 보정. `seed.sql`에도 동일 UPDATE를 append(0005~0007과 동일 패턴). `npm run test`
 (125/125) 및 원격 적용 후 `npm run test:integration`(27/27) 전부 PASS.
+
+---
+
+## 8. Amendment — `texture_profiles` 확장 배치 1: `0009`~`0014` (구현 및 원격 적용 완료, 2026-08-29)
+
+`§7-4`가 예고한 "다음 빈 번호(0008 이후)"는 실제로는 구 `ingredient_role`(5값) 컬럼 제거가 아니라
+**`texture_profiles` 확장 작업 전체(0009~0025, 17개 migration)**에 쓰였다 — 구 컬럼 제거는
+아직 진행되지 않은 채로 남아 있다(§10 참고). 이 사실을 여기 정정해서 기록한다.
+
+**분류(§1-1 기준)**: 0009~0014의 6개 migration 파일을 전수 확인한 결과 `create table` /
+`alter table` / `add column` / `create type` / `create index` / `add constraint` 등 DDL
+키워드가 **단 하나도 없다** — 전부 순수 DML(`insert into texture_profiles`, `insert into
+evidence`, 그리고 두 건의 `update cooking_profiles ... set completion_checks`)이다. 따라서
+§1-1의 "14개 테이블·enum 6개(0005 갱신분 포함)" 목록은 갱신할 필요가 없다 — schema 자체는
+전혀 바뀌지 않았다.
+
+배경 조사는 `docs/texture-profile-expansion-investigation.md`(기존 7개 패턴 감사 + 나머지
+43개 Tier 분류)에서 시작해 `docs/tier1-texture-profile-investigation.md`(§1-24, 첫 INSERT
+판정) → `docs/watermelon-cheese-texture-investigation.md`로 이어졌다.
+
+| Migration | 재료(신규 texture 행) | evidence | 성격 |
+|---|---|---|---|
+| `0009_texture_tier1` | grape/strawberry/corn/sesame/chestnut (20행) | 신규 **E014**(USDA choking prevention), **E015**(FSA/HSE choking hazards) 추가 후 재사용 | data — 순수 INSERT |
+| `0010_corn_completion_checks_cleanup` | (texture 행 없음) | — | data — `cook_corn.completion_checks`에서 texture_profiles.shape와 중복되던 형태 서술 제거(UPDATE 1건) |
+| `0011_blueberry_texture_and_completion` | blueberry (4행) | E014 재사용(신규 없음) | data — INSERT 4행 + `cook_blueberry.completion_checks` 정리(UPDATE 1건), 이전 세션의 "INSERT 불가" 판정을 재검토로 뒤집음(§29) |
+| `0012_grape_completion_checks_cleanup` | (texture 행 없음) | — | data — `cook_grape.completion_checks` 정리(UPDATE 1건), 0010과 동일 패턴 |
+| `0013_watermelon_cheese_texture_insert` | watermelon/cheese (8행) | 신규 **E016**(NHS UK "Preparing food safely") 추가 후 재사용 | data — 기존 4개 evidence 어디에도 커버 안 되어 새 1차 출처 조사 후 INSERT |
+| `0014_korean_melon_texture_insert` | korean_melon (4행) | E016 재사용(신규 없음) | data — 순수 INSERT |
+
+**data contract 관점**: 이 배치에서 `texture_profiles.shape` vocabulary(`mashed/minced/grated/
+small_piece/stick/wedge/floret/shredded/meatball/flaked/melted`, `types/domain.ts`
+`TEXTURE_SHAPE_VALUES`)를 새로 정의했다 — DB에는 enum이 아니라 `text` 컬럼이므로 이건 schema
+변경이 아니라 **애플리케이션 레벨 vocabulary 계약**이다(§1-1의 "column 전체"에는 영향 없음).
+이 계약 자체는 0009 이전(코드 커밋에는 포함되지 않았던 이전 조사)에 이미 확정되어 있었고, 0009는
+그 vocabulary를 실제 데이터에 처음 적용한 migration이다.
+
+**검증**: 각 migration은 사전 SELECT(충돌 없음 확인) → INSERT/UPDATE → 재조회 → `npm test` +
+`npm run test:integration` PASS → 필요 시 curl로 생성 API 종단 확인의 동일한 절차를 거쳤다.
+세부 수치는 각 investigation 문서에 기록되어 있으며 여기 재기재하지 않는다(§6 원칙 — 이 문서는
+schema/data contract 변화의 요약이지 작업 로그의 복제가 아니다).
+
+---
+
+## 9. Amendment — `texture_profiles` 확장 배치 2: `0015`~`0019` (구현 및 원격 적용 완료, 2026-08-29)
+
+**분류(§1-1 기준)**: 5개 migration 파일 전수 확인 결과 DDL 키워드 없음 — 전부 순수 DML(`insert
+into texture_profiles`, 0018/0019는 `insert into evidence`도 포함). §1-1 갱신 불필요.
+
+병렬 배치 처리 방식(pear/beef/pork/cod/tuna를 한 migration으로 묶는 것)이 이 라운드에서
+처음 도입됐다 — 여러 재료를 조사한 뒤 하나의 migration + 한 번의 검증 사이클로 묶는 방식,
+기존 0009(grape/strawberry/corn/sesame/chestnut 5종 결합)와 같은 원칙.
+
+| Migration | 재료(신규 texture 행) | evidence | 성격 |
+|---|---|---|---|
+| `0015_pear_meat_fish_texture_insert` | pear/beef/pork/cod/tuna (20행) | E010, E016 재사용(신규 없음) | data |
+| `0016_vegetable_batch_texture_insert` | zucchini/radish/eggplant/cucumber/cauliflower (20행) | E016, E010 재사용(신규 없음) | data — zucchini/radish/eggplant 3종은 stage_1=`mashed` → stage_2~4=`stick`으로 **stage별 진행값**을 처음 도입(그 전까지 모든 배치는 전 stage 균일값) |
+| `0017_perilla_legume_texture_insert` | perilla/green_pea/kidney_bean (12행) | E015, E014 재사용(신규 없음) | data |
+| `0018_egg_texture_insert` | egg (4행) | 신규 **E017**(NHS "Egg fingers", provenance 보존용 — texture_profiles.evidence_id로는 미사용), **E018**(Solid Starts, 실제 근거) 추가 | data — NHS 균일 wedge안과 Solid Starts 연령진행안(mashed→small_piece)이 경합, 사용자가 안전 근거(퍽퍽한 노른자 질식 위험)를 이유로 후자 채택(`docs/egg-texture-investigation.md`) |
+| `0019_napa_cabbage_spinach_tomato_texture_insert` | napa_cabbage/spinach/tomato (12행) | 신규 **E019**(provenance 보존용, 미사용), **E020**, **E021**, **E022**(VERIFIED), **E023**(INFERRED) 추가 | data — **이 프로젝트 최초로 `evidence.status='INFERRED'`인 행 사용**(그 전까지 30개 evidence 전부 VERIFIED). 같은 원문에 대해 확신도가 다른 두 evidence 행(E022/E023)을 분리해 stage별로 다르게 인용하는 기법을 처음 사용. `texture_spinach_stage_4`는 원문이 형태를 특정하지 않아 `shape=null` 유지(임의 값 채우지 않음) |
+
+**data contract 관점**: `0016`에서 처음 나온 "재료 하나에 stage별로 다른 shape 값"과 `0019`에서
+처음 나온 "evidence.status=INFERRED 사용" 및 "동일 재료·동일 stage 세트를 두 evidence 행으로
+분리 인용"은 새 컬럼/enum 없이 **기존 스키마가 이미 지원하던 조합을 처음 실제로 사용**한
+사례다 — `texture_profiles`에 stage별 unique 행이 이미 있었고(§1-1 unique 제약), `evidence.status`
+enum에는 이미 `INFERRED`가 있었다(§1-1 5개 enum 중 `source_tier`가 아니라 `evidence` 테이블
+자체의 `status` 컬럼 — 0001부터 존재). 스키마 변경은 없다.
+
+배경 문서: `docs/pear-meat-fish-texture-investigation.md`, `docs/vegetable-batch-texture-investigation.md`,
+`docs/perilla-legume-texture-investigation.md`, `docs/egg-texture-investigation.md`,
+`docs/napa-cabbage-spinach-tomato-texture-investigation.md`.
+
+---
+
+## 10. Amendment — `texture_profiles` 확장 배치 3: `0020`~`0025`, 44/50 목표 도달 + 정책 확정 (구현 및 원격 적용 완료, 2026-08-29)
+
+**분류(§1-1 기준)**: 6개 migration 파일 전수 확인 결과 DDL 키워드 없음, 신규 evidence도 없음
+(전부 기존 E010 재사용) — 전부 순수 DML(`insert into texture_profiles`만). §1-1 갱신 불필요.
+
+`docs/remaining-21-texture-survey.md`가 남은 21개 재료를 감사한 결과에 따라, "재료 자신의
+`prep_*`/`cook_*` 텍스트에 이미 shape 힌트가 있는지 먼저 감사 → 없으면 기존 evidence 재사용 →
+그래도 없으면 신규 1차 조사" 순서(self-derived-first)로 진행 방식을 바꿨다
+(`docs/self-derived-batch-texture-investigation.md`).
+
+| Migration | 재료(신규 texture 행) | evidence | 성격 |
+|---|---|---|---|
+| `0020_shrimp_texture_insert` | shrimp (4행) | E010 재사용 | data — `prep_shrimp.cutting_guidance`에서 직접 자기유래 |
+| `0021_seaweed_texture_insert` | seaweed (4행) | E010 재사용 | data — `cook_seaweed.completion_checks`에서 자기유래 |
+| `0022_onion_texture_insert` | onion (4행) | E010 재사용 | data — `cook_onion.time_guidance`에서 자기유래(해석 1단계 포함, 사용자 확인) |
+| `0023_mushroom_texture_insert` | mushroom (4행) | E010 재사용 | data — onion과 구조적으로 동일 |
+| `0024_cabbage_texture_insert` | cabbage (4행) | E010 재사용 | data — `minced` vs `shredded` 경합을 사용자가 `shredded`로 확정 |
+| `0025_soft_fruit_batch_texture_insert` | banana/kiwi/peach/tangerine/avocado/mango (24행) | E010 재사용 | data — 6종 병렬 배치, 확신도 3단계(명시적 매치/부분 매치/유추)로 구분해 문서화 |
+
+**현재 상태(원격 DB 직접 조회로 재확인, 2026-08-29)**: `texture_profiles` **176행, 44/50 재료**.
+`evidence` 총 **23행**(0009~0019에서 추가된 10개 신규 행 포함, 0020~0025는 신규 evidence
+없음). `broccoli`/`tofu` 2종만 `verification_status='UNSUPPORTED'`— §1-2에 기록된 원래
+상태에서 tofu만 `0007`(§7-1-4)에서 전환됐고 broccoli는 그대로다.
+
+### 10-1. 정책 확정 — 곡물 4종은 `texture_profiles.shape` 대상에서 제외
+
+`rice`/`oatmeal`/`brown_rice`/`barley` 4종은 이번 44/50 확장 대상에 포함하지 않았다(원격 DB
+조회로 4종 모두 texture_profiles 행 0개 확인). **이건 조사 미비가 아니라 확정된 정책이다**:
+`shape`는 개별 조각의 제공 형태(잘라낸 모양)를 표현하는 vocabulary인데, 죽의 핵심 변수는
+조각 형태가 아니라 농도/점도이므로 `mashed` 등을 억지로 적용하지 않는다. 향후 consistency/
+thickness 개념이 필요해지면 `texture_profiles.shape`에 혼합하지 않고 별도 field 또는 별도
+table로 설계한다(§3의 사전 검토 절차 적용 대상). 이 정책은 이번 문서 작업에서 새로 결정한
+것이 아니라 이미 확정된 것을 여기 기록만 한다.
+
+### 10-2. `broccoli`/`tofu`는 변경 없음 — 별도 상태를 확인만 한다
+
+`tofu`는 `0007`(§7-1-4)에서 이미 `UNSUPPORTED`로 전환된 상태 그대로다 — 근거 부족 상태에서
+낮은 확신도 데이터를 채우지 않고 명확히 차단한다는 2026-08-28 사용자 결정이 계속 유효하다.
+`broccoli`는 §1-2에 기록된 원래 상태(`preparation`/`cooking` 미등록) 그대로다 — 원인은 원본
+조사 데이터 자체가 오염/사용불가로 확인되어 명시적으로 미연결됐기 때문이며(`seed.sql` 주석),
+clean-slate 1차 조사가 필요한 별도 backlog로 남아 있다. 이번 배치에서 둘 다 건드리지 않았다.
+
+### 10-3. 문서-실태 불일치 정정
+
+`§6-1`/`§7-4`는 "구 `ingredient_role`(5값) 컬럼 제거를 `0008` 이후 빈 번호에서 진행한다"고
+예고했으나, 실제로는 `0009`~`0025` 22개 번호가 전부 `texture_profiles` 확장에 쓰였다 — 구
+컬럼 제거는 **아직 시작되지 않았다**. `§6-1`/`§7-4` 원문은 작성 당시의 계획이므로 수정하지
+않고 그대로 두되, 여기서 실제 경과를 정정 기록한다. 구 컬럼 제거가 필요해지면 `0026` 이후
+번호에서 §3 절차를 다시 거쳐 진행한다.
+
+---
