@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildStepInfoRows } from "@/lib/recipe/buildStepInfoRows";
+import { buildStepInfoRows, stepInfoRowKey } from "@/lib/recipe/buildStepInfoRows";
 import { buildCookingSteps, type CookingStep } from "@/lib/recipe/buildCookingSteps";
 import { buildRecipeResponse } from "@/lib/recipe/buildRecipeResponse";
 import type { RecipeResponse } from "@/types/api";
@@ -139,5 +139,151 @@ describe("buildStepInfoRows", () => {
     expect(rows).toContainEqual({ label: "질감", value: textureProfile.texture });
     expect(rows).toContainEqual({ label: "제공 형태", value: "으깬 상태" });
     expect(rows).toContainEqual({ label: "입자 크기", value: "고운 입자" });
+  });
+
+  describe("regression: duplicate '제공 형태' label (blueberry-like serving-state-only ingredient + shape)", () => {
+    // Cooking Mode bug repro (/cooking?ingredient_ids=blueberry,beef): a
+    // serving-state-only ingredient (allowed_methods=[], e.g. a raw fruit)
+    // gets a completionCheckLabel() "제공 형태" row (cookingTimeStatus.ts)
+    // AND, independently, a texture_profiles shape "제공 형태" row (this
+    // file, line ~68) — same label text, unrelated data. This is a
+    // legitimate data collision, not a bug to remove: both rows carry real,
+    // distinct information and must both render. The bug was that
+    // CookingModeView.tsx keyed each row by `row.label` alone, so React saw
+    // two children with the same key — this test locks in that the
+    // collision still produces two DISTINCT rows (the fix is in the
+    // component's key strategy, not here).
+    function makeBlueberryLikeRecipe(): RecipeResponse {
+      return {
+        stage_id: "stage_2",
+        food_form_id: "puree",
+        servings: null,
+        ingredients: [
+          {
+            id: "blueberry",
+            name_ko: "블루베리",
+            verification_status: "NEEDS_REVIEW",
+            preparation: null,
+            cooking: {
+              allowed_methods: [],
+              completion_checks: ["으깨어 제공"],
+              time_guidance: null,
+              recommended_time: null,
+            },
+            texture: null,
+            shape: "mashed",
+            particle_size: null,
+            allergens: [],
+          },
+        ],
+        toppings: [],
+        safety_notes: [],
+        storage: null,
+      };
+    }
+
+    it("buildStepInfoRows legitimately returns two rows both labeled 제공 형태", () => {
+      const recipe = makeBlueberryLikeRecipe();
+      const step = makeStep({ id: "blueberry-0", ingredientId: "blueberry", ingredientName: "블루베리" });
+      const rows = buildStepInfoRows(step, recipe);
+      const servingFormRows = rows.filter((r) => r.label === "제공 형태");
+      expect(servingFormRows).toHaveLength(2);
+      expect(servingFormRows).toContainEqual({ label: "제공 형태", value: "으깨어 제공" });
+      expect(servingFormRows).toContainEqual({ label: "제공 형태", value: "으깬 상태" });
+    });
+
+    it("stepInfoRowKey gives each row in the collision a unique key", () => {
+      const recipe = makeBlueberryLikeRecipe();
+      const step = makeStep({ id: "blueberry-0", ingredientId: "blueberry", ingredientName: "블루베리" });
+      const rows = buildStepInfoRows(step, recipe);
+      const keys = rows.map((row, i) => stepInfoRowKey(row, i));
+      expect(new Set(keys).size).toBe(keys.length);
+    });
+  });
+
+  describe("regression: no cross-ingredient row mixing across STEP navigation (blueberry,beef repro)", () => {
+    function makeBlueberryBeefRecipe(): RecipeResponse {
+      return {
+        stage_id: "stage_2",
+        food_form_id: "puree",
+        servings: null,
+        ingredients: [
+          {
+            id: "blueberry",
+            name_ko: "블루베리",
+            verification_status: "NEEDS_REVIEW",
+            preparation: null,
+            cooking: {
+              allowed_methods: [],
+              completion_checks: ["으깨어 제공"],
+              time_guidance: null,
+              recommended_time: null,
+            },
+            texture: null,
+            shape: "mashed",
+            particle_size: null,
+            allergens: [],
+          },
+          {
+            id: "beef",
+            name_ko: "소고기",
+            verification_status: "NEEDS_REVIEW",
+            preparation: null,
+            cooking: {
+              allowed_methods: ["boil"],
+              completion_checks: ["속까지 갈색으로 완전히 익은 상태"],
+              time_guidance: null,
+              recommended_time: null,
+            },
+            texture: null,
+            shape: "minced",
+            particle_size: "fine",
+            allergens: [],
+          },
+        ],
+        toppings: [],
+        safety_notes: [
+          {
+            code: "SAFETY_COOKING_REQUIRED",
+            action: "CONTINUE_COOKING",
+            message: "소고기: 내부 온도 75°C 이상으로 완전히 익혀 제공하세요.",
+            ingredient_id: "beef",
+            rule_status: "VERIFIED",
+            severity: "CRITICAL",
+          },
+        ],
+        storage: null,
+      };
+    }
+
+    it("rows built for the beef STEP never contain blueberry's rows, and vice versa, regardless of call order", () => {
+      const recipe = makeBlueberryBeefRecipe();
+      const blueberryStep = makeStep({ id: "blueberry-0", ingredientId: "blueberry", ingredientName: "블루베리" });
+      const beefStep = makeStep({
+        id: "beef-1",
+        ingredientId: "beef",
+        ingredientName: "소고기",
+        actionLabel: "익힘 확인",
+        timerEnabled: true,
+      });
+
+      // Simulate 이전/다음 STEP navigation in both directions — buildStepInfoRows
+      // must stay a pure function of (step, recipe) with no leaked state.
+      const beefRowsFirst = buildStepInfoRows(beefStep, recipe);
+      const blueberryRowsAfter = buildStepInfoRows(blueberryStep, recipe);
+      const blueberryRowsFirst = buildStepInfoRows(blueberryStep, recipe);
+      const beefRowsAfter = buildStepInfoRows(beefStep, recipe);
+
+      for (const rows of [beefRowsFirst, beefRowsAfter]) {
+        expect(rows).toContainEqual({ label: "안전 온도", value: "내부 온도 75°C 이상으로 완전히 익혀 제공하세요." });
+        expect(rows).toContainEqual({ label: "제공 형태", value: "다진 상태" });
+        expect(rows.some((r) => r.value === "으깨어 제공" || r.value === "으깬 상태")).toBe(false);
+      }
+      for (const rows of [blueberryRowsFirst, blueberryRowsAfter]) {
+        expect(rows).toContainEqual({ label: "제공 형태", value: "으깨어 제공" });
+        expect(rows).toContainEqual({ label: "제공 형태", value: "으깬 상태" });
+        expect(rows.some((r) => r.label === "안전 온도")).toBe(false);
+      }
+    });
   });
 });

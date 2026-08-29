@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import type { ApiErrorResponse, RecipeResponse } from "@/types/api";
 import { parseInputFromParams } from "@/lib/recipe/parseRequestParams";
 import { buildCookingSteps, type CookingStep } from "@/lib/recipe/buildCookingSteps";
-import { buildStepInfoRows, type StepInfoRow } from "@/lib/recipe/buildStepInfoRows";
+import { buildStepInfoRows, stepInfoRowKey, type StepInfoRow } from "@/lib/recipe/buildStepInfoRows";
 import { SafetyNoteItem } from "@/components/shared/SafetyNoteItem";
 
 function StepInfoTable({ rows }: { rows: StepInfoRow[] }) {
@@ -15,7 +15,7 @@ function StepInfoTable({ rows }: { rows: StepInfoRow[] }) {
     <div className="w-full rounded-lg border border-gray-200 text-sm">
       {rows.map((row, i) => (
         <div
-          key={row.label}
+          key={stepInfoRowKey(row, i)}
           className={`flex items-center justify-between px-3 py-2 ${i > 0 ? "border-t border-gray-100" : ""}`}
         >
           <span className="text-gray-500">{row.label}</span>

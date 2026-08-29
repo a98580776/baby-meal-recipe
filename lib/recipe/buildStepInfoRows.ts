@@ -10,6 +10,22 @@ export interface StepInfoRow {
 }
 
 /**
+ * Row order for a given (step, recipe) is fixed and never reshuffled across
+ * re-renders of the same step — but the label alone is not a safe React key:
+ * a serving-state-only ingredient (allowed_methods=[], e.g. blueberry) emits
+ * both a completionCheckLabel() "제공 형태" row (line below) and a shape
+ * "제공 형태" row from the same label, by coincidence of wording, not shared
+ * data. Keying on label alone collided those two rows under one React key,
+ * which also corrupted reconciliation across a STEP change (a stale row from
+ * the previous ingredient's table could linger after switching STEPs, since
+ * StepInfoTable — unlike StepTimer — isn't remounted per STEP). Index makes
+ * each row in this deterministic list unique without inventing a data-model id.
+ */
+export function stepInfoRowKey(row: StepInfoRow, index: number): string {
+  return `${row.label}-${index}`;
+}
+
+/**
  * Pulled out of CookingModeView.tsx (같은 이유로 cookingTimeStatus.ts가
  * 분리된 것과 동일 — 뷰 로직이 아니라 독립적으로 테스트 가능한 순수 함수로
  * 유지) so Cooking Mode's info-table content has regression coverage.
