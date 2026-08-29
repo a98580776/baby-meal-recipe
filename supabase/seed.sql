@@ -452,3 +452,91 @@ insert into ingredient_safety_rules (ingredient_id, safety_rule_id) values
   ('sesame', 'CHOKING_HARD_RAW'),
   ('perilla', 'CHOKING_HARD_RAW');
 
+-- =======================================================================
+-- Migration 0005 additions (append-only, mirrors that migration's data
+-- portion so a fresh bootstrap matches the migrated state -- see that file
+-- for the schema change (ingredient_role enum + column) and full sourcing
+-- rationale: docs/ingredient-role-analysis.md +
+-- docs/ingredient-role-mvp-product-rules.md).
+--
+-- IMPORTANT: food_form="topping" (existing food_forms row, a serving-style
+-- form) and ingredient_role="TOPPING_ONLY"/"BASE_AND_TOPPING" (whether an
+-- ingredient suits being added on top of a dish) are unrelated axes -- this
+-- block does not touch food_forms.
+-- =======================================================================
+
+update ingredients set ingredient_role = 'BASE_ONLY' where id in (
+  'rice', 'oatmeal', 'brown_rice', 'barley'
+);
+
+update ingredients set ingredient_role = 'TOPPING_ONLY' where id in (
+  'seaweed', 'sesame', 'perilla', 'cheese'
+);
+
+update ingredients set ingredient_role = 'MIX_IN_ONLY' where id in (
+  'onion', 'mushroom', 'tomato'
+);
+
+update ingredients set ingredient_role = 'REVIEW' where id in (
+  'broccoli', 'tofu', 'cucumber', 'corn', 'egg', 'chestnut'
+);
+
+-- napa_cabbage/cabbage/spinach included here (topping_eligible left "보류"
+-- in the source docs; their topping-search exposure is withheld separately
+-- in application code -- see lib/rules/ingredientRole.ts).
+update ingredients set ingredient_role = 'BASE_AND_TOPPING' where id in (
+  'carrot', 'kabocha', 'potato', 'sweet_potato',
+  'beef', 'chicken', 'salmon', 'apple',
+  'pear', 'banana', 'avocado', 'peach',
+  'napa_cabbage', 'cabbage', 'zucchini', 'spinach',
+  'radish', 'cauliflower', 'green_pea', 'kidney_bean', 'eggplant',
+  'pork', 'cod', 'tuna', 'shrimp',
+  'strawberry', 'blueberry', 'kiwi', 'tangerine', 'grape', 'mango',
+  'korean_melon', 'watermelon'
+);
+
+-- =======================================================================
+-- Migration 0006 additions (append-only, mirrors that migration's data
+-- portion so a fresh bootstrap matches the migrated state -- see that file
+-- for the schema change (ingredient_role_v2 + ingredient_role_status enums
+-- and columns) and full policy: docs/ingredient-role-v2-product-rules.md §13.
+--
+-- IMPORTANT: the legacy `ingredient_role` column above is left untouched by
+-- this block -- it is not the application's source of truth anymore
+-- (docs/ingredient-role-v2-product-rules.md §16) but is kept in the DB until
+-- a future migration removes it. Do not derive new logic from it.
+-- =======================================================================
+
+update ingredients set ingredient_role_v2 = 'BASE_ONLY', ingredient_role_status = 'CONFIRMED'
+where id in ('rice', 'oatmeal', 'brown_rice', 'barley');
+
+update ingredients set ingredient_role_v2 = 'ADD_ON_ONLY', ingredient_role_status = 'CONFIRMED'
+where id in ('seaweed', 'sesame', 'perilla', 'cheese');
+
+-- MIX_IN 특성 (product-rules.md §8) -- status is CONFIRMED, not REVIEW; see
+-- lib/rules/ingredientRole.ts's MIX_IN_CHARACTER_IDS for how this is
+-- preserved in application code.
+update ingredients set ingredient_role_v2 = 'BASE_ONLY', ingredient_role_status = 'CONFIRMED'
+where id in ('onion', 'mushroom', 'tomato');
+
+-- 데이터 부족·상충형 REVIEW (6) -- does not touch verification_status.
+update ingredients set ingredient_role_v2 = 'BASE_ONLY', ingredient_role_status = 'REVIEW'
+where id in ('broccoli', 'tofu', 'cucumber', 'corn', 'egg', 'chestnut');
+
+-- 부분 확정형 REVIEW (3) -- base axis confirmed, add-on axis unresolved.
+-- Storing REVIEW here is what makes the old TOPPING_EXPOSURE_WITHHELD_IDS
+-- application-code exception unnecessary under v2.
+update ingredients set ingredient_role_v2 = 'BASE_ONLY', ingredient_role_status = 'REVIEW'
+where id in ('napa_cabbage', 'cabbage', 'spinach');
+
+update ingredients set ingredient_role_v2 = 'BASE_AND_ADD_ON', ingredient_role_status = 'CONFIRMED'
+where id in (
+  'carrot', 'kabocha', 'potato', 'sweet_potato',
+  'beef', 'chicken', 'salmon', 'apple',
+  'pear', 'banana', 'avocado', 'peach',
+  'zucchini', 'radish', 'cauliflower', 'green_pea', 'kidney_bean', 'eggplant',
+  'pork', 'cod', 'tuna', 'shrimp',
+  'strawberry', 'blueberry', 'kiwi', 'tangerine', 'grape', 'mango',
+  'korean_melon', 'watermelon'
+);
+
