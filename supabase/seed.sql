@@ -851,3 +851,114 @@ insert into texture_profiles (id, stage_id, food_form_id, texture, shape, partic
   ('texture_tomato_stage_4', 'stage_4', null, '과육이 부드러운 질감', 'wedge', null, 'UNSUPPORTED', 'E020', 'tomato');
 
 -- =======================================================================
+-- Migration 0020 addition (append-only, mirrors that migration's data
+-- portion so a fresh bootstrap matches the migrated state -- see
+-- supabase/migrations/0020_shrimp_texture_insert.sql and
+-- docs/self-derived-batch-texture-investigation.md §1 for full rationale).
+-- shrimp texture_profiles INSERT -- no new evidence, reuses E010. First of
+-- the "① self-derived" bucket processed under the DB-audit-first workflow.
+-- =======================================================================
+
+insert into texture_profiles (id, stage_id, food_form_id, texture, shape, particle_size, particle_size_status, evidence_id, ingredient_id) values
+  ('texture_shrimp_stage_1', 'stage_1', null, '살이 불투명하고 단단하게 익은 질감', 'minced', null, 'UNSUPPORTED', 'E010', 'shrimp'),
+  ('texture_shrimp_stage_2', 'stage_2', null, '살이 불투명하고 단단하게 익은 질감', 'minced', null, 'UNSUPPORTED', 'E010', 'shrimp'),
+  ('texture_shrimp_stage_3', 'stage_3', null, '살이 불투명하고 단단하게 익은 질감', 'minced', null, 'UNSUPPORTED', 'E010', 'shrimp'),
+  ('texture_shrimp_stage_4', 'stage_4', null, '살이 불투명하고 단단하게 익은 질감', 'minced', null, 'UNSUPPORTED', 'E010', 'shrimp');
+
+-- =======================================================================
+-- Migration 0021 addition (append-only, mirrors that migration's data
+-- portion so a fresh bootstrap matches the migrated state -- see
+-- supabase/migrations/0021_seaweed_texture_insert.sql and
+-- docs/self-derived-batch-texture-investigation.md §2 for full rationale).
+-- seaweed texture_profiles INSERT -- no new evidence, reuses E010. No
+-- changes to cooking_profiles or evidence -- texture_profiles INSERT only.
+-- =======================================================================
+
+insert into texture_profiles (id, stage_id, food_form_id, texture, shape, particle_size, particle_size_status, evidence_id, ingredient_id) values
+  ('texture_seaweed_stage_1', 'stage_1', null, '질긴 큰 조각 없이 잘게 부서진 질감', 'shredded', null, 'UNSUPPORTED', 'E010', 'seaweed'),
+  ('texture_seaweed_stage_2', 'stage_2', null, '질긴 큰 조각 없이 잘게 부서진 질감', 'shredded', null, 'UNSUPPORTED', 'E010', 'seaweed'),
+  ('texture_seaweed_stage_3', 'stage_3', null, '질긴 큰 조각 없이 잘게 부서진 질감', 'shredded', null, 'UNSUPPORTED', 'E010', 'seaweed'),
+  ('texture_seaweed_stage_4', 'stage_4', null, '질긴 큰 조각 없이 잘게 부서진 질감', 'shredded', null, 'UNSUPPORTED', 'E010', 'seaweed');
+
+-- =======================================================================
+-- Migration 0022 addition (append-only, mirrors that migration's data
+-- portion so a fresh bootstrap matches the migrated state -- see
+-- supabase/migrations/0022_onion_texture_insert.sql and
+-- docs/self-derived-batch-texture-investigation.md §3 for full rationale).
+-- onion texture_profiles INSERT -- no new evidence, reuses E010. No
+-- changes to cooking_profiles or evidence -- texture_profiles INSERT only.
+-- =======================================================================
+
+insert into texture_profiles (id, stage_id, food_form_id, texture, shape, particle_size, particle_size_status, evidence_id, ingredient_id) values
+  ('texture_onion_stage_1', 'stage_1', null, '투명하고 충분히 부드러운 질감', 'minced', null, 'UNSUPPORTED', 'E010', 'onion'),
+  ('texture_onion_stage_2', 'stage_2', null, '투명하고 충분히 부드러운 질감', 'minced', null, 'UNSUPPORTED', 'E010', 'onion'),
+  ('texture_onion_stage_3', 'stage_3', null, '투명하고 충분히 부드러운 질감', 'minced', null, 'UNSUPPORTED', 'E010', 'onion'),
+  ('texture_onion_stage_4', 'stage_4', null, '투명하고 충분히 부드러운 질감', 'minced', null, 'UNSUPPORTED', 'E010', 'onion');
+
+-- =======================================================================
+-- Migration 0023 addition (append-only, mirrors that migration's data
+-- portion so a fresh bootstrap matches the migrated state -- see
+-- supabase/migrations/0023_mushroom_texture_insert.sql and
+-- docs/self-derived-batch-texture-investigation.md §4 for full rationale).
+-- mushroom texture_profiles INSERT -- no new evidence, reuses E010.
+-- =======================================================================
+
+insert into texture_profiles (id, stage_id, food_form_id, texture, shape, particle_size, particle_size_status, evidence_id, ingredient_id) values
+  ('texture_mushroom_stage_1', 'stage_1', null, '질긴 부분 없이 충분히 부드러운 질감', 'minced', null, 'UNSUPPORTED', 'E010', 'mushroom'),
+  ('texture_mushroom_stage_2', 'stage_2', null, '질긴 부분 없이 충분히 부드러운 질감', 'minced', null, 'UNSUPPORTED', 'E010', 'mushroom'),
+  ('texture_mushroom_stage_3', 'stage_3', null, '질긴 부분 없이 충분히 부드러운 질감', 'minced', null, 'UNSUPPORTED', 'E010', 'mushroom'),
+  ('texture_mushroom_stage_4', 'stage_4', null, '질긴 부분 없이 충분히 부드러운 질감', 'minced', null, 'UNSUPPORTED', 'E010', 'mushroom');
+
+-- =======================================================================
+-- Migration 0024 addition (append-only, mirrors that migration's data
+-- portion so a fresh bootstrap matches the migrated state -- see
+-- supabase/migrations/0024_cabbage_texture_insert.sql and
+-- docs/self-derived-batch-texture-investigation.md §5 for full rationale).
+-- cabbage texture_profiles INSERT -- no new evidence, reuses E010.
+-- =======================================================================
+
+insert into texture_profiles (id, stage_id, food_form_id, texture, shape, particle_size, particle_size_status, evidence_id, ingredient_id) values
+  ('texture_cabbage_stage_1', 'stage_1', null, '잎이 충분히 부드러운 질감', 'shredded', null, 'UNSUPPORTED', 'E010', 'cabbage'),
+  ('texture_cabbage_stage_2', 'stage_2', null, '잎이 충분히 부드러운 질감', 'shredded', null, 'UNSUPPORTED', 'E010', 'cabbage'),
+  ('texture_cabbage_stage_3', 'stage_3', null, '잎이 충분히 부드러운 질감', 'shredded', null, 'UNSUPPORTED', 'E010', 'cabbage'),
+  ('texture_cabbage_stage_4', 'stage_4', null, '잎이 충분히 부드러운 질감', 'shredded', null, 'UNSUPPORTED', 'E010', 'cabbage');
+
+-- =======================================================================
+-- Migration 0025 addition (append-only, mirrors that migration's data
+-- portion so a fresh bootstrap matches the migrated state -- see
+-- supabase/migrations/0025_soft_fruit_batch_texture_insert.sql and
+-- docs/self-derived-batch-texture-investigation.md §6 for full rationale).
+-- banana/avocado/kiwi/tangerine/mango/peach texture_profiles INSERT --
+-- no new evidence, all reuse E010.
+-- =======================================================================
+
+insert into texture_profiles (id, stage_id, food_form_id, texture, shape, particle_size, particle_size_status, evidence_id, ingredient_id) values
+  ('texture_banana_stage_1', 'stage_1', null, '잘 익은 과육이 쉽게 으깨지는 질감', 'mashed', null, 'UNSUPPORTED', 'E010', 'banana'),
+  ('texture_banana_stage_2', 'stage_2', null, '잘 익은 과육이 쉽게 으깨지는 질감', 'mashed', null, 'UNSUPPORTED', 'E010', 'banana'),
+  ('texture_banana_stage_3', 'stage_3', null, '잘 익은 과육이 쉽게 으깨지는 질감', 'mashed', null, 'UNSUPPORTED', 'E010', 'banana'),
+  ('texture_banana_stage_4', 'stage_4', null, '잘 익은 과육이 쉽게 으깨지는 질감', 'mashed', null, 'UNSUPPORTED', 'E010', 'banana'),
+
+  ('texture_kiwi_stage_1', 'stage_1', null, '과육이 쉽게 으깨지는 질감', 'mashed', null, 'UNSUPPORTED', 'E010', 'kiwi'),
+  ('texture_kiwi_stage_2', 'stage_2', null, '과육이 쉽게 으깨지는 질감', 'mashed', null, 'UNSUPPORTED', 'E010', 'kiwi'),
+  ('texture_kiwi_stage_3', 'stage_3', null, '과육이 쉽게 으깨지는 질감', 'mashed', null, 'UNSUPPORTED', 'E010', 'kiwi'),
+  ('texture_kiwi_stage_4', 'stage_4', null, '과육이 쉽게 으깨지는 질감', 'mashed', null, 'UNSUPPORTED', 'E010', 'kiwi'),
+
+  ('texture_peach_stage_1', 'stage_1', null, '과육이 쉽게 으깨지는 질감', 'mashed', null, 'UNSUPPORTED', 'E010', 'peach'),
+  ('texture_peach_stage_2', 'stage_2', null, '과육이 쉽게 으깨지는 질감', 'mashed', null, 'UNSUPPORTED', 'E010', 'peach'),
+  ('texture_peach_stage_3', 'stage_3', null, '과육이 쉽게 으깨지는 질감', 'mashed', null, 'UNSUPPORTED', 'E010', 'peach'),
+  ('texture_peach_stage_4', 'stage_4', null, '과육이 쉽게 으깨지는 질감', 'mashed', null, 'UNSUPPORTED', 'E010', 'peach'),
+
+  ('texture_tangerine_stage_1', 'stage_1', null, '과육이 부드럽고 질긴 막이 없는 질감', 'mashed', null, 'UNSUPPORTED', 'E010', 'tangerine'),
+  ('texture_tangerine_stage_2', 'stage_2', null, '과육이 부드럽고 질긴 막이 없는 질감', 'mashed', null, 'UNSUPPORTED', 'E010', 'tangerine'),
+  ('texture_tangerine_stage_3', 'stage_3', null, '과육이 부드럽고 질긴 막이 없는 질감', 'mashed', null, 'UNSUPPORTED', 'E010', 'tangerine'),
+  ('texture_tangerine_stage_4', 'stage_4', null, '과육이 부드럽고 질긴 막이 없는 질감', 'mashed', null, 'UNSUPPORTED', 'E010', 'tangerine'),
+
+  ('texture_avocado_stage_1', 'stage_1', null, '과육이 충분히 부드러운 질감', 'mashed', null, 'UNSUPPORTED', 'E010', 'avocado'),
+  ('texture_avocado_stage_2', 'stage_2', null, '과육이 충분히 부드러운 질감', 'mashed', null, 'UNSUPPORTED', 'E010', 'avocado'),
+  ('texture_avocado_stage_3', 'stage_3', null, '과육이 충분히 부드러운 질감', 'mashed', null, 'UNSUPPORTED', 'E010', 'avocado'),
+  ('texture_avocado_stage_4', 'stage_4', null, '과육이 충분히 부드러운 질감', 'mashed', null, 'UNSUPPORTED', 'E010', 'avocado'),
+
+  ('texture_mango_stage_1', 'stage_1', null, '과육이 충분히 부드러운 질감', 'mashed', null, 'UNSUPPORTED', 'E010', 'mango'),
+  ('texture_mango_stage_2', 'stage_2', null, '과육이 충분히 부드러운 질감', 'mashed', null, 'UNSUPPORTED', 'E010', 'mango'),
+  ('texture_mango_stage_3', 'stage_3', null, '과육이 충분히 부드러운 질감', 'mashed', null, 'UNSUPPORTED', 'E010', 'mango'),
+  ('texture_mango_stage_4', 'stage_4', null, '과육이 충분히 부드러운 질감', 'mashed', null, 'UNSUPPORTED', 'E010', 'mango');
