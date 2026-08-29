@@ -570,3 +570,130 @@ update cooking_profiles set
   completion_checks = '{"속이 완전히 부드럽게 익음", "곱게 다지거나 으깨어 덩어리 없이 제공"}'
 where id = 'cook_chestnut';
 
+-- =======================================================================
+-- Migration 0009 addition (append-only, mirrors that migration's data
+-- portion so a fresh bootstrap matches the migrated state -- see
+-- supabase/migrations/0009_texture_tier1.sql and
+-- docs/tier1-texture-profile-investigation.md for full sourcing rationale).
+-- Tier 1 (CHOKING_HARD_RAW) texture_profiles for grape/strawberry/corn/
+-- sesame/chestnut only -- blueberry/korean_melon/watermelon/perilla are
+-- explicitly out of scope (insufficient evidence).
+-- =======================================================================
+
+insert into evidence (id, organization, title, url, source_tier, checked_at, applicability, status) values
+  ('E014', 'USDA (Team Nutrition / Food and Nutrition Service)', 'Choking Prevention Information for children birth - 4 Years', 'https://www.bowdoin.edu/childrens-center/pdf/edited-usda-chokingpreventionteamnutrition.pdf', 'TIER_1', '2026-08-29', 'birth-4y choking-hazard food list and cutting techniques -- grapes/cherries/berries cut in half lengthwise then into smaller pieces; raw hard vegetables (incl. corn) listed as a hazard; general "mash or puree until soft" technique', 'VERIFIED'),
+  ('E015', 'UK Food Standards Agency (FSA)', 'Early years food choking hazards', 'https://cyps.northyorks.gov.uk/sites/default/files/Noticeboard/Red%20bag/Attachments/2022/Early-Years-Choking-Hazards-Table_FINAL_21-Sept-2021.pdf', 'TIER_1', '2026-08-29', 'under-5 choking-hazard food table (FSA-authored, fetched via a local-authority-hosted mirror after food.gov.uk''s own link 404''d) -- nuts and seeds: chop or flake, whole nuts/seeds not given to under-5s', 'VERIFIED');
+
+insert into texture_profiles (id, stage_id, food_form_id, texture, shape, particle_size, particle_size_status, evidence_id, ingredient_id) values
+  ('texture_grape_stage_1', 'stage_1', null, '껍질과 과육이 쉽게 눌리는 부드러운 질감', 'wedge', null, 'UNSUPPORTED', 'E014', 'grape'),
+  ('texture_grape_stage_2', 'stage_2', null, '껍질과 과육이 쉽게 눌리는 부드러운 질감', 'wedge', null, 'UNSUPPORTED', 'E014', 'grape'),
+  ('texture_grape_stage_3', 'stage_3', null, '껍질과 과육이 쉽게 눌리는 부드러운 질감', 'wedge', null, 'UNSUPPORTED', 'E014', 'grape'),
+  ('texture_grape_stage_4', 'stage_4', null, '껍질과 과육이 쉽게 눌리는 부드러운 질감', 'wedge', null, 'UNSUPPORTED', 'E014', 'grape'),
+
+  ('texture_strawberry_stage_1', 'stage_1', null, '충분히 부드럽게 눌리는 질감', 'wedge', null, 'UNSUPPORTED', 'E014', 'strawberry'),
+  ('texture_strawberry_stage_2', 'stage_2', null, '충분히 부드럽게 눌리는 질감', 'wedge', null, 'UNSUPPORTED', 'E014', 'strawberry'),
+  ('texture_strawberry_stage_3', 'stage_3', null, '충분히 부드럽게 눌리는 질감', 'wedge', null, 'UNSUPPORTED', 'E014', 'strawberry'),
+  ('texture_strawberry_stage_4', 'stage_4', null, '충분히 부드럽게 눌리는 질감', 'wedge', null, 'UNSUPPORTED', 'E014', 'strawberry'),
+
+  ('texture_corn_stage_1', 'stage_1', null, '알갱이가 부드럽게 으깨지는 질감', 'mashed', null, 'UNSUPPORTED', 'E014', 'corn'),
+  ('texture_corn_stage_2', 'stage_2', null, '알갱이가 부드럽게 으깨지는 질감', 'mashed', null, 'UNSUPPORTED', 'E014', 'corn'),
+  ('texture_corn_stage_3', 'stage_3', null, '알갱이가 부드럽게 으깨지는 질감', 'mashed', null, 'UNSUPPORTED', 'E014', 'corn'),
+  ('texture_corn_stage_4', 'stage_4', null, '알갱이가 부드럽게 으깨지는 질감', 'mashed', null, 'UNSUPPORTED', 'E014', 'corn'),
+
+  ('texture_sesame_stage_1', 'stage_1', null, '입안에 큰 알갱이가 남지 않는 고운 질감', 'minced', null, 'UNSUPPORTED', 'E015', 'sesame'),
+  ('texture_sesame_stage_2', 'stage_2', null, '입안에 큰 알갱이가 남지 않는 고운 질감', 'minced', null, 'UNSUPPORTED', 'E015', 'sesame'),
+  ('texture_sesame_stage_3', 'stage_3', null, '입안에 큰 알갱이가 남지 않는 고운 질감', 'minced', null, 'UNSUPPORTED', 'E015', 'sesame'),
+  ('texture_sesame_stage_4', 'stage_4', null, '입안에 큰 알갱이가 남지 않는 고운 질감', 'minced', null, 'UNSUPPORTED', 'E015', 'sesame'),
+
+  ('texture_chestnut_stage_1', 'stage_1', null, '속까지 부드럽게 익어 쉽게 으깨지는 질감', 'mashed', null, 'UNSUPPORTED', 'E010', 'chestnut'),
+  ('texture_chestnut_stage_2', 'stage_2', null, '속까지 부드럽게 익어 쉽게 으깨지는 질감', 'mashed', null, 'UNSUPPORTED', 'E010', 'chestnut'),
+  ('texture_chestnut_stage_3', 'stage_3', null, '속까지 부드럽게 익어 쉽게 으깨지는 질감', 'mashed', null, 'UNSUPPORTED', 'E010', 'chestnut'),
+  ('texture_chestnut_stage_4', 'stage_4', null, '속까지 부드럽게 익어 쉽게 으깨지는 질감', 'mashed', null, 'UNSUPPORTED', 'E010', 'chestnut');
+
+-- =======================================================================
+-- Migration 0010 addition (append-only, mirrors that migration's data
+-- portion so a fresh bootstrap matches the migrated state -- see
+-- supabase/migrations/0010_corn_completion_checks_cleanup.sql and
+-- docs/tier1-texture-profile-investigation.md §25-28 for full rationale).
+-- corn(옥수수) completion_checks에서 shape(제공 형태) 문구 제거 -- 안 A 적용, 1/6.
+-- Cooking Mode가 texture_profiles.shape를 이미 노출하므로(Phase 11-3,
+-- buildStepInfoRows.ts) 정보 손실 없이 안전하게 제거 가능. doneness만 남기고
+-- 문법만 정리(연결형 "-고" -> 종결형 "-음") -- 새 주장 추가 없음, evidence_id(E010)
+-- 그대로 유지.
+-- =======================================================================
+
+update cooking_profiles set completion_checks = '{"알이 부드러움"}' where id = 'cook_corn';
+
+-- =======================================================================
+-- Migration 0011 addition (append-only, mirrors that migration's data
+-- portion so a fresh bootstrap matches the migrated state -- see
+-- supabase/migrations/0011_blueberry_texture_and_completion.sql and
+-- docs/tier1-texture-profile-investigation.md §29 for full rationale).
+-- blueberry texture_profiles INSERT (reuses E014, no new evidence row) +
+-- cook_blueberry.completion_checks 정리 -- 안 A 적용, 2/6.
+-- =======================================================================
+
+insert into texture_profiles (id, stage_id, food_form_id, texture, shape, particle_size, particle_size_status, evidence_id, ingredient_id) values
+  ('texture_blueberry_stage_1', 'stage_1', null, '충분히 부드럽게 눌리는 질감', 'wedge', null, 'UNSUPPORTED', 'E014', 'blueberry'),
+  ('texture_blueberry_stage_2', 'stage_2', null, '충분히 부드럽게 눌리는 질감', 'wedge', null, 'UNSUPPORTED', 'E014', 'blueberry'),
+  ('texture_blueberry_stage_3', 'stage_3', null, '충분히 부드럽게 눌리는 질감', 'wedge', null, 'UNSUPPORTED', 'E014', 'blueberry'),
+  ('texture_blueberry_stage_4', 'stage_4', null, '충분히 부드럽게 눌리는 질감', 'wedge', null, 'UNSUPPORTED', 'E014', 'blueberry');
+
+update cooking_profiles set completion_checks = '{"껍질이 터짐"}' where id = 'cook_blueberry';
+
+-- =======================================================================
+-- Migration 0012 addition (append-only, mirrors that migration's data
+-- portion so a fresh bootstrap matches the migrated state -- see
+-- supabase/migrations/0012_grape_completion_checks_cleanup.sql and
+-- docs/tier1-texture-profile-investigation.md §25-28 for full rationale).
+-- grape(포도) completion_checks에서 shape(제공 형태) 문구 제거 -- 안 A 적용, 3/6.
+-- texture_profiles.shape='wedge'가 이미 전담하므로 "안전한 형태로 제공"을
+-- 제거하고 doneness("껍질과 과육이 쉽게 눌림")만 남긴다. 새 주장 추가 없음,
+-- evidence_id(E010) 그대로 유지.
+-- =======================================================================
+
+update cooking_profiles set completion_checks = '{"껍질과 과육이 쉽게 눌림"}' where id = 'cook_grape';
+
+-- =======================================================================
+-- Migration 0013 addition (append-only, mirrors that migration's data
+-- portion so a fresh bootstrap matches the migrated state -- see
+-- supabase/migrations/0013_watermelon_cheese_texture_insert.sql and
+-- docs/watermelon-cheese-texture-investigation.md for full rationale).
+-- watermelon/cheese texture_profiles INSERT via new evidence E016 (NHS UK
+-- "Preparing food safely" page). completion_checks intentionally not
+-- touched for either -- same structural issue as sesame/perilla/seaweed
+-- (§30), joined to that deferred list.
+-- =======================================================================
+
+insert into evidence (id, organization, title, url, source_tier, checked_at, applicability, status) values
+  ('E016', 'NHS (UK)', 'Preparing food safely (Best Start in Life)', 'https://www.nhs.uk/best-start-in-life/baby/weaning/safe-weaning/preparing-food-safely/', 'TIER_1', '2026-08-29', 'choking-prevention cutting guidance by food category -- large/firm fruit (melon, apple): slices for older children, grate/mash/steam/simmer for younger; cheese: grate or cut into short narrow strips', 'VERIFIED');
+
+insert into texture_profiles (id, stage_id, food_form_id, texture, shape, particle_size, particle_size_status, evidence_id, ingredient_id) values
+  ('texture_watermelon_stage_1', 'stage_1', null, '과육이 부드럽게 눌리는 질감', 'grated', null, 'UNSUPPORTED', 'E016', 'watermelon'),
+  ('texture_watermelon_stage_2', 'stage_2', null, '과육이 부드럽게 눌리는 질감', 'wedge', null, 'UNSUPPORTED', 'E016', 'watermelon'),
+  ('texture_watermelon_stage_3', 'stage_3', null, '과육이 부드럽게 눌리는 질감', 'wedge', null, 'UNSUPPORTED', 'E016', 'watermelon'),
+  ('texture_watermelon_stage_4', 'stage_4', null, '과육이 부드럽게 눌리는 질감', 'wedge', null, 'UNSUPPORTED', 'E016', 'watermelon'),
+
+  ('texture_cheese_stage_1', 'stage_1', null, '부드러운 질감', 'grated', null, 'UNSUPPORTED', 'E016', 'cheese'),
+  ('texture_cheese_stage_2', 'stage_2', null, '부드러운 질감', 'grated', null, 'UNSUPPORTED', 'E016', 'cheese'),
+  ('texture_cheese_stage_3', 'stage_3', null, '부드러운 질감', 'grated', null, 'UNSUPPORTED', 'E016', 'cheese'),
+  ('texture_cheese_stage_4', 'stage_4', null, '부드러운 질감', 'grated', null, 'UNSUPPORTED', 'E016', 'cheese');
+
+-- =======================================================================
+-- Migration 0014 addition (append-only, mirrors that migration's data
+-- portion so a fresh bootstrap matches the migrated state -- see
+-- supabase/migrations/0014_korean_melon_texture_insert.sql and
+-- docs/watermelon-cheese-texture-investigation.md §6 for full rationale).
+-- korean_melon texture_profiles INSERT -- reuses E016 (same "melon"
+-- category as watermelon), no new evidence. texture derived from
+-- cook_korean_melon's own pure-doneness completion_checks ("부드럽게
+-- 으깨짐") -- no completion_checks change needed.
+-- =======================================================================
+
+insert into texture_profiles (id, stage_id, food_form_id, texture, shape, particle_size, particle_size_status, evidence_id, ingredient_id) values
+  ('texture_korean_melon_stage_1', 'stage_1', null, '부드럽게 으깨지는 질감', 'grated', null, 'UNSUPPORTED', 'E016', 'korean_melon'),
+  ('texture_korean_melon_stage_2', 'stage_2', null, '부드럽게 으깨지는 질감', 'wedge', null, 'UNSUPPORTED', 'E016', 'korean_melon'),
+  ('texture_korean_melon_stage_3', 'stage_3', null, '부드럽게 으깨지는 질감', 'wedge', null, 'UNSUPPORTED', 'E016', 'korean_melon'),
+  ('texture_korean_melon_stage_4', 'stage_4', null, '부드럽게 으깨지는 질감', 'wedge', null, 'UNSUPPORTED', 'E016', 'korean_melon');
+
+-- =======================================================================

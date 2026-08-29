@@ -1,0 +1,23 @@
+-- corn(옥수수) completion_checks에서 shape(제공 형태) 문구 제거 — 안 A 적용, 1/6.
+-- Source of truth: docs/tier1-texture-profile-investigation.md §25-28.
+--
+-- cook_corn.completion_checks was "알이 부드럽고 필요 시 갈아 제공" — a single sentence mixing
+-- doneness ("알이 부드럽고") with a serving-form instruction ("필요 시 갈아 제공") that duplicates
+-- texture_profiles.shape='mashed' (already inserted for corn's 4 stages by 0009_texture_tier1.sql,
+-- evidence E014/USDA DIRECT_PRIMARY_VERIFIED).
+--
+-- §16-7/§27 of the investigation doc originally deferred this cleanup because Cooking Mode did not
+-- read texture_profiles yet (deleting the shape clause would have erased that information from the
+-- Cooking Mode screen entirely). That precondition is now resolved: lib/recipe/buildStepInfoRows.ts
+-- (Phase 11-3) surfaces texture_profiles.shape/particle_size/texture as its own info rows on every
+-- Cooking Mode step, independent of completion_checks. So the shape clause can now be removed from
+-- completion_checks without any information loss on screen — texture_profiles.shape covers it.
+--
+-- The doneness-only remainder is kept and only grammatically completed (연결형 "-고" -> 종결형
+-- "-음"), not reworded or extended -- no new claim is added beyond what "알이 부드럽고" already said.
+-- evidence_id (E010, INFERRED) is left untouched -- this is a textual split of an already-evidenced
+-- claim, not a new fact requiring new evidence.
+--
+-- This migration is pure DML (single UPDATE) -- no table/column/enum change.
+
+update cooking_profiles set completion_checks = '{"알이 부드러움"}' where id = 'cook_corn';

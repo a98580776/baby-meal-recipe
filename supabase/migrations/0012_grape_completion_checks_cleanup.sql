@@ -1,0 +1,26 @@
+-- grape(포도) completion_checks에서 shape(제공 형태) 문구 제거 — 안 A 적용, 3/6.
+-- Source of truth: docs/tier1-texture-profile-investigation.md §25-28 (M 분류, §25 line 1105) +
+-- §29(blueberry 재검토 결정과 동일 원칙 재적용).
+--
+-- cook_grape.completion_checks was "껍질과 과육이 쉽게 눌리고 안전한 형태로 제공" -- a single
+-- sentence mixing doneness/ripeness ("껍질과 과육이 쉽게 눌리고") with a serving-form instruction
+-- ("안전한 형태로 제공") that duplicates texture_profiles.shape='wedge' (already inserted for
+-- grape's 4 stages by 0009_texture_tier1.sql, evidence E014/USDA+FSA+NHS+HSE
+-- DIRECT_PRIMARY_VERIFIED).
+--
+-- Same precondition as corn (0010) and blueberry (0011): Cooking Mode now reads
+-- texture_profiles.shape/particle_size/texture as its own info rows on every step
+-- (lib/recipe/buildStepInfoRows.ts, Phase 11-3), independent of completion_checks. So the shape
+-- clause can be removed from completion_checks without any information loss on screen --
+-- texture_profiles.shape already covers it, and the CHOKING_HARD_RAW safety_notes warning
+-- (unrelated table) still carries the "provide safely" guidance separately.
+--
+-- The doneness-only remainder is kept and only grammatically completed (연결형 "-고" -> 명사형
+-- "-ㅁ", identical transformation style to corn's "부드럽고" -> "부드러움" and blueberry's
+-- "터지고" -> "터짐"), not reworded or extended -- no new claim is added beyond what "껍질과
+-- 과육이 쉽게 눌리고" already said. evidence_id (E010, INFERRED) is left untouched -- this is a
+-- textual split of an already-evidenced claim, not a new fact requiring new evidence.
+--
+-- This migration is pure DML (single UPDATE) -- no table/column/enum change.
+
+update cooking_profiles set completion_checks = '{"껍질과 과육이 쉽게 눌림"}' where id = 'cook_grape';
