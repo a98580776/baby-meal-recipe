@@ -68,12 +68,12 @@
 - 사용자가 2026-08-28 **B안(근거 부족 상태에서 낮은 확신도 데이터를 채우지 않고 명확히 차단)**을 이미 선택 — `docs/p0-safety-fixes-investigation.md` §4
 - **작업 대상 아님.** 새로운 Tier 1/2 영아 전용 가열 근거가 발견되기 전까지 재검토하지 않는다.
 
-### broccoli — 별도 조사 backlog(정책 결정 아님)
+### broccoli — evidence 보강 완료 (migration 0031, 2026-08-30)
 
-- 상태: `verification_status = UNSUPPORTED`
-- 원인은 tofu와 다르다 — `supabase/seed.sql` 주석: "원본 Claude 조사 자체가 오염/사용불가로 확인되어 명시적으로 미연결", "최종 데이터는 재조사 대기(설계명세 §16)"
-- 이건 "데이터를 채울지 말지"의 정책 문제가 아니라 **egg/napa_cabbage/spinach/tomato(③ 버킷)처럼 처음부터 새로 하는 1차 조사가 필요한 항목**
-- 이번 audit에서 조사/반영하지 않았다. 착수 여부는 §5 Q5 참고.
+- 상태: `verification_status = UNSUPPORTED` → **`NEEDS_REVIEW`** (migration 0031 적용, VERIFIED 아님 — 프로젝트 전체 verification 정책과 일관성 유지 위해 의도적으로 보수적 선택)
+- clean-slate 1차 조사(`docs/broccoli-clean-slate-investigation.md`) + migration 초안/diff 리뷰(`docs/broccoli-migration-plan.md`)를 거쳐 기존 evidence(E015 FSA/E016 NHS, broccoli를 이름으로 직접 언급)를 재사용하고 신규 evidence(E026, Solid Starts)를 등록 — prep/cooking/texture 4-stage 데이터 반영, `shape='floret'`, `CHOKING_HARD_RAW` 미연결(형제 채소군과 일관성 유지)
+- 조리 시간(분 단위)과 stage별 월령 매핑은 1차 출처에서 확인하지 못해 추가하지 않음(추측 금지 원칙)
+- **작업 대상 아님.** VERIFIED 승격은 별도 verification policy 확정 후 검토.
 
 ---
 

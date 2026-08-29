@@ -387,14 +387,29 @@ async function runCases() {
     const rUnsupported = await post("/api/v1/recipes/generate", {
       stage_id: "stage_2",
       readiness: true,
-      ingredient_ids: ["broccoli"],
+      ingredient_ids: ["tofu"],
       food_form_id: "puree",
     });
     record(
-      "14b. UNSUPPORTED(브로콜리)는 VERIFIED로 승격되지 않고 생성이 차단됨",
+      "14b. UNSUPPORTED(두부)는 생성이 차단됨 (broccoli는 migration 0031로 evidence 보강 후 NEEDS_REVIEW로 전환 -- 14c 참고)",
       "422 VALIDATION_FAILED",
       rUnsupported.status === 422,
       `status=${rUnsupported.status} message=${rUnsupported.json?.error?.message}`,
+    );
+
+    const rBroccoli = await post("/api/v1/recipes/generate", {
+      stage_id: "stage_2",
+      readiness: true,
+      ingredient_ids: ["broccoli"],
+      food_form_id: "puree",
+    });
+    const broccoliWarned = (rBroccoli.json?.safety_notes ?? []).some((n) => n.code === "VERIFICATION_IN_PROGRESS");
+    const broccoliIng = rBroccoli.json?.ingredients?.find((i) => i.id === "broccoli");
+    record(
+      "14c. broccoli clean-slate 조사(migration 0031) 반영 -- UNSUPPORTED에서 NEEDS_REVIEW로 전환, 정상 생성 + evidence 기반 데이터(shape='floret') 노출",
+      "200 + VERIFICATION_IN_PROGRESS 경고 + shape='floret'",
+      rBroccoli.status === 200 && broccoliWarned && broccoliIng?.shape === "floret",
+      `status=${rBroccoli.status} warned=${broccoliWarned} shape=${broccoliIng?.shape}`,
     );
   }
 

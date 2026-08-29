@@ -1023,3 +1023,34 @@ update cooking_profiles set whole_cut_rest_seconds = 180 where id = 'cook_beef';
 
 insert into ingredient_safety_rules (ingredient_id, safety_rule_id) values
   ('pork', 'BONE_REMOVE');
+
+-- =======================================================================
+-- Migration 0031 addition (append-only, mirrors that migration's data
+-- portion) -- see supabase/migrations/0031_broccoli_evidence_completion.sql
+-- and docs/broccoli-clean-slate-investigation.md / docs/broccoli-migration-plan.md
+-- for full rationale (clean-slate 1차 조사, E015/E016 재사용 + 신규 E026,
+-- prep/cooking profile은 형제 채소(cauliflower 등)의 기존 관례 문구/evidence(E010)
+-- 재사용, shape=floret 통일, CHOKING_HARD_RAW 미연결, UNSUPPORTED -> NEEDS_REVIEW
+-- -- VERIFIED로 승격하지 않음).
+-- =======================================================================
+
+insert into evidence (id, organization, title, url, source_tier, checked_at, applicability, status) values
+  ('E026', 'Solid Starts', 'Broccoli -- When can babies eat broccoli?', 'https://solidstarts.com/foods/broccoli/', 'TIER_1', '2026-08-30', 'age-staged broccoli serving guidance -- 6mo+: large florets (~3 adult fingers wide) or stalk sticks (~2 adult fingers thick/long, NOT cylindrical -- cylindrical shape is called out as a higher choking risk); 9mo+: transition to smaller bite-sized floret/stem pieces; 12mo+: continued bite-sized pieces, steaming time reduced as chewing skill develops. Explicit safety note: raw or undercooked broccoli is firm and hard to chew, increasing choking risk -- softening by cooking is the mitigation, consistent with E015/E016''s "steam or simmer until soft" guidance for the same food.', 'VERIFIED');
+
+insert into preparation_profiles (id, wash_rule, peel_rule, seed_removal_rule, core_tough_part_rule, bone_removal_rule, fishbone_removal_rule, cutting_guidance, status, evidence_id) values
+  ('prep_broccoli', null, null, null, null, null, null, '재료의 질긴 부분·씨·껍질 등은 제공 형태와 재료 상태에 따라 확인', 'INFERRED', 'E010');
+
+insert into cooking_profiles (id, allowed_methods, temperature_rule_id, completion_checks, time_guidance, time_status, evidence_id, time_min, time_max, time_unit) values
+  ('cook_broccoli', '{steam,boil}', null, '{"줄기와 꽃 부분이 쉽게 으깨짐"}', null, 'UNSUPPORTED', 'E016', null, null, null);
+
+insert into texture_profiles (id, stage_id, food_form_id, texture, shape, particle_size, particle_size_status, evidence_id, ingredient_id) values
+  ('texture_broccoli_stage_1', 'stage_1', null, '충분히 쪄서 부드럽게 익힌 꽃송이를 아기가 쥐기 편한 크기로 제공하는 질감', 'floret', null, 'UNSUPPORTED', 'E026', 'broccoli'),
+  ('texture_broccoli_stage_2', 'stage_2', null, '충분히 쪄서 부드럽게 익힌 꽃송이를 아기가 쥐기 편한 크기로 제공하는 질감', 'floret', null, 'UNSUPPORTED', 'E026', 'broccoli'),
+  ('texture_broccoli_stage_3', 'stage_3', null, '충분히 쪄서 부드럽게 익힌 꽃송이를 아기가 쥐기 편한 크기로 제공하는 질감', 'floret', null, 'UNSUPPORTED', 'E026', 'broccoli'),
+  ('texture_broccoli_stage_4', 'stage_4', null, '충분히 쪄서 부드럽게 익힌 꽃송이를 아기가 쥐기 편한 크기로 제공하는 질감', 'floret', null, 'UNSUPPORTED', 'E026', 'broccoli');
+
+update ingredients
+set preparation_profile_id = 'prep_broccoli',
+    cooking_profile_id = 'cook_broccoli',
+    verification_status = 'NEEDS_REVIEW'
+where id = 'broccoli';
