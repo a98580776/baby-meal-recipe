@@ -250,6 +250,7 @@ export function RecipeView() {
                       ))}
                     </ul>
                   )}
+                  {c?.rest_guidance && <p className="mt-1 text-xs text-gray-500">{c.rest_guidance}</p>}
                   {ing.texture && <p className="mt-1 text-sm text-gray-700">{ing.texture}</p>}
                   {ing.allergens.length > 0 && (
                     <ul className="mt-1 flex flex-wrap gap-2">
@@ -337,12 +338,13 @@ export function RecipeView() {
                       <p className="mt-1 text-sm text-gray-700">권장 조리시간: {recommendedTimeText}</p>
                     )}
                     {c.time_guidance && <p className="mt-1 text-xs text-gray-500">{c.time_guidance}</p>}
+                    {c.rest_guidance && <p className="mt-1 text-xs text-gray-500">{c.rest_guidance}</p>}
                     {safetyTempNote && (
                       <p className="mt-1 text-sm font-medium text-amber-700">
                         안전 확인: {safetyTempNote.message.slice(`${ing.name_ko}:`.length).trim()}
                       </p>
                     )}
-                    {!recommendedTimeText && !c.time_guidance && !safetyTempNote && (
+                    {!recommendedTimeText && !c.time_guidance && !c.rest_guidance && !safetyTempNote && (
                       <p className="mt-1 text-xs text-gray-400">
                         공식적으로 확인된 조리 시간이 없어 상태를 직접 확인해주세요.
                       </p>

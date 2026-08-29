@@ -6,6 +6,7 @@ import type { RecipeLookupData } from "@/lib/rules/types";
 import { isNoCookingNeededFromProfile } from "@/lib/recipe/cookingTimeStatus";
 import { hasPorridgeBase } from "@/lib/recipe/porridgeBase";
 import { isBaseSelectable, isAddOnSelectable } from "@/lib/rules/ingredientRole";
+import { MEAT_FORM_SUPPORTED_INGREDIENT_IDS, isMeatFormValue } from "@/lib/rules/meatForm";
 
 /**
  * Pure validation pipeline — no Supabase/network access here. Callers fetch
@@ -105,6 +106,36 @@ export function validateRecipeInput(
       errors.push({
         code: "INVALID_INPUT",
         message: `${withEunNeun(resolved.ingredient.name_ko)} 후첨 재료로 선택할 수 없습니다.`,
+      });
+    }
+  }
+
+  // 3-2. meat_form (ground/whole_cut) — docs/meat-form-domain-model-design.md.
+  // Selectable-id/value checks only; this never changes a safety threshold
+  // (that stays MEAT_POULTRY_TEMP_MFDS/75°C regardless), so mismatches are
+  // warnings (the input is simply ignored), not errors.
+  const selectedIds = new Set([...input.ingredient_ids, ...toppingIngredientIds]);
+  for (const [ingredientId, meatForm] of Object.entries(input.meat_forms ?? {})) {
+    if (!isMeatFormValue(meatForm)) {
+      errors.push({
+        code: "INVALID_INPUT",
+        message: `meat_forms 값이 올바르지 않습니다: ${ingredientId}=${meatForm}`,
+      });
+      continue;
+    }
+    if (!selectedIds.has(ingredientId)) {
+      warnings.push({
+        code: "MEAT_FORM_IGNORED",
+        message: `meat_forms에 지정된 재료가 선택 재료 목록에 없어 무시됩니다: ${ingredientId}`,
+      });
+      continue;
+    }
+    if (!MEAT_FORM_SUPPORTED_INGREDIENT_IDS.has(ingredientId)) {
+      const resolved = data.ingredients.get(ingredientId);
+      const name = resolved?.ingredient.name_ko ?? ingredientId;
+      warnings.push({
+        code: "MEAT_FORM_IGNORED",
+        message: `${withEunNeun(name)} 조리형태(다짐육/덩어리살) 구분을 아직 지원하지 않아 해당 입력이 무시됩니다.`,
       });
     }
   }
@@ -219,6 +250,7 @@ export function validateRecipeInput(
       servings: input.servings ?? null,
       exclusions,
       allergies,
+      ...(input.meat_forms ? { meat_forms: input.meat_forms } : {}),
       ...(storageRuleId ? { storage_rule_id: storageRuleId } : {}),
     },
   };

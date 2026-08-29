@@ -100,6 +100,12 @@ export function buildCookingSteps(recipe: RecipeResponse): CookingStep[] {
         push(`${ing.name_ko}: ${check}`, skipTimer ? "완료" : "익힘 확인");
       }
     }
+
+    // meat_form='whole_cut' 휴지시간 안내 — 안전 온도 기준과 무관한 별개의
+    // 품질 팁이라 타이머 없는 "완료" 액션으로 마지막에 붙인다.
+    if (c?.rest_guidance) {
+      push(`${ing.name_ko}: ${c.rest_guidance}`);
+    }
   }
 
   return steps;

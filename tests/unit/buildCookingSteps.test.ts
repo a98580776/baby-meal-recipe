@@ -5,13 +5,18 @@ import { evaluateIngredientSafety } from "@/lib/rules/safety";
 import type { RecipeRequestInput, RecipeResponse } from "@/types/api";
 import { foodForms, ingredients, stages } from "../fixtures/seedData";
 
-function makeRecipe(ingredientIds: string[], toppingIds: string[] = []) {
+function makeRecipe(
+  ingredientIds: string[],
+  toppingIds: string[] = [],
+  meatForms?: Record<string, "ground" | "whole_cut">,
+) {
   const input: RecipeRequestInput = {
     stage_id: "stage_2",
     readiness: true,
     ingredient_ids: ingredientIds,
     food_form_id: "porridge",
     topping_ingredient_ids: toppingIds,
+    ...(meatForms ? { meat_forms: meatForms } : {}),
   };
   const allIds = [...ingredientIds, ...toppingIds];
   const data = {
@@ -65,6 +70,20 @@ describe("buildCookingSteps", () => {
     const steps = buildCookingSteps(makeRecipe(["beef"]));
     // beef has no wash_rule content beyond "별도 세척 불필요" and no peel/seed/etc rules
     expect(steps.some((s) => s.instruction.includes("null"))).toBe(false);
+  });
+
+  it("meat_form 도메인 모델: beef + whole_cut일 때만 휴지시간 안내 스텝이 마지막에 붙는다 (완료 액션, 타이머 없음)", () => {
+    const wholeCutSteps = buildCookingSteps(makeRecipe(["beef"], [], { beef: "whole_cut" }));
+    const restStep = wholeCutSteps.at(-1);
+    expect(restStep?.instruction).toBe("소고기: 조리 후 3분간 그대로 두었다가 제공하면 육즙이 더 안정적입니다.");
+    expect(restStep?.actionLabel).toBe("완료");
+    expect(restStep?.timerEnabled).toBe(false);
+
+    const groundSteps = buildCookingSteps(makeRecipe(["beef"], [], { beef: "ground" }));
+    expect(groundSteps.some((s) => s.instruction.includes("육즙"))).toBe(false);
+
+    const unsetSteps = buildCookingSteps(makeRecipe(["beef"]));
+    expect(unsetSteps.some((s) => s.instruction.includes("육즙"))).toBe(false);
   });
 
   it("orders steps ingredient-by-ingredient for multi-ingredient recipes", () => {

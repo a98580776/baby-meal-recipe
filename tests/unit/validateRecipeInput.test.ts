@@ -457,3 +457,40 @@ describe("validateRecipeInput — 보관 규칙 매핑", () => {
     expect(result.normalized_input.storage_rule_id).toBeUndefined();
   });
 });
+
+describe("validateRecipeInput — meat_form 도메인 모델 (docs/meat-form-domain-model-design.md)", () => {
+  it("beef + whole_cut: 에러/경고 없이 통과하고 normalized_input에 반영된다", () => {
+    const input = baseInput({ ingredient_ids: ["beef"], meat_forms: { beef: "whole_cut" } });
+    const result = validateRecipeInput(input, lookup({}, ["beef"]));
+    expect(result.valid).toBe(true);
+    expect(result.warnings.filter((w) => w.code === "MEAT_FORM_IGNORED")).toHaveLength(0);
+    expect(result.normalized_input.meat_forms).toEqual({ beef: "whole_cut" });
+  });
+
+  it("잘못된 meat_form 값은 INVALID_INPUT 에러를 낸다", () => {
+    const input = baseInput({
+      ingredient_ids: ["beef"],
+      // @ts-expect-error 잘못된 값을 의도적으로 주입해 검증
+      meat_forms: { beef: "sliced" },
+    });
+    const result = validateRecipeInput(input, lookup({}, ["beef"]));
+    expect(result.valid).toBe(false);
+    expect(result.errors.some((e) => e.code === "INVALID_INPUT" && e.message.includes("meat_forms"))).toBe(
+      true,
+    );
+  });
+
+  it("선택되지 않은 재료에 대한 meat_forms는 경고와 함께 무시된다(에러 아님)", () => {
+    const input = baseInput({ ingredient_ids: ["carrot"], meat_forms: { beef: "whole_cut" } });
+    const result = validateRecipeInput(input, lookup({}, ["carrot"]));
+    expect(result.valid).toBe(true);
+    expect(result.warnings.some((w) => w.code === "MEAT_FORM_IGNORED")).toBe(true);
+  });
+
+  it("meat_form을 아직 지원하지 않는 재료(chicken)는 경고와 함께 무시된다", () => {
+    const input = baseInput({ ingredient_ids: ["chicken"], meat_forms: { chicken: "whole_cut" } });
+    const result = validateRecipeInput(input, lookup({}, ["chicken"]));
+    expect(result.valid).toBe(true);
+    expect(result.warnings.some((w) => w.code === "MEAT_FORM_IGNORED")).toBe(true);
+  });
+});

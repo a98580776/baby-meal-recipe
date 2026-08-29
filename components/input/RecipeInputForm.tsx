@@ -11,6 +11,7 @@ import {
   subscribeRecentIngredients,
 } from "@/lib/recipe/recentIngredients";
 import { isBaseSelectable, isAddOnSelectable } from "@/lib/rules/ingredientRole";
+import { MEAT_FORM_SUPPORTED_INGREDIENT_IDS, type MeatForm } from "@/lib/rules/meatForm";
 
 interface RecipeInputFormProps {
   stages: Stage[];
@@ -54,6 +55,11 @@ export function RecipeInputForm({
   // 축이라, food_form 선택과 무관하게 항상 사용 가능하다.
   const [toppingIngredientIds, setToppingIngredientIds] = useState<string[]>([]);
   const [toppingSearchOpen, setToppingSearchOpen] = useState(false);
+  // meat_form 도메인 모델 (docs/meat-form-domain-model-design.md): beef가
+  // 선택됐을 때만 UI에 노출되는 다짐육/덩어리살 선택. 재료가 선택 해제되면
+  // 아래 selectedIngredients 기반 렌더링에서 자연히 숨겨지고, 값은 남아있어도
+  // 서버 검증(validateRecipeInput 3-2)이 선택되지 않은 재료의 입력을 무시한다.
+  const [meatForms, setMeatForms] = useState<Record<string, MeatForm>>({});
 
   const [formError, setFormError] = useState<string | null>(null);
   const [apiErrors, setApiErrors] = useState<ApiErrorDetail[]>([]);
@@ -123,6 +129,7 @@ export function RecipeInputForm({
       ingredient_ids: selectedIngredientIds,
       food_form_id: foodFormId,
       topping_ingredient_ids: toppingIngredientIds,
+      ...(Object.keys(meatForms).length > 0 ? { meat_forms: meatForms } : {}),
     };
 
     setSubmitting(true);
@@ -147,6 +154,10 @@ export function RecipeInputForm({
         ingredient_ids: selectedIngredientIds.join(","),
         topping_ingredient_ids: toppingIngredientIds.join(","),
       });
+      const meatFormsEntries = Object.entries(meatForms).filter(([id]) => selectedIngredientIds.includes(id));
+      if (meatFormsEntries.length > 0) {
+        params.set("meat_forms", meatFormsEntries.map(([id, value]) => `${id}:${value}`).join(","));
+      }
 
       router.push(`/recipe?${params.toString()}`);
     } catch {
@@ -255,6 +266,35 @@ export function RecipeInputForm({
           </div>
         )}
       </section>
+
+      {selectedIngredients
+        .filter((ing) => MEAT_FORM_SUPPORTED_INGREDIENT_IDS.has(ing.id))
+        .map((ing) => (
+          <section key={`meat-form-${ing.id}`}>
+            <h2 className="mb-2 text-base font-semibold">{ing.name_ko} 조리 형태</h2>
+            <div className="flex gap-2">
+              {(
+                [
+                  { value: "ground" as const, label: "다짐육(간 것)" },
+                  { value: "whole_cut" as const, label: "덩어리살(스테이크·구이용)" },
+                ]
+              ).map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setMeatForms((m) => ({ ...m, [ing.id]: opt.value }))}
+                  className={`shrink-0 rounded-full border px-4 py-2 text-sm ${
+                    meatForms[ing.id] === opt.value
+                      ? "border-blue-600 bg-blue-600 text-white"
+                      : "border-gray-300 bg-white text-gray-700"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </section>
+        ))}
 
       <section>
         <h2 className="mb-2 text-base font-semibold">이유식 형태</h2>

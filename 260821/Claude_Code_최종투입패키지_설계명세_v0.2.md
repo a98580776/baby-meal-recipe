@@ -536,11 +536,29 @@ request:
 }
 ```
 
+meat_form 도메인 모델(2026-08-29, docs/meat-form-domain-model-design.md): 선택 필드
+`meat_forms`(재료 id → `"ground" | "whole_cut"`)를 받는다. 이번 라운드는 beef만 지원하며,
+안전 온도 기준(MFDS 75°C)은 이 값과 무관하게 동일하다 — whole_cut일 때만 조리 결과의
+`rest_guidance`(휴지시간 품질 안내)가 채워진다.
+
+```json
+{
+  "stage_id": "stage_1",
+  "readiness": true,
+  "ingredient_ids": ["beef"],
+  "food_form_id": "puree",
+  "meat_forms": { "beef": "whole_cut" },
+  "exclusions": []
+}
+```
+
 validation 순서:
 
 1. stage 존재
 2. readiness 확인
 3. ingredient 존재
+3-1. ingredient role v2 (base/add-on 선택 가능 여부)
+3-2. meat_form 값/대상 검증 (docs/meat-form-domain-model-design.md)
 4. ingredient verification status
 5. allergen/exclusion
 6. safety rule
@@ -578,6 +596,10 @@ request:
   "exclusions": []
 }
 ```
+
+`meat_forms`(§17 참고)를 함께 보내면 응답의 `ingredients[].cooking.rest_guidance`(beef +
+whole_cut일 때만 non-null)에 반영된다. 다른 응답 필드(안전 온도, completion_checks 등)는
+변경되지 않는다.
 
 ### Pipeline
 

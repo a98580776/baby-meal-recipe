@@ -322,13 +322,14 @@ export const ingredients: Record<string, ResolvedIngredient> = {
       time_guidance: null,
       time_status: "UNSUPPORTED",
       evidence_id: "E004",
-      // Phase 10-4-2 decision B structure — whole-cut temp/rest stay
-      // unregistered until primary-source verification succeeds.
+      // meat_form 도메인 모델(migration 0029): whole_cut_rest_seconds=180
+      // (E024, USDA 3분 휴지). whole_cut_temperature_rule_id는 정책상 계속
+      // null — 안전 온도는 meat_form과 무관하게 MFDS 75°C로 통일.
       time_min: null,
       time_max: null,
       time_unit: null,
       whole_cut_temperature_rule_id: null,
-      whole_cut_rest_seconds: null,
+      whole_cut_rest_seconds: 180,
     },
     ["GROUND_MEAT_TEMP", "MEAT_POULTRY_TEMP_MFDS", "BEEF_ALLERGEN"],
     [{ code: "BEEF" }],

@@ -1004,3 +1004,12 @@ insert into evidence (id, organization, title, url, source_tier, checked_at, app
   ('E025', 'USDA FSIS', 'Slow Cookers and Food Safety', 'https://www.fsis.usda.gov/food-safety/safe-food-handling-and-preparation/food-safety-basics/slow-cookers-and-food-safety', 'TIER_1', '2026-08-29', 'slow cookers (170-280F internal cooker temperature, food covered, meat/poultry thawed before adding) are a safe cooking method -- direct heat, long cook time, and trapped steam combine to destroy bacteria.', 'VERIFIED');
 
 update cooking_profiles set allowed_methods = '{bake,boil,braise}' where id = 'cook_chicken';
+
+-- =======================================================================
+-- Migration 0029 addition (append-only, mirrors that migration's data
+-- portion) -- see supabase/migrations/0029_beef_whole_cut_rest_seconds.sql
+-- for rationale (meat_form domain model, whole_cut_temperature_rule_id
+-- stays null by policy decision -- safety temp stays MFDS 75°C).
+-- =======================================================================
+
+update cooking_profiles set whole_cut_rest_seconds = 180 where id = 'cook_beef';

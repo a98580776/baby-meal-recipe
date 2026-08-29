@@ -232,4 +232,63 @@ describe("buildRecipeResponse", () => {
       expect(recipe.toppings).toEqual([]);
     });
   });
+
+  describe("meat_form 도메인 모델 (docs/meat-form-domain-model-design.md)", () => {
+    it("beef + whole_cut: rest_guidance가 whole_cut_rest_seconds(180초→3분)로 채워진다", () => {
+      const recipe = buildRecipeResponse(
+        { ...input, ingredient_ids: ["beef"], meat_forms: { beef: "whole_cut" } },
+        { ...data, ingredients: new Map([["beef", ingredients.beef]]) },
+        storageRule,
+        null,
+        [],
+      );
+      const beef = recipe.ingredients.find((i) => i.id === "beef");
+      expect(beef?.cooking?.rest_guidance).toBe("조리 후 3분간 그대로 두었다가 제공하면 육즙이 더 안정적입니다.");
+    });
+
+    it("beef + ground: rest_guidance는 null", () => {
+      const recipe = buildRecipeResponse(
+        { ...input, ingredient_ids: ["beef"], meat_forms: { beef: "ground" } },
+        { ...data, ingredients: new Map([["beef", ingredients.beef]]) },
+        storageRule,
+        null,
+        [],
+      );
+      expect(recipe.ingredients.find((i) => i.id === "beef")?.cooking?.rest_guidance).toBeNull();
+    });
+
+    it("meat_forms 미지정(beef): rest_guidance는 null (기존 응답 그대로 유지)", () => {
+      const recipe = buildRecipeResponse(
+        { ...input, ingredient_ids: ["beef"] },
+        { ...data, ingredients: new Map([["beef", ingredients.beef]]) },
+        storageRule,
+        null,
+        [],
+      );
+      expect(recipe.ingredients.find((i) => i.id === "beef")?.cooking?.rest_guidance).toBeNull();
+    });
+
+    it("whole_cut이어도 안전 온도(safety_notes)는 이 함수와 무관 — rest_guidance만 바뀐다", () => {
+      // buildRecipeResponse는 safetyNotes를 그대로 전달받아 통과시킬 뿐 —
+      // meat_form에 따라 safety_notes 내용이 달라지지 않는다는 것을 확인
+      // (안전 온도는 여전히 MFDS 75°C 하나로 통일되어 있어야 한다는 정책
+      // 결정을 회귀 테스트로 고정).
+      const notes = [{ code: "SAFETY_COOKING_REQUIRED", message: "소고기: 내부 온도 75°C 이상까지 완전히 익혀야 합니다." }];
+      const groundRecipe = buildRecipeResponse(
+        { ...input, ingredient_ids: ["beef"], meat_forms: { beef: "ground" } },
+        { ...data, ingredients: new Map([["beef", ingredients.beef]]) },
+        storageRule,
+        null,
+        notes,
+      );
+      const wholeCutRecipe = buildRecipeResponse(
+        { ...input, ingredient_ids: ["beef"], meat_forms: { beef: "whole_cut" } },
+        { ...data, ingredients: new Map([["beef", ingredients.beef]]) },
+        storageRule,
+        null,
+        notes,
+      );
+      expect(groundRecipe.safety_notes).toEqual(wholeCutRecipe.safety_notes);
+    });
+  });
 });

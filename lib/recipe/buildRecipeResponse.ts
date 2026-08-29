@@ -1,6 +1,7 @@
 import type { ApiErrorDetail, RecipeIngredientView, RecipeRequestInput, RecipeResponse } from "@/types/api";
 import type { ReheatRule, StorageRule } from "@/types/domain";
 import type { RecipeLookupData } from "@/lib/rules/types";
+import { buildRestGuidance } from "@/lib/rules/meatForm";
 
 /**
  * Pure assembly of the final recipe response from already-validated,
@@ -8,7 +9,11 @@ import type { RecipeLookupData } from "@/lib/rules/types";
  * row already resolved by lib/supabase/queries.ts (설계명세 §18-19: LLM은
  * MVP 핵심 데이터를 결정하지 않는다).
  */
-function toIngredientViews(ids: string[], data: RecipeLookupData): RecipeIngredientView[] {
+function toIngredientViews(
+  ids: string[],
+  data: RecipeLookupData,
+  meatForms: Record<string, string> | undefined,
+): RecipeIngredientView[] {
   return ids
     .map((id) => data.ingredients.get(id))
     .filter((r): r is NonNullable<typeof r> => r != null)
@@ -39,6 +44,11 @@ function toIngredientViews(ids: string[], data: RecipeLookupData): RecipeIngredi
                   unit: resolved.cookingProfile.time_unit,
                 }
               : null,
+            rest_guidance:
+              meatForms?.[resolved.ingredient.id] === "whole_cut" &&
+              resolved.cookingProfile.whole_cut_rest_seconds != null
+                ? buildRestGuidance(resolved.cookingProfile.whole_cut_rest_seconds)
+                : null,
           }
         : null,
       texture: resolved.textureProfile?.texture ?? null,
@@ -59,7 +69,7 @@ export function buildRecipeResponse(
   reheatRule: ReheatRule | null,
   safetyNotes: ApiErrorDetail[],
 ): RecipeResponse {
-  const ingredients = toIngredientViews(input.ingredient_ids, data);
+  const ingredients = toIngredientViews(input.ingredient_ids, data, input.meat_forms);
   // Recipe MVP — Part 2 Topping 분리: same view shape, separate array.
   // Deduped so a repeated topping id never appears twice in the response,
   // AND any id already present in ingredient_ids (base) is excluded here —
@@ -73,7 +83,7 @@ export function buildRecipeResponse(
   // apply, when the actual issue is the duplicate base entry.
   const baseIds = new Set(input.ingredient_ids);
   const toppingIds = [...new Set(input.topping_ingredient_ids ?? [])].filter((id) => !baseIds.has(id));
-  const toppings = toIngredientViews(toppingIds, data);
+  const toppings = toIngredientViews(toppingIds, data, input.meat_forms);
 
   return {
     stage_id: input.stage_id,

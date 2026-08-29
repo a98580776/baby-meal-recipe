@@ -21,6 +21,13 @@ export interface RecipeRequestInput {
   // eligibility is base-only; existence/verification/allergen/safety/
   // preparation/cooking checks apply to both).
   topping_ingredient_ids?: string[];
+  // meat_form 도메인 모델 (docs/meat-form-domain-model-design.md): 재료별
+  // ground(다짐육)/whole_cut(덩어리살) 조리형태. 키는 ingredient_id, 값은
+  // 반드시 "ground" | "whole_cut". 현재는 lib/rules/meatForm.ts의
+  // MEAT_FORM_SUPPORTED_INGREDIENT_IDS(beef만)에 대해서만 의미가 있고, 이
+  // 값은 안전 온도 기준(75°C, MEAT_POULTRY_TEMP_MFDS)을 바꾸지 않는다 —
+  // whole_cut일 때 휴지시간 안내(cooking.rest_guidance)에만 영향을 준다.
+  meat_forms?: Record<string, "ground" | "whole_cut">;
 }
 
 export interface RecipeValidationResponse {
@@ -98,6 +105,13 @@ export interface RecipeIngredientView {
     // Non-null only when time_unit is set (mirrors the DB check
     // constraint) — never inferred from time_guidance.
     recommended_time: { min: number | null; max: number | null; unit: string } | null;
+    // meat_form='whole_cut'이고 cooking_profiles.whole_cut_rest_seconds가
+    // 채워진 재료에서만 non-null. 안전 온도 기준과 무관한 별개의 품질
+    // 안내(육즙 안정화 휴지시간)이므로 completion_checks/time_guidance와
+    // 섞지 않고 별도 필드로 노출한다. shape/particle_size와 같은 이유로
+    // optional — 기존에 이 필드를 모르는 코드(테스트 픽스처 등)가 깨지지
+    // 않도록 하고, buildRecipeResponse.ts는 항상 값을 채운다(생략 안 함).
+    rest_guidance?: string | null;
   } | null;
   // Phase 10-5: stage-specific texture guidance (null when not yet
   // registered for this ingredient+stage — never fabricated client-side).
