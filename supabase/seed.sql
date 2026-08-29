@@ -992,3 +992,15 @@ update cooking_profiles
 set completion_checks = array_append(completion_checks, '건조하지 않고 촉촉하게 익음 확인')
 where id = 'cook_chicken'
   and not ('건조하지 않고 촉촉하게 익음 확인' = any(completion_checks));
+
+-- =======================================================================
+-- Migration 0028 addition (append-only, mirrors that migration's data
+-- portion) -- see supabase/migrations/0028_chicken_slow_cooker_method.sql
+-- for rationale (Q3: slow cooker mapped to 'braise', pressure cooker left
+-- unmapped -- no consumer-facing Tier 1 source found for it).
+-- =======================================================================
+
+insert into evidence (id, organization, title, url, source_tier, checked_at, applicability, status) values
+  ('E025', 'USDA FSIS', 'Slow Cookers and Food Safety', 'https://www.fsis.usda.gov/food-safety/safe-food-handling-and-preparation/food-safety-basics/slow-cookers-and-food-safety', 'TIER_1', '2026-08-29', 'slow cookers (170-280F internal cooker temperature, food covered, meat/poultry thawed before adding) are a safe cooking method -- direct heat, long cook time, and trapped steam combine to destroy bacteria.', 'VERIFIED');
+
+update cooking_profiles set allowed_methods = '{bake,boil,braise}' where id = 'cook_chicken';
