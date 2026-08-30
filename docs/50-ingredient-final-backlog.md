@@ -1,0 +1,468 @@
+# 50-Ingredient Final Backlog Consolidation
+
+**작성일**: 2026-08-30. **성격**: 의사결정용 backlog — 조사 요약이 아니라 "개발팀이 다음에
+무엇을 해야 하는가"를 결정하기 위한 문서. **이 문서 작성 과정에서 DB/production 코드/테스트를
+전혀 수정하지 않았다** — 원격 Supabase에 대해 `select()`만 실행했고(임시 스크립트
+`scripts_final_backlog_survey.mjs`는 실행 직후 삭제), 기존 16개 조사 문서(§0)를 전부 읽고
+교차 검증했다.
+
+---
+
+## 0. 조사 대상 문서 — 수집 결과
+
+요청받은 16개 문서 전부 repository에 실존한다(누락 없음):
+
+`current-roadmap.md` · `remaining-21-texture-survey.md` · `texture-profile-expansion-investigation.md` ·
+`p0-safety-fixes-investigation.md` · `broccoli-clean-slate-investigation.md` ·
+`broccoli-migration-plan.md` · `broccoli-choking-rule-migration-plan.md` ·
+`tofu-block-policy-reinvestigation.md` · `tofu-migration-plan.md` ·
+`cod-tuna-fishbone-investigation.md` · `egg-cooking-method-investigation.md` ·
+`chestnut-cooking-method-investigation.md` · `choking-hard-raw-audit.md` ·
+`choking-hard-raw-runtime-investigation.md` · `beef-safety-rule-schema-investigation.md` ·
+`content-beef-chicken-investigation.md`
+
+추가로 `current-project-status.md`(2026-08-29 전체 감사) · `p0-safety-fixes-investigation.md`
+§8(chestnut 재검토) · `project_beef_whole_cut_followup.md`(메모리) 3건도 CLOSED 판정의
+근거로 함께 확인했다.
+
+---
+
+## 1. 현재 DB 상태 — READ-ONLY 스냅샷 (2026-08-30)
+
+### Ingredients
+
+| 지표 | 값 |
+|---|---:|
+| 전체 ingredient | 50 |
+| `verification_status` 분포 | NEEDS_REVIEW 10 / INFERRED 40 / **UNSUPPORTED 0** |
+| `ingredient_role_v2 × status` | BASE_AND_ADD_ON/CONFIRMED 30, BASE_ONLY/CONFIRMED 7, BASE_ONLY/REVIEW 9, ADD_ON_ONLY/CONFIRMED 4 |
+| preparation coverage | 50/50 (100%) |
+| cooking coverage | 50/50 (100%) |
+| texture coverage | 46/50 (누락 4: `barley`/`brown_rice`/`oatmeal`/`rice` — §4-3/§6-5) |
+| allergen coverage | 15개 재료에 15개 링크(해당 재료만 대상, 나머지는 알레르기 무관 재료) |
+| safety rule coverage | 24개 재료에 43개 링크, 26개 재료는 0링크(§6-6에서 재료별 판정) |
+
+**UNSUPPORTED가 0이 됐다는 것이 이번 조사의 핵심 사실 하나다** — broccoli/tofu 둘 다 이번
+분기에 NEEDS_REVIEW로 전환 완료되어, 2026-08-29 시점 문서(`current-roadmap.md`)가 기록한
+"UNSUPPORTED 2건"은 더 이상 존재하지 않는다.
+
+### Safety
+
+| 지표 | 값 |
+|---|---:|
+| `safety_rules` 총 개수 | 24 (`allergen` 13 / `cooking_temperature` 6 / `physical_hazard` 2(BONE_REMOVE, FISHBONE_REMOVE) / `choking` 1(CHOKING_HARD_RAW) / `age_restriction` 1(HONEY_UNDER_12M) / `raw_food` 1(RAW_FISH_BLOCK)) |
+| `ingredient_safety_rules` 총 링크 | 43 |
+| `CHOKING_HARD_RAW` 링크 | **12**(broccoli 포함, 2547d8f 반영 확인) |
+| `FISHBONE_REMOVE` 링크 | 3(salmon/cod/tuna, 전부 fish 카테고리) |
+| 온도 규칙 링크 | `MEAT_POULTRY_TEMP_MFDS` 3(beef/chicken/pork), `FISH_SHELLFISH_TEMP_MFDS` 4(cod/tuna/shrimp/salmon), `GROUND_MEAT_TEMP` 1(beef), `POULTRY_TEMP` 1(chicken), `FISH_TEMP` 1(salmon 전용) |
+
+### Evidence
+
+| 지표 | 값 |
+|---|---:|
+| 총 개수 | 26 |
+| Tier 분포 | **TIER_1 26/26 (100%)** — Tier 2/3 evidence는 이 프로젝트에 존재하지 않는다 |
+| status 분포 | VERIFIED 25 / INFERRED 1(E023, spinach stage_3 전용) |
+| 재료별 evidence coverage | prep/cook/texture/safety_rules 전체 216개 행 중 evidence_id 사용 횟수 상위: **E010 138회**, E016 51회, E009 28회, E014 24회, E011 12회, E015 8회, E004 6회 — 나머지 evidence는 10회 미만(§6-7) |
+
+### Recipe generation 관련
+
+| 지표 | 값 |
+|---|---:|
+| `allowed_methods=[]`인 cooking_profile | 20개(§6-2에서 전수 판정) |
+| `cooking_profile` 자체가 없는 ingredient | **0개**(50/50 전부 row 존재 — `choking-hard-raw-runtime-investigation.md`와 재확인 일치) |
+| texture_profile 누락 재료 | 4개(barley/brown_rice/oatmeal/rice, 전부 곡물 — §6-5) |
+| `verification_status`와 실제 prep/cook coverage 불일치 | **0건** — UNSUPPORTED이면서 prep/cook이 채워진 경우, 또는 그 반대 경우 모두 없음(50개 전수 대조 확인) |
+
+---
+
+## 2. CLOSED — 이미 완료된 작업
+
+| ID | 제목 | 산출물 | commit |
+|---|---|---|---|
+| CLOSED-01 | broccoli evidence gap 해소 (UNSUPPORTED → NEEDS_REVIEW, prep/cook/texture 4-stage) | migration 0031 | `a264dfa` |
+| CLOSED-02 | tofu evidence gap 해소 (UNSUPPORTED → NEEDS_REVIEW, prep/cook/texture 1-stage) | migration 0032 | `8cf0fb8` |
+| CLOSED-03 | broccoli → CHOKING_HARD_RAW 연결 | migration 0033 | `2547d8f` |
+| CLOSED-04 | pork → BONE_REMOVE 연결 | migration 0030 | `e819394` |
+| CLOSED-05 | cod/tuna → FISHBONE_REMOVE 연결 + egg/chestnut allowed_methods 보정 + CHOKING_HARD_RAW BLOCK_FORM 구조적 무력화 코드 수정 (P0 4건 묶음) | migration 0007 | `50dac8e` |
+| CLOSED-06 | chestnut completion_checks에 안전 제공 형태 텍스트 추가 | migration 0008 | `50dac8e` |
+| CLOSED-07 | ingredient_role_v2 3-role 재설계(5-value → 3-value+status) | migration 0006 | `7707db6` |
+| CLOSED-08 | texture_profiles Tier1+evidence-reuse 배치(0009~0014) | migration 0009-0014 | `8336960` |
+| CLOSED-09 | texture_profiles bucket-classification 배치(0015~0019) | migration 0015-0019 | `3c7a7e5` |
+| CLOSED-10 | texture_profiles self-derived-first 배치(0020~0025), 44/50 목표 달성 | migration 0020-0025 | `7c6c6f7` |
+| CLOSED-11 | beef whole-cut evidence(E024) 등록 + beef/chicken allowed_methods 확장 | migration 0026 | `b35d54e` |
+| CLOSED-12 | chicken 건조 방지 completion_check 추가(Q6) | migration 0027 | `75cbc7f` |
+| CLOSED-13 | chicken 슬로우쿠커 → braise 매핑(Q3, evidence E025) | migration 0028 | `b415d3b` |
+| CLOSED-14 | `meat_form: ground/whole_cut` 도메인 모델 + beef rest_seconds | migration 0029 | `6ace5fd` |
+| CLOSED-15 | egg cooking-method(allowed_methods) 재검증 — 변경 불필요 확인(KEEP) | `docs/egg-cooking-method-investigation.md` | 조사만, commit 없음 |
+| CLOSED-16 | chestnut cooking-method(allowed_methods) 재검증 — 변경 불필요 확인(KEEP) | `docs/chestnut-cooking-method-investigation.md` | 조사만, commit 없음 |
+| CLOSED-17 | cod/tuna FISHBONE_REMOVE 근거 재검증 — 기존 연결 타당성 재확인(LINK 유지) | `docs/cod-tuna-fishbone-investigation.md` | 조사만, commit 없음 |
+
+**CLOSED 17건.** CLOSED-15~17은 "새 데이터를 추가"한 것이 아니라 "기존 상태가 여전히 맞는지
+재검증해서 변경 불필요로 결론낸 것"이다 — 이것도 유효한 작업 완료로 집계한다(재조사 낭비를
+막기 위한 증거이기도 하다, §5).
+
+**OPS-001(2026-08-29 발견된 미커밋 리스크) 상태 갱신**: 당시 "modified 28개 + untracked 60개
+이상"이었던 것이 현재 `git status --short` 기준 **untracked 5개**(전부 이번 세션 이전에
+작성된 조사 문서 `.md` 파일, 코드/migration/seed 아님)로 축소됐다 — **사실상 해소**. 남은
+5개 문서를 커밋할지는 순수 housekeeping이며 §9 NOW에 낮은 리스크 항목으로 포함한다.
+
+---
+
+## 3. Backlog — 미해결 이슈 (카테고리 A~F)
+
+카테고리 정의는 요청서 §4와 동일: **A**=실제 데이터 오류, **B**=안전 관련 미완성, **C**=데이터
+품질/evidence gap, **D**=UX 정밀도, **E**=구조적/architecture gap, **F**=조사만으로 종료(위
+CLOSED-15~17로 이미 반영, 이 표에는 없음).
+
+### A. 실제 데이터 오류
+
+| ID | 제목 | 영향 재료 | 문제 | 우선순위 |
+|---|---|---|---|---|
+| A-1 | Cooking Mode 타이머/라벨 오분류 — allowed_methods=[] but 실제 조리시간 존재 | pear, peach, seaweed, sesame, perilla, cheese (6개, "definite" 그룹) | §3-A-1 상세 | **P1** |
+| A-2 | 위와 동일 패턴이지만 "선택적 조리"라 판단이 애매한 하위그룹 | grape, blueberry, strawberry (3개) | §3-A-1 상세 | P2 |
+
+#### A-1/A-2 상세 (이번 조사에서 새로 발견 — 기존 16개 문서 어디에도 없음)
+
+`lib/recipe/cookingTimeStatus.ts`에는 "조리 불필요" 판정 함수가 **두 개** 있는데, 서로 다른
+정밀도로 서로 다른 화면에 쓰이고 있다:
+
+- `isNoCookingNeededFromView(cooking)` — `allowed_methods=[]` **그리고** `recommended_time.min/
+  max === 0`까지 확인하는 정밀한 버전. **`RecipeView.tsx`(즉 `/recipe` 화면)만 이걸 쓴다.**
+- `isServingStateOnly(cooking)` / `completionCheckLabel()` — `allowed_methods.length === 0`
+  **만** 보는 단순 버전. **`buildCookingSteps.ts`(Cooking Mode)와 `buildStepInfoRows.ts`가
+  이걸 쓴다.**
+
+`rice/oatmeal/brown_rice/barley/corn/egg/chestnut` 7개는 과거에 정확히 이 오분류로 문제가
+됐고(`docs/p0-safety-fixes-investigation.md` §2, `tests/unit/buildCookingSteps.test.ts:213-303`
+에 회귀 테스트로 남아있음) `allowed_methods`를 `{}`→`{boil}`로 채워 해결됐다. **그런데 이번
+DB 스냅샷(§1)에서 정확히 같은 패턴을 가진 재료 9개가 더 있다는 것을 이번 조사에서 처음
+확인했다** — `allowed_methods=[]`이면서 `time_min/max`가 0이 아닌(즉 실제 조리/손질 시간이
+기록된) 재료:
+
+| 재료 | time_guidance(원문) | time_min~max | 그룹 |
+|---|---|---:|---|
+| pear | "작게 썬 배, 찌기" | 5~10분 | A-1(definite) |
+| peach | "껍질·씨 제거 후 찌기" | 5~10분 | A-1(definite) |
+| seaweed | "필요 시 살짝 가열/구워 수분 제거" | 1~2분 | A-1(definite) |
+| sesame | "가열 후 곱게 갈기/분쇄" | 3~5분 | A-1(definite) |
+| perilla | "가열 후 곱게 갈기/분쇄" | 3~5분 | A-1(definite) |
+| cheese | "가열 필요 시 녹이기" | 0~2분 | A-1(definite) |
+| grape | "필요 시 찌거나 데쳐 부드럽게 처리" | 2~4분 | A-2(선택적) |
+| blueberry | "필요 시 찌기/으깨기" | 3~5분 | A-2(선택적) |
+| strawberry | "필요 시 찌기" | 3~5분 | A-2(선택적) |
+
+**실제 영향**: 이 9개 재료는 `/recipe` 화면에서는 `isNoCookingNeededFromView`가 정확히
+판정해 "추천 N~M분" 텍스트가 보이지만, **Cooking Mode에서는 `isServingStateOnly`가 부정확하게
+"조리 불필요"로 오판**해 (1) 완료 기준 라벨이 "완료 기준" 대신 "제공 형태"로 잘못 표시되고,
+(2) `timerEnabled=false`가 되어 타이머가 뜨지 않고, (3) `buildCookingSteps.ts:62-64` 로직상
+`timeGuidance`/`recommendedTime` 자체가 스텝 객체에서 `null`로 치환되어 **DB에 있는 시간
+정보가 Cooking Mode에는 아예 도달하지 않는다.** 두 화면이 같은 재료를 다르게 취급하는
+**화면 간 불일치**다.
+
+**pork/cod/tuna/shrimp는 이 버그의 영향을 받지 않는다** — `buildCookingSteps.ts:94-109`의
+`tempNotes`(CONTINUE_COOKING safety_notes, 이 4개는 온도 규칙이 링크되어 있음) 분기가
+`isServingStateOnly` 체크보다 먼저 실행되어 정상적으로 "익힘 확인"+타이머를 받는다(코드
+주석에 이 사실이 명시되어 있음). 즉 **온도 안전규칙이 없는 재료만** 이 사각지대에 걸린다.
+
+**A-1(6개, definite)과 A-2(3개, 선택적) 구분 이유**: pear/peach/seaweed/sesame/perilla/cheese는
+`time_guidance`에 "찌기"/"가열 후 갈기"/"녹이기"처럼 **확정적 동사**가 있어, 과거 rice/egg/
+chestnut을 고친 것과 완전히 동일한 패턴(단순 `allowed_methods` 값 채우기)으로 해결 가능하다.
+grape/blueberry/strawberry는 "**필요 시**" 찌기/데치기로, 실제로는 생과일을 안전한 모양(웨지
+등)으로 잘라 그대로 제공하는 경우가 더 흔한 재료들이다 — 이건 "조리 정보가 빠졌다"가 아니라
+"조리가 선택 사항인 재료를 Cooking Mode가 어떻게 표현할지" 정책 판단이 먼저 필요해서 A-1과
+분리했다(§9 NEXT).
+
+---
+
+### B. 안전 관련 미완성
+
+| ID | 제목 | 영향 재료 | 근거 문서 | 우선순위 |
+|---|---|---|---|---|
+| B-1 | CHOKING_HARD_RAW: raw/cooked 레시피 인스턴스 상태를 표현할 schema 없음 (DATA_MODEL_GAP) | CHOKING_HARD_RAW 연결 12개 전체(구조적) | `choking-hard-raw-runtime-investigation.md` | **BACKLOG** |
+| B-2 | stage 조건부 safety action 강도 부재(초기든 완료기든 동일 WARN) | chestnut(직접 지적됨), CHOKING_HARD_RAW 연결 12개 전체(구조적으로 동일 영향) | `p0-safety-fixes-investigation.md` §8-4 | BACKLOG |
+| B-3 | egg — 조리온도 계열 safety_rule 미연결(`temperature_rule_id=null`) | egg | `egg-cooking-method-investigation.md` §7 | P2 |
+| B-4 | egg — `time_min/max`(8~10분) vs NHS E017(5분) 수치 불일치 | egg | 위와 동일 §6 | P2 |
+| B-5 | tofu FPIES(비-IgE 알레르기) — 신규 발견, 현재 taxonomy에 반영 불가 | tofu | `tofu-block-policy-reinvestigation.md` §2-6, `tofu-migration-plan.md` §5 | BACKLOG |
+
+**B-1/B-2 판정(요청서 §6-1 명시 대응)**: `choking-hard-raw-runtime-investigation.md`가 내린
+`DATA_MODEL_GAP` 결론을 그대로 유지한다. **지금 당장 수정하지 않는다** — raw-serving을 실제
+선택 옵션으로 노출하는 제품 기능이 없어(§6에서 확인, `buildCookingSteps.ts`가 food_form과
+무관하게 조리 데이터 존재 여부로만 스텝을 만듦) 이 gap이 latent(잠재)하며 실제 사고로
+이어지지 않는다. **BACKLOG가 맞다** — 향후 "자기주도식에서 재료를 실제로 raw 제공"하는 기능이
+로드맵에 오를 때만 재검토한다. B-2도 같은 이유로 지금 건드릴 필요가 없다 — texture_profile
+stage 작업과 자연스럽게 연결되는 훨씬 큰 스키마/정책 결정이다.
+
+**B-5(tofu FPIES) 판정**: `safety_rules.rule_type`(choking/allergen/cooking_temperature/
+raw_food/physical_hazard/age_restriction) 어디에도 "희귀 비-IgE 반응"이 들어갈 자리가 없다.
+새 rule_type을 만들지, 완전히 무시할지는 정책 결정이며 이번 조사에서 결론 내지 않는다 —
+`tofu-migration-plan.md`가 이미 "그대로 유지 재확인(무시가 기본값)"으로 확정했으므로 그
+결정을 존중한다.
+
+---
+
+### C. 데이터 품질 / Evidence Gap
+
+| ID | 제목 | 영향 재료 | 우선순위 |
+|---|---|---|---|
+| C-1 | `E010`(질병관리청 일반 지침) 범용 placeholder 과다 사용 — 216개 근거-사용 행 중 138회(64%) | 사실상 데이터셋 전체 | BACKLOG(architecture) |
+| C-2 | `preparation_profiles.cutting_guidance`가 18개 재료에서 동일 boilerplate 문장 공유(DB-010) | napa_cabbage, cabbage, zucchini, cucumber, spinach, onion, radish, green_pea, kidney_bean, tomato, eggplant, mushroom, seaweed, chestnut, sesame, perilla, cheese, broccoli | P2 |
+| C-3 | 견과류(chestnut) 전용 choking evidence 부재 — 현재는 일반 E002/E010에만 의존 | chestnut(및 잠재적으로 sesame/perilla) | P2/BACKLOG |
+| C-4 | pork/cod/tuna/shrimp — `allowed_methods=[]` 잔존(단, tempNotes 경로로 실제 UX 오류는 없음, §3-A-1 참고) | pork, cod, tuna, shrimp | P2 |
+| C-5 | fish-bone 전용 1차 출처 부재 — FISHBONE_REMOVE/BONE_REMOVE/RAW_FISH_BLOCK/CHOKING_HARD_RAW 4개 규칙이 전부 E002 하나 공유 | salmon, cod, tuna (구조적) | BACKLOG |
+| C-6 | cauliflower/zucchini/eggplant/radish/cucumber — CHOKING_HARD_RAW 미연결, evidence gap으로 HOLD 확정(재평가 가능 조건부) | 5개 채소 | BACKLOG(§5 조건부 재조사) |
+| C-7 | barley/oats(brown_rice 포함?) — 글루텐 등 broader-context 알레르기 미검토(가능성만 제기, 확인 안 됨) | barley, oatmeal, brown_rice | BACKLOG |
+
+**C-1 판정(요청서 §6-7 명시 대응)**: 이 프로젝트 evidence 26개 전부 TIER_1이라는 강점이 있는
+반면, 그중 1개(E010)가 216개 근거-연결 행 중 138개(64%)에 재사용되고 있다 — "재료별 공식
+출처가 확보될 때까지 쓰는 범용 문서화용 근거"라는 성격이 강하다(`chestnut-cooking-method-
+investigation.md` §2가 이미 정확히 이렇게 지적함). **이것은 이 데이터셋 전체의 구조적 특성이지
+개별 재료의 결함이 아니다** — 요청서 지시대로 지금 당장 138개 행을 전부 개별 출처로 재조사하는
+것은 제안하지 않는다. architecture-level 관찰로만 기록한다.
+
+---
+
+### D. UX 정밀도
+
+| ID | 제목 | 영향 재료 | 우선순위 |
+|---|---|---|---|
+| D-1 | `allowed_methods` 값이 한국어 라벨 없이 영문 그대로 노출(`"조리 방법: bake, boil"`) | beef, chicken 등 `allowed_methods`가 있는 모든 재료 | **P1** |
+| D-2 | WARN 문구 "충분히 익혀"가 korean_melon/watermelon(실제로는 raw 제공)에 부정확 | korean_melon, watermelon | P2 |
+
+**D-1**: `beef-safety-rule-schema-investigation.md` §9-A가 조사 중 부산물로 발견한 기존 UX
+갭이다. `textureLabels.ts`(shape/particle_size 라벨 매핑)와 동일한 패턴의 작은 매핑 파일 하나만
+있으면 되는 낮은 난이도 작업이라 P1로 올린다 — 이미 사용자에게 매 레시피마다 노출되는
+문제라서다.
+
+---
+
+### E. 구조적 / Architecture Gap
+
+| ID | 제목 | 근거 문서 | 우선순위 |
+|---|---|---|---|
+| E-1(=B-1) | raw/cooked 레시피 인스턴스 domain state 부재 | `choking-hard-raw-runtime-investigation.md` | BACKLOG |
+| E-2(=B-2) | stage 조건부 safety action 강도 부재 | `p0-safety-fixes-investigation.md` §8-4 | BACKLOG |
+| E-3 | 곡물 4종(rice/oatmeal/brown_rice/barley) — `shape` 필드가 죽 농도 개념에 적용 가능한지 정책 미결정 | `remaining-21-texture-survey.md`, `current-roadmap.md` POLICY-001 | **BACKLOG(정책 결정 대기)** |
+| E-4 | sesame/perilla/seaweed/watermelon/cheese — `completion_checks`의 의미를 "조리 완료"로 유지할지 "준비 상태"까지 포함할지 재정의 보류 | 메모리(`project_texture_profiles_status`), `current-roadmap.md` | BACKLOG(정책 결정 대기) |
+| E-5 | `meat_form` 모델의 pork whole-cut 확장(E024류 evidence 확장 필요) | `project_beef_whole_cut_followup` 메모리 §"남은 후속 과제" | LATER |
+| E-6 | `BEEF_WHOLE_CUT_TEMP` 연결 여부 — 연결하지 않기로 이미 최종 결정, 재론 조건만 기록 | 위와 동일 | **DO NOT DO**(§9) |
+| E-7 | 구 `ingredient_role`(5-value) 컬럼 제거 | `current-roadmap.md` DB-011 | P2 |
+| E-8 | TIP 콘텐츠 스키마/데이터(CLAUDE.md §12 차별화 요소) | `current-roadmap.md` CONTENT-001 | LATER |
+| E-9 | `docs/schema-freeze.md` amendment 로그가 0008에서 멈춤(현재 0033까지 진행) | `current-roadmap.md` DOC-001 | P2 |
+
+---
+
+## 4. 특별 검토 항목 (요청서 §6 전체 대응)
+
+### 4-1. CHOKING_HARD_RAW → §3 B-1/E-1로 통합 완료. 결론: **BACKLOG 유지, 지금 수정 안 함.**
+
+### 4-2. `allowed_methods` 빈 값 — 전수 판정 (§6-2 대응)
+
+DB의 `allowed_methods=[]`인 20개 cooking_profile을 **"오류"로 자동 판정하지 않고** 4가지로
+분류했다:
+
+| 분류 | 재료 | 근거 |
+|---|---|---|
+| **진짜 조리 불필요**(`isNoCookingNeededFromProfile` 기준 충족: allowed_methods=[] AND time_min=time_max=0) | banana, avocado, kiwi, tangerine, mango, korean_melon, watermelon (7개) | `time_guidance="조리 불필요(숙도와 제공 형태 확인)"`가 모든 케이스에 명시적으로 박혀 있음 — 오류 아님, 의도된 설계 |
+| **cooking_profile 미비이지만 안전은 이미 확보됨**(온도 safety_rule이 별도로 CONTINUE_COOKING 경고를 발생시킴) | pork, cod, tuna, shrimp (4개) | §3 C-4. UX 완전성 문제일 뿐 안전 문제 아님 |
+| **버그(§3-A-1/A-2)** — 실제 조리시간이 있는데 Cooking Mode가 이를 사용하지 못함 | pear, peach, seaweed, sesame, perilla, cheese, grape, blueberry, strawberry (9개) | 시간 정보(`time_min/max/guidance`)는 DB에 존재, `allowed_methods`만 비어 근본 원인 |
+
+**"빈 배열 = 오류"라고 가정하지 않는다는 지시를 정확히 지켰다** — 20개 중 7개는 의도된 설계,
+9개는 실제 버그, 4개는 안전에는 영향 없는 완성도 이슈로 서로 다른 결론이다.
+
+### 4-3. egg — 두 이슈 분리 (§6-3 대응)
+
+- **B-3(온도 safety rule 부재)**: `completion_checks="흰자와 노른자가 모두 완전히 응고"`가
+  사실상 doneness 대리 지표 역할을 하고 있어 당장 안전 실패는 아니다. 정식 `CONTINUE_COOKING`
+  규칙으로 격상할지는 정책 결정 — **지금 변경 불필요, P2로 기록만.**
+- **B-4(8~10분 vs NHS 5분 불일치)**: 두 수치 모두 근거가 있다(내부 값은 원본 seed, NHS는
+  E017) — 어느 쪽이 틀렸다고 단정할 근거가 없다. **지금 변경 불필요, P2로 기록만.**
+
+두 이슈 모두 `docs/egg-cooking-method-investigation.md`가 "이번 조사(allowed_methods) 범위
+밖"이라고 이미 명시적으로 분리해뒀던 것을 그대로 유지한다.
+
+### 4-4. chestnut — 세 갈래 분리 (§6-4 대응)
+
+- **견과류 evidence coverage(C-3)**: E015("nuts and seeds: chop or flake")가 아직 chestnut
+  texture/safety에 연결되지 않음 — P2/BACKLOG, 즉시 수정 불필요(`chestnut-cooking-method-
+  investigation.md` §4가 "이번 조사 범위 밖"으로 이미 분리).
+- **texture evidence**: 이미 `shape='mashed'`(E010 근거)로 4-stage 채워져 있음 — 갭 아님.
+- **`peel_rule` 공백**: `prep_chestnut.peel_rule=null`, 겉껍질+속껍질(보늬) 제거가 실제
+  핵심 손질 단계인데 전용 문구가 없음(현재는 18개 재료 공용 boilerplate만 있음, §C-2와 중복
+  이슈) — P2.
+
+**즉시 수정 필요 없음** — 세 이슈 전부 안전에 영향 없고, 근거를 갖춘 뒤 처리하는 것이
+CLAUDE.md §19 원칙에 맞다.
+
+### 4-5. texture coverage — 정밀 구분 (§6-5 대응)
+
+| 구분 | 재료/행 | 판정 |
+|---|---|---|
+| texture_profile **완전 누락** | barley, brown_rice, oatmeal, rice (4개) | **의도된 정책 보류**(E-3) — 근거 부족이 아니라 "죽류에 shape 개념이 맞는가"라는 정책 질문이 먼저 필요. `cook_rice.completion_checks`("쌀알이 충분히 퍼지고 쉽게 으깨짐")로 기술적으로는 `mashed`를 채울 수 있지만, 의도적으로 채우지 않은 상태 |
+| stage 4개 중 일부만 존재(partial) | **0건** | 46개 재료 전부 4-stage 완비, partial 없음 |
+| `shape=null`이 **의도된 것** | apple/carrot/chicken/kabocha/potato/salmon/sweet_potato(각 4행, 원본 7개 baseline — 자유서술 텍스트로 이미 단계별 정보 표현) + spinach(1행, stage_4 — "as desired" 원문이 형태를 특정 안 함) + tofu(3행, stage_2~4 — 확장 해석 금지 결정) | 전부 각 investigation 문서에서 "근거 없는 shape를 채우지 않는다"는 원칙에 따른 **의도된 null** — 실제 누락 아님 |
+| shape=null이 **실제 누락** | 없음 | — |
+
+**결론: texture coverage의 46/50이라는 숫자 자체가 이미 "완료"에 가깝다.** 남은 4개는
+데이터 조사가 아니라 정책 결정(E-3) 문제다.
+
+### 4-6. safety coverage — 26개 무링크 재료 전수 판정 (§6-6 대응)
+
+| 판정 | 재료 | 근거 |
+|---|---|---|
+| **rule 불필요**(알레르기 없음, choking/온도 위험 신호 없음 — 부드럽게 조리되는 일반 채소/과일) | kabocha, potato, sweet_potato, cabbage, mushroom, napa_cabbage, onion, spinach, tomato, avocado, banana, kiwi, mango, tangerine, pear, green_pea, kidney_bean | 전부 익히면 물러지는 재료이고, 국내 19개 법정 알레르기 유발물질에도 없으며, choking-hard-raw-audit.md/이번 조사 어디서도 raw-hard-choking 직접 근거가 발견되지 않음 |
+| **evidence 있으면 연결 후보이나 지금은 HOLD**(=C-6) | cauliflower, zucchini, eggplant, radish, cucumber | `choking-hard-raw-audit.md` §6에서 EVIDENCE GAP으로 이미 명시적 HOLD 판정 — "비슷해 보인다"는 이유만으로 연결하지 않는다는 원칙 유지 |
+| **향후 검토 후보**(가능성만 제기, 확인 안 됨) | barley, oatmeal, brown_rice(=C-7, 글루텐 broader-context) | 이번 조사에서 새로 확인한 것 없음 — 조사 자체가 필요한 별도 안건 |
+| **rule 불필요, 이미 텍스처 근거로 대체됨** | seaweed | `cook_seaweed.completion_checks`("질긴 큰 조각 없이 잘게 부순 상태")가 이미 안전한 제공 형태를 서술 — 별도 safety_rule 없이도 방향 일치 |
+
+**"rule이 없음 = 안전 데이터 누락"이라고 자동 판단하지 않았다** — 26개 전부 개별 판정했고,
+그중 진짜 "향후 검토가 필요할 수 있는" 항목은 barley/oatmeal/brown_rice(글루텐, 미확인)와
+cauliflower/zucchini/eggplant/radish/cucumber(HOLD, 조건부) 8개뿐이다.
+
+### 4-7. Evidence quality — E010 placeholder 문제 (§6-7 대응)
+
+§3 C-1에서 다뤘다. **결론: architecture-level 관찰로 기록, 지금 138개 행을 재조사하지
+않는다.** 이 프로젝트의 실제 강점(evidence 26개 전부 Tier 1)을 해치지 않으면서, "재료별
+전용 근거"와 "범용 원칙 근거"를 구분해서 표시하는 방법(예: evidence의 `applicability`
+필드에 이미 "일반 원칙"이라고 자연어로 명시되어 있음 — 추가 스키마 없이도 이미 어느 정도
+구분 가능)은 있으나, 이를 UI에 노출할지는 별도 제품 결정이다.
+
+---
+
+## 5. "다시 조사해야 할 재료" 목록
+
+**결론 먼저: 50개 재료를 처음부터 다시 조사할 필요는 없다.** 무조건 재조사가 필요한 재료는
+0개다. 아래는 **조건부로만** 가치가 있는 경우다 — 전부 "사실이 부족해서"가 아니라 "먼저
+정책/제품 결정이 나야 조사 방향이 정해지는" 경우다.
+
+| 재료 | 왜 재조사가 조건부인가 | 확인할 질문 | DB 변경 가능성 | 다른 재료와 묶어 조사 가능? |
+|---|---|---|---|---|
+| cauliflower/zucchini/eggplant/radish/cucumber | CHOKING_HARD_RAW 연결을 실제로 확대하기로 **결정된 경우에만** | "raw {재료}가 단단해서 질식 위험"을 직접 주장하는 Tier1 출처가 있는가(broccoli의 E026급) | 있음(연결 시) | O — 5개 동시 조사 가능(같은 종류 조사) |
+| barley/oatmeal/brown_rice | 글루텐 알레르기를 broader-context로 모델링하기로 **결정된 경우에만** | 국내 식약처 기준에서 글루텐이 19개 법정 항목 밖 broader-context로 이미 다뤄지는 사례가 있는가(fish/chestnut 패턴처럼) | 있음(모델링 시) | O — 3개 동시 조사 |
+| chestnut | 견과류 전용 choking evidence를 보강하기로 **우선순위가 올라간 경우에만** | E015/CDC의 nuts-specific 문구를 chestnut에 직접 연결할 1차 출처가 더 있는가 | 낮음(이미 KEEP 결론, 보강만) | sesame/perilla와 묶어 조사 가능(같은 nut_seed 카테고리) |
+| pork(whole-cut) | `meat_form` 모델을 pork로 확장하기로 **결정된 경우에만** | pork whole-cut 전용 온도/휴지 evidence(E024류) | 있음 | 단독(beef와 이미 분리된 결정) |
+| tofu(FPIES) | `safety_rules.rule_type`을 확장하기로 **결정된 경우에만** | 비-IgE 반응을 이 스키마에서 어떻게 표현할지 | 있음(모델링 시) | 단독 |
+
+**egg/chestnut(cooking-method)는 이미 2회씩 재검증되어 KEEP으로 확정됐다 — 더 이상 재조사
+대상이 아니다.** broccoli/tofu(evidence gap)도 CLOSED다. 남은 42개 재료는 이번 조사에서
+새로운 재조사 필요성이 발견되지 않았다.
+
+---
+
+## 6. 병렬화 가능성
+
+| 그룹 | 항목 | 병렬성 |
+|---|---|---|
+| A-1(6개 재료 allowed_methods 보정) | pear/peach/seaweed/sesame/perilla/cheese | **PARALLEL_SAFE** — 서로 다른 `cooking_profiles` row, 기존 rice/egg/chestnut 배치 처리 선례(0007)와 동일 패턴 |
+| D-1(allowed_methods 라벨 매핑) | 코드 1개 파일 | **PARALLEL_SAFE** — A-1과도 독립적(라벨 매핑은 값이 아니라 표시 방식) |
+| C-2(prep boilerplate 조사) | 18개 재료 | **PARALLEL_SAFE** — 서로 다른 `preparation_profiles` row, 조사 단계는 재료별로 나눠도 결과를 한 migration으로 묶을 수 있음(기존 배치 관례) |
+| E-7(레거시 컬럼 제거) | 스키마 변경 1건 | **SEQUENTIAL** — DDL이라 다른 DML 작업과 동시 진행보다는 별도 시점에 단독 실행 권장(회귀 위험 최소화) |
+| E-9(schema-freeze.md 갱신) | 문서 1건 | **PARALLEL_SAFE** — 다른 모든 작업과 독립 |
+| A-2(grape/blueberry/strawberry) | 3개 재료 | **BLOCKED** — "선택적 조리" 표현 정책이 먼저 필요(§3) |
+| B-1/E-1(raw/cooked domain state) | 스키마 확장 | **BLOCKED** — product가 raw-serving 옵션을 실제로 도입하기 전까지 |
+| B-2/E-2(stage 조건부 강도) | safety_rules.action 확장 | **BLOCKED** — action enum 재설계 필요, texture stage 작업과 결합 필요 |
+| E-3(곡물 shape 정책) | 4개 재료 | **BLOCKED** — 정책 결정 선행 |
+| E-4(completion_checks 의미 재정의) | 5개 재료 | **BLOCKED** — 정책 결정 선행 |
+| C-6(HOLD 5개 채소) | cauliflower 등 | **BLOCKED** — 신규 evidence 확보 전까지 |
+| B-5(tofu FPIES) | rule_type 설계 | **BLOCKED** — 정책 결정 선행 |
+
+---
+
+## 7. 최종 추천 실행 순서
+
+### NOW (다음 세션에서 바로)
+
+1. **OPS housekeeping**: 남은 untracked 조사 문서 5개(`choking-hard-raw-audit.md` 등)를
+   커밋한다 — 위험 0, OPS-001의 완전한 마무리.
+2. **A-1**: pear/peach/seaweed/sesame/perilla/cheese 6개의 `allowed_methods` 보정 —
+   기존 rice/egg/chestnut(migration 0007) 패턴을 그대로 재사용, 조사 부담 낮음, 실제
+   사용자에게 매 레시피마다 노출되는 결함이라 우선순위가 높다.
+3. **D-1**: `allowed_methods` 한국어 라벨 매핑 파일 추가 — 낮은 난이도, 코드 전용, DB
+   변경 없음.
+
+### NEXT (NOW 완료 후)
+
+1. **A-2**: grape/blueberry/strawberry의 "선택적 조리" Cooking Mode 표현 정책을 먼저
+   결정한 뒤, 결정에 따라 A-1과 같은 패턴으로 처리하거나 별도 라벨(예: "선택 조리")을
+   설계한다.
+2. **C-2**: 18개 재료의 boilerplate `cutting_guidance`를 재료별 구체 문구로 보강 —
+   안전에 영향 없는 콘텐츠 품질 개선, 배치 조사 가능.
+3. **E-9**: `docs/schema-freeze.md` amendment 로그를 0009~0033까지 갱신 — 순수 문서 작업.
+4. **E-7**: 레거시 `ingredient_role`(5-value) 컬럼 제거 — 단독 DDL migration.
+
+### LATER (MVP 이후 또는 정책 결정 대기)
+
+1. **B-1/E-1**: raw/cooked 레시피 인스턴스 domain state — product가 raw-serving을 실제
+   옵션으로 도입할 때.
+2. **B-2/E-2**: stage 조건부 safety action 강도 — texture stage 작업과 결합해 재설계할 때.
+3. **E-3**: 곡물 4종 shape/consistency 정책 결정.
+4. **E-4**: sesame/perilla/seaweed/watermelon/cheese `completion_checks` 의미 재정의.
+5. **E-5**: `meat_form` pork whole-cut 확장.
+6. **E-8**: TIP 콘텐츠 스키마(신규 기능, CLAUDE.md §12).
+7. **B-3/B-4**: egg 온도 safety rule 신설 여부 + NHS 5분 값 반영 여부.
+8. **C-1/C-3/C-5**: evidence 품질 고도화(E010 의존도, 견과류 전용 근거, 생선가시 전용 근거).
+
+### DO NOT DO
+
+1. **50개 재료를 처음부터 다시 하나씩 조사하는 것** — §5에서 확정한 결론. 이번 조사로
+   발견된 모든 "gap"은 (a) 이미 조사했고 정책 결정만 남은 것, (b) 안전과 무관한 UX/코드
+   정밀도 문제, (c) 개별 재료가 아니라 데이터 모델 자체의 구조적 질문 중 하나다 — 사실
+   부족(fact gap)이 원인인 경우는 남아있지 않다.
+2. **cauliflower/zucchini/eggplant/radish/cucumber를 "비슷해 보인다"는 이유로
+   CHOKING_HARD_RAW에 연결하는 것** — `choking-hard-raw-audit.md`가 이미 명시적으로
+   금지한 패턴, 신규 direct evidence 없이는 하지 않는다.
+3. **`BEEF_WHOLE_CUT_TEMP` 연결 결정을 재검토 없이 뒤집는 것** — 이미 명시적으로 "연결하지
+   않기로 최종 결정"됨(메모리 확인), `meat_form` 모델의 추가 확장이라는 새로운 트리거 없이는
+   재론하지 않는다.
+4. **tofu FPIES를 기존 필드에 억지로 끼워 넣는 것** — `rule_type` taxonomy 재설계 없이
+   `completion_checks`나 기존 allergen 문구에 슬쩍 추가하면 스키마 의미가 왜곡된다.
+5. **곡물 4종의 `shape`를 "기술적으로 채울 수 있다"는 이유로 채우는 것** — 정책 질문
+   (E-3)이 먼저다, 데이터를 채우면서 동시에 필드 의미를 재정의하면 나중에 되돌리기 어렵다
+   ([[feedback_db_content_workflow]] 원칙과 동일).
+6. **A-2(grape/blueberry/strawberry)를 A-1과 기계적으로 동일하게 처리하는 것** — "선택적
+   조리"와 "필수 조리"를 같은 방식으로 표현하면 오히려 새로운 부정확함을 만든다.
+
+---
+
+## 8. Invariant 확인
+
+이 문서 작성 과정에서:
+
+- [x] DB 변경 없음(원격 Supabase에 `select()`만 실행, `scripts_final_backlog_survey.mjs`는
+  실행 직후 삭제)
+- [x] `supabase/seed.sql` 무변경
+- [x] production 코드(`lib/`, `app/`, `components/`) 무변경 — 읽기만 함
+- [x] 테스트 파일 무변경
+- [x] 기존 migration 파일 무변경
+- [x] 신규 safety rule 생성 없음
+- [x] `verification_status` 변경 없음
+- [x] commit 없음(이 문서 파일 신규 추가만)
+
+---
+
+## 최종 보고
+
+- **전체 ingredient**: 50
+- **CLOSED**: 17건(§2)
+- **P0**: 0건(현재 MVP 핵심 흐름을 막는 P0 없음 — 이전 OPS-001/DB-008 P0 2건 모두 이미 CLOSED)
+- **P1**: 2건(A-1 Cooking Mode 타이머 오분류 6개 재료, D-1 allowed_methods 라벨 미매핑)
+- **P2**: 8건(A-2, B-3, B-4, C-2, C-3, C-4, D-2, E-7, E-9 — 일부 항목은 우선순위 표에서
+  BACKLOG와 병기, 정확한 개수는 §3 표 참고)
+- **BACKLOG**: 10건(B-1/E-1, B-2/E-2, B-5, C-1, C-5, C-6, C-7, E-3, E-4, E-5, E-6은 DO NOT DO로 별도 표기)
+- **재조사 필요 재료**: **0개(무조건)**, 조건부 재조사 후보 5그룹(§5) — 전부 정책 결정이
+  선행되어야 의미가 있음
+- **병렬 가능 작업**: A-1, D-1, C-2, E-9(§6, PARALLEL_SAFE)
+- **순차 작업**: E-7(SEQUENTIAL, 단독 DDL)
+- **현재 MVP blocker**: **없음** — CLOSED-17건이 이전에 식별된 모든 P0급 이슈(미커밋 리스크,
+  cod/tuna 가시, egg/chestnut 조리법, CHOKING_HARD_RAW 침묵, broccoli/tofu UNSUPPORTED)를
+  전부 해소했다
+- **권장 NOW**: OPS housekeeping(문서 커밋) + A-1(6개 재료 allowed_methods 보정) + D-1(라벨 매핑)
+- **권장 NEXT**: A-2 정책 결정 + C-2(prep 문구 보강) + E-9(schema-freeze 갱신) + E-7(레거시 컬럼 제거)
+- **권장 LATER**: B-1/E-1, B-2/E-2, E-3, E-4, E-5, E-8, B-3/B-4, C-1/C-3/C-5
+- **DO NOT DO**: 50개 전수 재조사, 형제 채소 유사성만으로 CHOKING_HARD_RAW 연결, BEEF_WHOLE_CUT_TEMP 재검토, tofu FPIES 임시방편 반영, 곡물 shape 성급한 채움, A-2를 A-1과 동일 처리
+
+DB 변경: NONE
+seed 변경: NONE
+code 변경: NONE
+test 변경: NONE
+commit: NONE
