@@ -1097,3 +1097,25 @@ where id = 'tofu';
 
 insert into ingredient_safety_rules (ingredient_id, safety_rule_id) values
   ('broccoli', 'CHOKING_HARD_RAW');
+
+-- =======================================================================
+-- Migration 0034 addition (append-only, mirrors that migration's data
+-- portion) -- see supabase/migrations/0034_a1_allowed_methods_fix.sql and
+-- docs/claude-desktop-handoff/2026-08-30-a1-allowed-methods-migration-draft.md
+-- for full rationale (A-1 fix: allowed_methods='{}' with non-empty
+-- time_min/max/time_guidance misclassified as "no cooking needed" by
+-- isServingStateOnly() in Cooking Mode. No new evidence -- all 6 reuse the
+-- existing E010 already on these rows. pear/peach={steam} is a HIGH-
+-- confidence exact verb match; seaweed/sesame/perilla/cheese are LOW-
+-- confidence approximate mappings -- user review amended the draft's
+-- {bake} proposal for seaweed/sesame/perilla to {steam} instead (closer
+-- match for a moist/brief-heat step than baking); cheese={microwave}
+-- approved as drafted, following the cook_apple microwave precedent).
+-- =======================================================================
+
+update cooking_profiles set allowed_methods = '{steam}' where id = 'cook_pear';
+update cooking_profiles set allowed_methods = '{steam}' where id = 'cook_peach';
+update cooking_profiles set allowed_methods = '{steam}' where id = 'cook_seaweed';
+update cooking_profiles set allowed_methods = '{steam}' where id = 'cook_sesame';
+update cooking_profiles set allowed_methods = '{steam}' where id = 'cook_perilla';
+update cooking_profiles set allowed_methods = '{microwave}' where id = 'cook_cheese';
