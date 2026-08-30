@@ -340,3 +340,125 @@ clean-slate 1차 조사가 필요한 별도 backlog로 남아 있다. 이번 배
 번호에서 §3 절차를 다시 거쳐 진행한다.
 
 ---
+
+## 11. Amendment — beef/chicken/pork/broccoli/tofu content batch: `0026`~`0033` (구현 및 원격 적용 완료, 2026-08-29~2026-08-30)
+
+**분류(§1-1 기준)**: 8개 migration 파일 전수 확인 결과 DDL 키워드 없음(`create table`/`alter
+table`/`add column`/`create type`/`create index`/`add constraint` 전부 0건) — 전부 순수 DML
+(`insert`/`update`)이다. §1-1의 "14개 테이블·enum 6개" 목록은 갱신할 필요가 없다.
+
+| Migration | 대상 | 성격 | evidence |
+|---|---|---|---|
+| `0026_beef_whole_cut_evidence_and_methods` | beef, chicken | data — beef/chicken `allowed_methods` 확장(bake/boil/braise, bake/boil) + `BEEF_WHOLE_CUT_TEMP` safety_rule **등록만**(연결 안 함, §12-1 참고) | 신규 **E024**(USDA FSIS whole-cut beef temp) |
+| `0027_chicken_dryness_completion_check` | chicken | data — `cook_chicken.completion_checks`에 건조 방지 문구 추가(Q6) | 신규 없음 |
+| `0028_chicken_slow_cooker_method` | chicken | data — `allowed_methods`에 슬로우쿠커→`braise` 매핑 추가(Q3) | 신규 **E025**(USDA FSIS slow cookers) |
+| `0029_beef_whole_cut_rest_seconds` | beef | data — `cook_beef.whole_cut_rest_seconds=180` 채움(E024 재사용, `whole_cut_temperature_rule_id`는 NULL 유지) | 신규 없음 |
+| `0030_pork_bone_removal_safety_rule` | pork | data — 기존 `BONE_REMOVE`(E002/CDC) 재사용 연결(INSERT 1행) | 신규 없음 |
+| `0031_broccoli_evidence_completion` | broccoli | data — `UNSUPPORTED→NEEDS_REVIEW`, prep/cook 신규 1행씩, texture 신규 4행(shape=`floret` 균일) | 신규 **E026**(Solid Starts broccoli), E010/E016 재사용 |
+| `0032_tofu_evidence_completion` | tofu | data — `UNSUPPORTED→NEEDS_REVIEW`, 기존 공백 prep/cook 행 UPDATE, texture 신규 4행(stage_1=`mashed`만, stage_2~4=`shape null`) | 신규 없음, E015/E016 재사용 |
+| `0033_broccoli_choking_hard_raw` | broccoli | data — 기존 `CHOKING_HARD_RAW`(E002/CDC) 재사용 연결(INSERT 1행) | 신규 없음 |
+
+**data contract 관점**: 이 배치에서 새로 나온 패턴은 두 가지다 — (1) `0026`에서 처음으로
+"safety_rule을 등록만 하고 어떤 ingredient에도 연결하지 않는" 상태(`BEEF_WHOLE_CUT_TEMP`)를
+의도적으로 만들었다(§12-1). (2) `0029`의 `whole_cut_rest_seconds` 컬럼은 `0003`에서 이미
+schema에 추가되어 있었지만 이번에 처음 값이 채워졌다 — 둘 다 기존 스키마가 이미 지원하던
+여지를 처음 실제로 사용한 사례이며, 스키마 변경은 없다.
+
+배경 문서: `docs/beef-safety-rule-schema-investigation.md`, `docs/content-beef-chicken-investigation.md`,
+`docs/meat-form-domain-model-design.md`, `docs/broccoli-clean-slate-investigation.md`,
+`docs/broccoli-migration-plan.md`, `docs/broccoli-choking-rule-migration-plan.md`,
+`docs/tofu-block-policy-reinvestigation.md`, `docs/tofu-migration-plan.md`,
+`docs/choking-hard-raw-audit.md`, `docs/choking-hard-raw-runtime-investigation.md`.
+
+**현재 상태(2026-08-30 원격 DB 스냅샷 기준, `docs/50-ingredient-final-backlog.md` §1)**:
+`verification_status` UNSUPPORTED **0개**(broccoli/tofu 모두 NEEDS_REVIEW로 전환 완료),
+`evidence` 26행(전부 TIER_1), `safety_rules` 24행 43링크.
+
+---
+
+## 12. 정책 결정 아카이브 — 메모리 근거를 문서로 이관 (2026-08-30)
+
+아래 3건은 그동안 `project_beef_whole_cut_followup`/`project_texture_profiles_status`
+메모리(Claude Code 세션 간 기억)에만 기록되어 있던 결정이다. `docs/50-ingredient-final-backlog.md`
+B-5/E-5/E-6이 이 메모리를 근거로 인용하고 있어, 메모리가 아니라 이 문서를 단일 근거(single
+source of truth)로 삼기 위해 원문 그대로 옮겨 적는다. 메모리는 계속 존재하되(세션 간 리마인더
+용도), 판정의 근거 문서는 이제부터 여기다.
+
+### 12-1. `BEEF_WHOLE_CUT_TEMP`(E024)를 연결하지 않기로 한 결정
+
+**언제**: 2026-08-29, migration `0026` 설계 시점에 이미 의도적으로 미연결 상태로 등록됐고(§11
+표 참고), 후속 세션(2026-08-29)에서 "연결 여부"를 별도 안건으로 재확인한 뒤 **최종 결정**으로
+확정.
+
+**결정**: whole-cut beef를 선택해도 안전 온도 표시는 계속 `MEAT_POULTRY_TEMP_MFDS`(75°C)
+하나로 통일한다. `BEEF_WHOLE_CUT_TEMP`(USDA 62.8°C + 3분 휴지, evidence E024)는 DB에 **등록만
+되어 있고 어떤 ingredient에도 연결되지 않은 상태**를 유지한다. 대신 `cook_beef.whole_cut_rest_seconds
+= 180`(migration `0029`)만 채워, "휴지시간 안내"를 **안전과 무관한 품질 팁**으로만 노출한다
+(`lib/rules/meatForm.ts`의 `buildRestGuidance`, `completion_checks`/온도 문구와 분리된 별도
+필드).
+
+**왜(Why)**:
+- USDA 기준(62.8°C + 휴지 3분)과 MFDS 기준(75°C, 휴지 불필요 — 이미 charge 온도가 높아 잔류
+  가열로 충분)은 서로 다른 안전 근거 체계다. 하나의 재료 응답에 두 기준을 섞으면 "75°C면 이미
+  충분한데 왜 3분을 더 기다리라고 하는가"라는 과학적 모순이 생긴다.
+- `ingredient_safety_rules`에는 "whole-cut에만 적용"을 표현할 컬럼이 없고, 이 시점(2026-08-29)
+  recipe-input에도 meat_form 필드가 없었다 — 조건 없이 연결하면 모든 beef 요청에 무조건
+  적용되어 규칙의 실제 의미(whole-cut 전용)를 왜곡한다.
+- `docs/schema-freeze.md` §1-3(Safety architecture freeze) 자체가 "KR_MFDS 온도 기준을
+  사용자 노출 우선 기준으로 삼는다"를 이미 freeze 대상으로 선언하고 있다 — 국내 규제 기준을
+  바꾸는 것은 데이터 보강이 아니라 안전 정책 변경이라, §3 사전 검토 절차를 밟지 않고는 손대지
+  않는다.
+
+**재론 조건**: 아래 둘 중 하나가 실제로 일어나기 전에는 재론하지 않는다.
+1. `meat_form`(ground/whole_cut) 모델이 이미 존재하므로(migration `0029`, §12-2), whole-cut
+   선택 시에만 조건부로 다른 온도 기준을 노출하기로 하는 **제품/정책 결정**이 별도로 내려지는
+   경우.
+2. MFDS 75°C 대신 USDA 62.8°C+휴지 기준을 채택하기로 하는 **안전 정책 자체의 변경**이 결정되는
+   경우(§1-3의 freeze 자체를 재검토해야 하는 더 큰 결정).
+
+이 결정을 건너뛰고 `BEEF_WHOLE_CUT_TEMP`를 먼저 연결하자는 요청이 오면, 위 재론 조건이 충족됐는지
+먼저 확인한다.
+
+### 12-2. `meat_form` 모델의 pork whole-cut 확장이 아직 안 된 이유
+
+**현재 상태**: `meat_form: ground | whole_cut` 도메인 모델(migration `0029`,
+`docs/meat-form-domain-model-design.md`)은 **beef만** 지원한다. `RecipeRequestInput.meat_forms`
+(재료별 조건부 입력)는 이미 존재하는 일반 구조이므로 pork를 추가하는 것 자체는 스키마 변경이
+아니다 — 막고 있는 것은 **evidence 공백**이다.
+
+**필요 조건**: pork whole-cut 전용 온도/휴지 기준을 뒷받침하는 Tier 1/2 evidence(beef의
+E024/USDA FSIS에 대응하는 pork 버전)가 먼저 확보돼야 한다. beef 때처럼 "일반 육류" evidence를
+그대로 재사용하면 §12-1과 같은 문제(서로 다른 안전 근거 체계를 섞는 것)가 재발한다 — pork
+전용 근거 없이 `meat_form` 분기만 코드로 확장하는 것은 하지 않는다.
+
+**우선순위**: `docs/50-ingredient-final-backlog.md` §7 기준 **LATER**(정책 결정 대기가 아니라
+evidence 조사가 필요한 항목 — pork whole-cut evidence 조사를 별도로 요청하면 그때 착수).
+
+### 12-3. tofu FPIES(비-IgE 알레르기)를 반영하지 않기로 한 결정
+
+**언제**: 2026-08-30, `docs/tofu-block-policy-reinvestigation.md` §2-6(최초 발견) →
+`docs/tofu-migration-plan.md` v1→v2 리뷰(사용자 결정) → migration `0032` 최종 반영.
+
+**최초 근거**: PMC(NCBI, 동료심사 의학 논문)에서 생후 7-8개월 영아 2례의 두부 유발 FPIES
+(Food Protein-Induced Enterocolitis Syndrome) 증례 보고를 확인했다 — 이 프로젝트가 이번에
+처음 접한 정보다. 그러나:
+- 이 프로젝트의 `safety_rules.rule_type` taxonomy(`allergen`/`choking`/`cooking_temperature`/
+  `raw_food`/`physical_hazard`/`age_restriction`) 어디에도 "희귀 비-IgE 반응"이 들어갈 자리가
+  없다.
+- 논문 자체의 톤이 "일반적으로 회피하라"가 아니라 "국제적 인지도 향상이 필요할 수 있다"이며,
+  증례 자체가 극히 드물다(서구권 보고 사례 자체가 이 논문이 처음이라는 뉘앙스).
+- 기존 `SOY_ALLERGEN`(IgE 매개)과 FPIES(비-IgE 매개)는 의학적으로 별개 기전이라, 기존 링크가
+  이 위험을 포괄한다고 볼 수 없다 — 즉 "이미 커버되고 있다"는 이유로 무시한 것이 아니라,
+  "표현할 스키마 자리가 없다"는 이유로 무시했다.
+
+**최종 결정**: migration `0032`는 FPIES를 **절대 반영하지 않는다** — 새 `safety_rules` 행을
+만들지 않고, `ingredient_safety_rules`에 연결하지 않고, validation 로직에 어떤 차단/경고도
+추가하지 않는다. `docs/tofu-block-policy-reinvestigation.md` §2-6/§5 Q3에 "발견 사실 +
+향후 검토 안건"으로만 남긴다.
+
+**재론 조건**: `safety_rules.rule_type` taxonomy를 확장하기로(예: `non_ige_reaction` 같은 새
+값 추가) 하는 스키마 변경이 §3 사전 검토 절차를 거쳐 별도로 승인되는 경우에만 재론한다. 그
+전까지는 기존 필드(`completion_checks`, allergen 문구 등)에 FPIES 관련 문구를 슬쩍 끼워 넣지
+않는다 — `docs/50-ingredient-final-backlog.md` §7 DO NOT DO 4번이 이미 이 원칙을 재확인했다.
+
+---
