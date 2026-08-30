@@ -149,6 +149,16 @@ export type TextureShapeValue = (typeof TEXTURE_SHAPE_VALUES)[number];
 export const TEXTURE_PARTICLE_SIZE_VALUES = ["fine", "coarse"] as const;
 export type TextureParticleSizeValue = (typeof TEXTURE_PARTICLE_SIZE_VALUES)[number];
 
+// cooking_profiles.allowed_methods vocabulary — confirmed by grep across
+// supabase/seed.sql + migrations/*.sql (docs/beef-safety-rule-schema-investigation.md
+// §9-A): only these 5 values are ever written. The DB column stays `text[]`
+// (no DB enum), so — same rationale as TEXTURE_SHAPE_VALUES above — this is
+// an application-level vocabulary contract; lib/recipe/cookingMethodLabels.ts
+// keys its label map on this union so a new value added to the DB without a
+// matching label is a compile error, not a silent English leak into the UI.
+export const COOKING_METHOD_VALUES = ["steam", "boil", "bake", "braise", "microwave"] as const;
+export type CookingMethodValue = (typeof COOKING_METHOD_VALUES)[number];
+
 export interface TextureProfile {
   id: string;
   stage_id: string;

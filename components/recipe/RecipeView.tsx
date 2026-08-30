@@ -10,6 +10,7 @@ import { recordRecentIngredients } from "@/lib/recipe/recentIngredients";
 import { formatRecommendedTime } from "@/lib/recipe/formatRecommendedTime";
 import { isNoCookingNeededFromView } from "@/lib/recipe/cookingTimeStatus";
 import { particleSizeLabel, shapeLabel } from "@/lib/recipe/textureLabels";
+import { cookingMethodLabels } from "@/lib/recipe/cookingMethodLabels";
 import { verificationStatusBadgeText } from "@/lib/ingredients/verificationStatusLabel";
 import { SafetyNoteItem } from "@/components/shared/SafetyNoteItem";
 
@@ -190,7 +191,7 @@ export function RecipeView() {
                     </ul>
                   )}
                   {c && c.allowed_methods.length > 0 && (
-                    <p className="mt-1 text-sm text-gray-700">조리 방법: {c.allowed_methods.join(", ")}</p>
+                    <p className="mt-1 text-sm text-gray-700">조리 방법: {cookingMethodLabels(c.allowed_methods).join(", ")}</p>
                   )}
                   {c && c.completion_checks.length > 0 && (
                     <ul className="mt-1 list-disc pl-5 text-sm text-gray-700">
@@ -274,7 +275,7 @@ export function RecipeView() {
                 {c ? (
                   <>
                     {c.allowed_methods.length > 0 && (
-                      <p className="text-sm text-gray-700">조리 방법: {c.allowed_methods.join(", ")}</p>
+                      <p className="text-sm text-gray-700">조리 방법: {cookingMethodLabels(c.allowed_methods).join(", ")}</p>
                     )}
                     {c.completion_checks.length > 0 && (
                       <ul className="list-disc pl-5 text-sm text-gray-700">

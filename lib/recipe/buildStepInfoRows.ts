@@ -1,6 +1,7 @@
 import type { CookingStep } from "@/lib/recipe/buildCookingSteps";
 import { completionCheckLabel } from "@/lib/recipe/cookingTimeStatus";
 import { formatRecommendedTime } from "@/lib/recipe/formatRecommendedTime";
+import { cookingMethodLabels } from "@/lib/recipe/cookingMethodLabels";
 import { particleSizeLabel, shapeLabel } from "@/lib/recipe/textureLabels";
 import type { RecipeResponse } from "@/types/api";
 
@@ -54,7 +55,7 @@ export function buildStepInfoRows(step: CookingStep, recipe: RecipeResponse): St
 
   if (ing.cooking) {
     if (ing.cooking.allowed_methods.length > 0) {
-      rows.push({ label: "조리 방법", value: ing.cooking.allowed_methods.join(", ") });
+      rows.push({ label: "조리 방법", value: cookingMethodLabels(ing.cooking.allowed_methods).join(", ") });
     }
     if (step.recommendedTime) {
       rows.push({ label: "권장 조리 시간", value: formatRecommendedTime(step.recommendedTime) });

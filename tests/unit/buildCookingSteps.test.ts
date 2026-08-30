@@ -35,7 +35,7 @@ describe("buildCookingSteps", () => {
     expect(steps.map((s) => s.instruction)).toEqual([
       "당근: 흐르는 물로 세척",
       "당근: 껍질 제거",
-      "당근 조리 방법: steam, boil",
+      "당근 조리 방법: 찌기, 삶기",
       "당근: 포크로 눌렀을 때 쉽게 으깨지는지 확인",
     ]);
   });

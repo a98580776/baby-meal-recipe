@@ -1,4 +1,5 @@
 import type { ApiErrorDetail, RecipeResponse } from "@/types/api";
+import { cookingMethodLabels } from "@/lib/recipe/cookingMethodLabels";
 import { isServingStateOnly } from "@/lib/recipe/cookingTimeStatus";
 
 export interface CookingStep {
@@ -83,7 +84,7 @@ export function buildCookingSteps(recipe: RecipeResponse): CookingStep[] {
 
     const c = ing.cooking;
     if (c?.allowed_methods.length) {
-      push(`${ing.name_ko} 조리 방법: ${c.allowed_methods.join(", ")}`);
+      push(`${ing.name_ko} 조리 방법: ${cookingMethodLabels(c.allowed_methods).join(", ")}`);
     }
 
     // Safety-engine-generated cooking requirements (e.g. verified internal
