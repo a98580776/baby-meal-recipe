@@ -384,17 +384,25 @@ async function runCases() {
       `notes=${JSON.stringify(rReview.json?.safety_notes)}`,
     );
 
-    const rUnsupported = await post("/api/v1/recipes/generate", {
-      stage_id: "stage_2",
+    // production seed에는 더 이상 UNSUPPORTED 재료가 없다(migration 0032로 tofu가
+    // 마지막 UNSUPPORTED 재료였던 상태를 벗어남 -- 0/50, 정상 최종 상태로 인정됨,
+    // docs/tofu-migration-plan.md §9 참고). UNSUPPORTED 차단 코드 경로는
+    // tests/unit/validateRecipeInput.test.ts의 synthetic fixture
+    // (unsupported_test_ingredient)가 계속 담당하므로 이 통합 테스트에서는
+    // 실제 재료로 재현하지 않는다. 대신 tofu의 새 NEEDS_REVIEW 정상 동작을 검증한다.
+    const rTofu = await post("/api/v1/recipes/generate", {
+      stage_id: "stage_1",
       readiness: true,
       ingredient_ids: ["tofu"],
       food_form_id: "puree",
     });
+    const tofuWarned = (rTofu.json?.safety_notes ?? []).some((n) => n.code === "VERIFICATION_IN_PROGRESS");
+    const tofuIng = rTofu.json?.ingredients?.find((i) => i.id === "tofu");
     record(
-      "14b. UNSUPPORTED(두부)는 생성이 차단됨 (broccoli는 migration 0031로 evidence 보강 후 NEEDS_REVIEW로 전환 -- 14c 참고)",
-      "422 VALIDATION_FAILED",
-      rUnsupported.status === 422,
-      `status=${rUnsupported.status} message=${rUnsupported.json?.error?.message}`,
+      "14b. tofu block-policy 재검증(migration 0032) 반영 -- UNSUPPORTED에서 NEEDS_REVIEW로 전환, 정상 생성 + evidence 기반 데이터(shape='mashed', stage_1) 노출",
+      "200 + VERIFICATION_IN_PROGRESS 경고 + shape='mashed'",
+      rTofu.status === 200 && tofuWarned && tofuIng?.shape === "mashed",
+      `status=${rTofu.status} warned=${tofuWarned} shape=${tofuIng?.shape}`,
     );
 
     const rBroccoli = await post("/api/v1/recipes/generate", {
@@ -415,16 +423,11 @@ async function runCases() {
 
   // 15. allergen / exclusion 위반
   {
-    // P0-1 fix(docs/p0-safety-fixes-investigation.md §4, 옵션 B) 이후 tofu는
-    // verification_status=UNSUPPORTED로 전환됐다. validateRecipeInput.ts의
-    // 각 단계는 독립적으로 전부 실행되므로 SOY_ALLERGEN 위반도 여전히
-    // errors 배열에 담기지만(SOY_ALLERGEN 로직 자체가 깨진 게 아님 —
-    // tests/safety/safetyRules.test.ts 17번에서 verification_status와
-    // 무관하게 별도 검증됨), 4단계(verification_status)가 6단계(safety)보다
-    // 먼저 실행돼 errors[0]이 되면서 /generate가 반환하는 최상위 code가
-    // SAFETY_BLOCKED(403)에서 VALIDATION_FAILED(422)로 바뀐다 — broccoli와
-    // 동일한 "미지원 재료" 우선 차단 동작이며, 이는 tofu를 UNSUPPORTED로
-    // 전환하기로 한 결정의 직접적이고 의도된 결과다.
+    // tofu block-policy 재검증(migration 0032) 이후 tofu는 더 이상
+    // UNSUPPORTED가 아니라서(4단계 통과) SOY_ALLERGEN(6단계, WARN_OR_BLOCK ->
+    // 알레르기 선언 시 BLOCK)이 이제 최상위 에러로 정상 노출된다 -- 이는
+    // migration 0032 이전에는 UNSUPPORTED가 먼저 걸려 한 번도 관찰된 적 없는
+    // 경로다(docs/api.md 166-176줄에 문서화된 예시 응답과 동일 시나리오).
     const rAllergy = await post("/api/v1/recipes/generate", {
       stage_id: "stage_2",
       readiness: true,
@@ -433,9 +436,9 @@ async function runCases() {
       allergies: ["SOY"],
     });
     record(
-      "15a. 두부 + SOY 알레르기 선언 → 차단 (P0-1 fix 이후 UNSUPPORTED가 우선 노출됨)",
-      "422 VALIDATION_FAILED",
-      rAllergy.status === 422 && rAllergy.json?.error?.code === "VALIDATION_FAILED",
+      "15a. 두부 + SOY 알레르기 선언 → SAFETY_BLOCKED (tofu가 NEEDS_REVIEW로 전환되며 최초로 관찰 가능해진 정상 동작)",
+      "403 SAFETY_BLOCKED",
+      rAllergy.status === 403 && rAllergy.json?.error?.code === "SAFETY_BLOCKED",
       `status=${rAllergy.status} message=${rAllergy.json?.error?.message}`,
     );
 

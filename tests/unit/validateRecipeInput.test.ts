@@ -84,12 +84,11 @@ describe("validateRecipeInput — 예외 케이스", () => {
     expect(result.valid).toBe(false);
   });
 
-  it("데이터가 없는 재료 (tofu — P0-1 fix로 UNSUPPORTED 전환, 차단)", () => {
-    expect(ingredients.tofu.ingredient.verification_status).toBe("UNSUPPORTED");
-    const input = baseInput({ ingredient_ids: ["tofu"] });
-    const result = validateRecipeInput(input, lookup({}, ["tofu"]));
+  it("데이터가 없는 재료 (synthetic UNSUPPORTED fixture — tofu는 migration 0032로 NEEDS_REVIEW 전환됨)", () => {
+    const input = baseInput({ ingredient_ids: ["unsupported_test_ingredient"] });
+    const result = validateRecipeInput(input, lookup({}, ["unsupported_test_ingredient"]));
     expect(result.valid).toBe(false);
-    expect(result.errors.some((e) => e.message.includes("두부"))).toBe(true);
+    expect(result.errors.some((e) => e.message.includes("테스트용 미검증 재료"))).toBe(true);
   });
 
   it("제외 재료가 선택 재료와 충돌", () => {
@@ -272,11 +271,11 @@ describe("validateRecipeInput — Recipe MVP Part 2 Topping 분리", () => {
     expect(result.errors.some((e) => e.code === "NOT_FOUND")).toBe(true);
   });
 
-  it("7) UNSUPPORTED 재료(두부)를 topping으로 선택: base와 동일하게 차단", () => {
-    const input = baseInput({ ingredient_ids: ["carrot"], topping_ingredient_ids: ["tofu"] });
-    const result = validateRecipeInput(input, lookup({}, ["carrot", "tofu"]));
+  it("7) UNSUPPORTED 재료(synthetic fixture)를 topping으로 선택: base와 동일하게 차단", () => {
+    const input = baseInput({ ingredient_ids: ["carrot"], topping_ingredient_ids: ["unsupported_test_ingredient"] });
+    const result = validateRecipeInput(input, lookup({}, ["carrot", "unsupported_test_ingredient"]));
     expect(result.valid).toBe(false);
-    expect(result.errors.some((e) => e.message.includes("두부"))).toBe(true);
+    expect(result.errors.some((e) => e.message.includes("테스트용 미검증 재료"))).toBe(true);
   });
 
   it("8) 알레르기 재료(두부)를 topping으로 선택 + SOY 선언: base와 동일하게 SAFETY_BLOCKED", () => {
@@ -400,13 +399,15 @@ describe("validateRecipeInput — Ingredient Role v2 (docs/ingredient-role-v2-pr
 
   // Case 5: verification_status=UNSUPPORTED — role_v2가 적합해도(BASE_ONLY,
   // 주재료 허용 대상) 기존 verification 게이트를 role이 우회하지 않는다.
-  it("Case 5: verification_status=UNSUPPORTED인 재료(두부)는 role_v2=BASE_ONLY로 주재료 허용 대상이어도 사용이 차단된다", () => {
-    expect(ingredients.tofu.ingredient.ingredient_role_v2).toBe("BASE_ONLY");
-    expect(ingredients.tofu.ingredient.verification_status).toBe("UNSUPPORTED");
-    const input = baseInput({ ingredient_ids: ["tofu"] });
-    const result = validateRecipeInput(input, lookup({}, ["tofu"]));
+  it("Case 5: verification_status=UNSUPPORTED인 재료(synthetic fixture)는 role_v2=BASE_ONLY로 주재료 허용 대상이어도 사용이 차단된다", () => {
+    expect(ingredients.unsupported_test_ingredient.ingredient.ingredient_role_v2).toBe("BASE_ONLY");
+    expect(ingredients.unsupported_test_ingredient.ingredient.verification_status).toBe("UNSUPPORTED");
+    const input = baseInput({ ingredient_ids: ["unsupported_test_ingredient"] });
+    const result = validateRecipeInput(input, lookup({}, ["unsupported_test_ingredient"]));
     expect(result.valid).toBe(false);
-    expect(result.errors.some((e) => e.message.includes("두부") && e.message.includes("사용할 수 없습니다"))).toBe(
+    expect(
+      result.errors.some((e) => e.message.includes("테스트용 미검증 재료") && e.message.includes("사용할 수 없습니다")),
+    ).toBe(
       true,
     );
     // role eligibility 자체는 위반하지 않았다는 것도 함께 확인 — 차단 사유가

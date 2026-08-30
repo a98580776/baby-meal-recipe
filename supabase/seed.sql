@@ -1054,3 +1054,34 @@ set preparation_profile_id = 'prep_broccoli',
     cooking_profile_id = 'cook_broccoli',
     verification_status = 'NEEDS_REVIEW'
 where id = 'broccoli';
+
+-- =======================================================================
+-- Migration 0032 addition (append-only, mirrors that migration's data
+-- portion) -- see supabase/migrations/0032_tofu_evidence_completion.sql
+-- and docs/tofu-block-policy-reinvestigation.md / docs/tofu-migration-plan.md
+-- for full rationale (block-policy 재검증, E015/E016 재사용(신규 evidence 없음),
+-- prep_tofu/cook_tofu 최초 UPDATE, shape stage_1=mashed만/stage_2~4=null(확장
+-- 해석 금지), FPIES 미반영, UNSUPPORTED -> NEEDS_REVIEW).
+-- =======================================================================
+
+update preparation_profiles set
+  cutting_guidance = '충분히 데워 으깨거나 갈아서 부드럽게 제공',
+  status = 'INFERRED',
+  evidence_id = 'E016'
+where id = 'prep_tofu';
+
+update cooking_profiles set
+  allowed_methods = '{steam,boil}',
+  completion_checks = '{"충분히 데워지고 부드러운 상태"}',
+  evidence_id = 'E016'
+where id = 'cook_tofu';
+
+insert into texture_profiles (id, stage_id, food_form_id, texture, shape, particle_size, particle_size_status, evidence_id, ingredient_id) values
+  ('texture_tofu_stage_1', 'stage_1', null, '충분히 데워 으깨거나 갈아서 제공하는 부드러운 질감', 'mashed', null, 'UNSUPPORTED', 'E016', 'tofu'),
+  ('texture_tofu_stage_2', 'stage_2', null, '충분히 데워지고 부드러운 상태의 질감', null, null, 'UNSUPPORTED', 'E016', 'tofu'),
+  ('texture_tofu_stage_3', 'stage_3', null, '충분히 데워지고 부드러운 상태의 질감', null, null, 'UNSUPPORTED', 'E016', 'tofu'),
+  ('texture_tofu_stage_4', 'stage_4', null, '충분히 데워지고 부드러운 상태의 질감', null, null, 'UNSUPPORTED', 'E016', 'tofu');
+
+update ingredients
+set verification_status = 'NEEDS_REVIEW'
+where id = 'tofu';

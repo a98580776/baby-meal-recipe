@@ -2,6 +2,14 @@
 // objects so lib/validation and lib/rules can be unit-tested without a
 // network round-trip to Supabase. Keep in sync with seed.sql by hand — this
 // file must not fabricate values seed.sql does not also contain.
+//
+// EXCEPTION: `unsupported_test_ingredient` below is NOT a mirror of any real
+// seed.sql row. tofu (migration 0032) was the last ingredient carrying
+// verification_status=UNSUPPORTED in production seed data -- once it moved
+// to NEEDS_REVIEW, 0 of the 50 seeded ingredients are UNSUPPORTED. This
+// synthetic fixture exists solely to keep exercising the
+// UNSUPPORTED-blocks-generation code path (validateRecipeInput.ts Step 4) in
+// unit tests. Do NOT insert this id into supabase/seed.sql.
 import type {
   AllergenScope,
   FoodForm,
@@ -399,16 +407,19 @@ export const ingredients: Record<string, ResolvedIngredient> = {
     "CONFIRMED",
   ),
 
-  // P0-1 fix (docs/p0-safety-fixes-investigation.md §4, 옵션 B): prep/cook
-  // 데이터가 전무하고 신뢰할 수 있는 조리법 출처를 찾지 못해, "빈 조리
-  // 단계"로 조용히 서비스하는 대신 verification_status를 UNSUPPORTED로
-  // 전환해 broccoli와 동일하게 명확히 차단한다. SOY 알레르기 연결은
-  // 그대로 유지(알레르기 정보 자체는 정상이므로).
+  // block-policy 재검증(migration 0032, docs/tofu-block-policy-reinvestigation.md
+  // + docs/tofu-migration-plan.md): 원래 P0-1 fix가 UNSUPPORTED로 전환한 이유는
+  // "조리법을 뒷받침할 공식 출처를 못 찾았다"는 데이터 공백이었다. 재조사 결과
+  // 이미 이 프로젝트 DB에 등록된 E015(FSA)/E016(NHS)이 tofu를 이름으로 직접
+  // 언급하며 조리법(steam/simmer)과 초기 단계 질감(grate/mash)을 명시하는 것을
+  // 확인해 NEEDS_REVIEW로 전환했다(VERIFIED 아님). stage_1만 shape='mashed'
+  // (직접 근거) — stage_2~4는 직접 근거 없어 shape=null 유지(다른 채소의 stick
+  // 패턴을 전이하지 않음). SOY 알레르기 연결은 그대로 유지.
   tofu: resolved(
     "tofu",
     "두부",
     "soy",
-    "UNSUPPORTED",
+    "NEEDS_REVIEW",
     "REVIEW",
     {
       id: "prep_tofu",
@@ -418,18 +429,18 @@ export const ingredients: Record<string, ResolvedIngredient> = {
       core_tough_part_rule: null,
       bone_removal_rule: null,
       fishbone_removal_rule: null,
-      cutting_guidance: null,
-      status: "NEEDS_REVIEW",
-      evidence_id: null,
+      cutting_guidance: "충분히 데워 으깨거나 갈아서 부드럽게 제공",
+      status: "INFERRED",
+      evidence_id: "E016",
     },
     {
       id: "cook_tofu",
-      allowed_methods: [],
+      allowed_methods: ["steam", "boil"],
       temperature_rule_id: null,
-      completion_checks: [],
+      completion_checks: ["충분히 데워지고 부드러운 상태"],
       time_guidance: null,
       time_status: "NEEDS_REVIEW",
-      evidence_id: null,
+      evidence_id: "E016",
       time_min: null,
       time_max: null,
       time_unit: null,
@@ -438,6 +449,24 @@ export const ingredients: Record<string, ResolvedIngredient> = {
     },
     ["SOY_ALLERGEN"],
     [{ code: "SOY" }],
+    "BASE_ONLY",
+    "REVIEW",
+  ),
+
+  // Synthetic, test-only -- see file header EXCEPTION note. Not a real
+  // production ingredient; never seeded into supabase/seed.sql. Exists only
+  // to exercise the UNSUPPORTED-blocks-generation code path now that no real
+  // seed ingredient carries verification_status=UNSUPPORTED.
+  unsupported_test_ingredient: resolved(
+    "unsupported_test_ingredient",
+    "테스트용 미검증 재료",
+    "vegetable",
+    "UNSUPPORTED",
+    "REVIEW",
+    null,
+    null,
+    [],
+    [],
     "BASE_ONLY",
     "REVIEW",
   ),

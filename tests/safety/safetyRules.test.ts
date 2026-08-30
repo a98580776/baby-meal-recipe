@@ -196,8 +196,8 @@ describe("14. NEEDS_REVIEW claim 노출 시도", () => {
 
 describe("15. allergen exclusion 위반", () => {
   it("알레르기로 선언된 재료를 포함하면 차단된다", () => {
-    // P0-1 fix로 tofu는 verification_status=UNSUPPORTED로도 전환됐으므로
-    // 이제 두 가지 독립된 이유(UNSUPPORTED + SOY_ALLERGEN)로 차단된다 —
+    // tofu는 migration 0032(block-policy 재검증)로 verification_status=
+    // NEEDS_REVIEW로 전환됐다 — 차단 이유는 이제 SOY_ALLERGEN 하나뿐이다.
     // 이 테스트는 valid=false만 확인하므로 영향받지 않는다. SOY_ALLERGEN
     // 로직 자체는 evaluateIngredientSafety를 직접 쓰는 17번 describe에서
     // verification_status와 무관하게 계속 검증된다.
