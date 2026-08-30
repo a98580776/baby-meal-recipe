@@ -147,19 +147,21 @@ describe("buildCookingSteps", () => {
     expect(steps.some((s) => s.actionLabel === "익힘 확인")).toBe(false);
   });
 
-  it("UI/UX QA follow-up — 조리방법 미등록 토핑(김)은 완료 기준을 타이머 없는 완료 스텝으로 만든다", () => {
-    // seaweed: allowed_methods=[] (등록된 조리방법 없음) but time_min/max
-    // is 1~2 (조건부 "필요 시 살짝 가열" 안내) — this must NOT force a
-    // mandatory 익힘 확인 timer just because it appears in recipe.toppings.
+  it("A-1 이후 — 조리방법이 등록된 토핑(김)은 익힘 확인 타이머 스텝을 만든다", () => {
+    // seaweed: A-1에서 allowed_methods=[]→["steam"]으로 보정됨(조리방법이 실제로
+    // 등록됨). isServingStateOnly()가 더 이상 true를 반환하지 않으므로
+    // completion_checks는 "완료"/타이머없음이 아니라 다른 조리 필요 재료와
+    // 동일하게 "익힘 확인"/타이머있음 스텝이 된다 — 이는 버그가 아니라 A-1이
+    // 의도한 정확한 동작(Cooking Mode에 등록된 조리시간이 있는데 타이머가
+    // 안 뜨던 문제 해결).
     const steps = buildCookingSteps(makeRecipe(["carrot"], ["seaweed"]));
     const seaweedCompletionStep = steps.find(
       (s) => s.ingredientId === "seaweed" && s.instruction.includes("질긴 큰 조각 없이 잘게 부순 상태"),
     );
     expect(seaweedCompletionStep).toBeDefined();
-    expect(seaweedCompletionStep?.actionLabel).toBe("완료");
-    expect(seaweedCompletionStep?.timerEnabled).toBe(false);
-    expect(seaweedCompletionStep?.recommendedTime).toBeNull();
-    expect(steps.some((s) => s.ingredientId === "seaweed" && s.actionLabel === "익힘 확인")).toBe(false);
+    expect(seaweedCompletionStep?.actionLabel).toBe("익힘 확인");
+    expect(seaweedCompletionStep?.timerEnabled).toBe(true);
+    expect(seaweedCompletionStep?.recommendedTime).toEqual({ min: 1, max: 2, unit: "분" });
   });
 
   it("김 재조사 — 조리방법 미등록 재료는 base로 선택해도 타이머 없는 완료 스텝을 만든다 (isTopping 무관)", () => {

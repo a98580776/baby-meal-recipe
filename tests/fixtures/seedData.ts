@@ -607,7 +607,7 @@ export const ingredients: Record<string, ResolvedIngredient> = {
     },
     {
       id: "cook_seaweed",
-      allowed_methods: [],
+      allowed_methods: ["steam"],
       temperature_rule_id: null,
       completion_checks: ["질긴 큰 조각 없이 잘게 부순 상태"],
       time_guidance: "추천 1~2분 (시작 기준) — 필요 시 살짝 가열/구워 수분 제거",
