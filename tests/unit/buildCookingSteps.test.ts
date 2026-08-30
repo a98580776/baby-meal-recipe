@@ -360,6 +360,92 @@ describe("buildCookingSteps", () => {
     expect(tempStep?.timerEnabled).toBe(true);
   });
 
+  describe("A-2 — 선택적 조리 과일(grape/blueberry/strawberry)", () => {
+    function makeOptionalCookingFruit(id: string, nameKo: string, timeGuidance: string, min: number, max: number): RecipeResponse {
+      return {
+        stage_id: "stage_3",
+        food_form_id: "puree",
+        servings: null,
+        ingredients: [
+          {
+            id,
+            name_ko: nameKo,
+            verification_status: "INFERRED",
+            preparation: null,
+            cooking: {
+              allowed_methods: [],
+              completion_checks: ["충분히 부드러움"],
+              time_guidance: timeGuidance,
+              recommended_time: { min, max, unit: "분" },
+            },
+            texture: null,
+            allergens: [],
+          },
+        ],
+        toppings: [],
+        safety_notes: [],
+        storage: null,
+      };
+    }
+
+    it.each([
+      ["grape", "포도", "추천 2~4분 (시작 기준) — 필요 시 찌거나 데쳐 부드럽게 처리", 2, 4],
+      ["blueberry", "블루베리", "추천 3~5분 (시작 기준) — 필요 시 찌기/으깨기", 3, 5],
+      ["strawberry", "딸기", "추천 3~5분 (시작 기준) — 필요 시 찌기", 3, 5],
+    ] as const)("%s: time_guidance가 '(선택 사항)' 완료 스텝으로 노출되고 타이머는 켜지지 않는다", (id, nameKo, timeGuidance, min, max) => {
+      const recipe = makeOptionalCookingFruit(id, nameKo, timeGuidance, min, max);
+      const steps = buildCookingSteps(recipe);
+      const optionalStep = steps.find((s) => s.instruction.includes(timeGuidance));
+      expect(optionalStep).toBeDefined();
+      expect(optionalStep?.instruction).toBe(`${nameKo}: ${timeGuidance} (선택 사항)`);
+      expect(optionalStep?.actionLabel).toBe("완료");
+      expect(optionalStep?.timerEnabled).toBe(false);
+      expect(optionalStep?.timeGuidance).toBeNull();
+      expect(optionalStep?.recommendedTime).toBeNull();
+      // 익힘 확인 스텝은 여전히 하나도 없다 — isServingStateOnly는 그대로 유지.
+      expect(steps.some((s) => s.actionLabel === "익힘 확인")).toBe(false);
+    });
+
+    it("진짜 조리 불필요 재료(바나나 등)는 이 '선택 사항' 스텝이 생기지 않는다 (회귀)", () => {
+      // banana: time_min=max=0 — hasOptionalCookingGuidance must stay false.
+      const steps = buildCookingSteps(makeRecipe(["carrot"]));
+      // carrot itself has allowed_methods=["steam","boil"], so this just
+      // confirms the new branch doesn't fire for ingredients outside its
+      // narrow allowed_methods=[]+non-null time_guidance+non-zero range gate.
+      expect(steps.some((s) => s.instruction.includes("선택 사항"))).toBe(false);
+
+      const bananaRecipe: RecipeResponse = {
+        stage_id: "stage_3",
+        food_form_id: "puree",
+        servings: null,
+        ingredients: [
+          {
+            id: "banana",
+            name_ko: "바나나",
+            verification_status: "INFERRED",
+            preparation: null,
+            cooking: {
+              allowed_methods: [],
+              completion_checks: ["잘 익은 과육이 쉽게 으깨짐"],
+              time_guidance: "조리 불필요(숙도와 제공 형태 확인) — 조리하지 않는 과육 기준",
+              recommended_time: { min: 0, max: 0, unit: "분" },
+            },
+            texture: null,
+            allergens: [],
+          },
+        ],
+        toppings: [],
+        safety_notes: [],
+        storage: null,
+      };
+      const bananaSteps = buildCookingSteps(bananaRecipe);
+      expect(bananaSteps.some((s) => s.instruction.includes("선택 사항"))).toBe(false);
+      expect(bananaSteps).toHaveLength(1);
+      expect(bananaSteps[0].actionLabel).toBe("완료");
+    });
+
+  });
+
   describe("C1 — Cooking Mode 안전 경고 (docs/phase11-ux-product-review.md)", () => {
     it("BLOCK_FORM(질식 위험) 경고가 재료의 첫 STEP에만 붙고, 이후 STEP엔 없다", () => {
       // carrot fixture는 CHOKING_HARD_RAW(BLOCK_FORM)를 갖고 cookingProfile도

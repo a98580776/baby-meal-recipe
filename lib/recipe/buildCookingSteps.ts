@@ -1,6 +1,6 @@
 import type { ApiErrorDetail, RecipeResponse } from "@/types/api";
 import { cookingMethodLabels } from "@/lib/recipe/cookingMethodLabels";
-import { isServingStateOnly } from "@/lib/recipe/cookingTimeStatus";
+import { hasOptionalCookingGuidance, isServingStateOnly } from "@/lib/recipe/cookingTimeStatus";
 
 export interface CookingStep {
   id: string;
@@ -112,6 +112,16 @@ export function buildCookingSteps(recipe: RecipeResponse): CookingStep[] {
       for (const check of c?.completion_checks ?? []) {
         push(`${ing.name_ko}: ${check}`, skipTimer ? "완료" : "익힘 확인");
       }
+    }
+
+    // A-2: grape/blueberry/strawberry — allowed_methods=[] (isServingStateOnly
+    // stays true, no mandatory timer) but time_guidance carries real, optional
+    // cooking guidance that would otherwise vanish entirely from Cooking Mode
+    // (push() only keeps timeGuidance/recommendedTime on "익힘 확인" steps).
+    // Surfaced as plain instruction text on a timer-less "완료" step instead —
+    // does not touch the timeGuidance/recommendedTime fields themselves.
+    if (c && hasOptionalCookingGuidance(c)) {
+      push(`${ing.name_ko}: ${c.time_guidance} (선택 사항)`);
     }
 
     // meat_form='whole_cut' 휴지시간 안내 — 안전 온도 기준과 무관한 별개의

@@ -64,6 +64,33 @@ export function isServingStateOnly(cooking: { allowed_methods: string[] }): bool
   return cooking.allowed_methods.length === 0;
 }
 
+// A-2: grape/blueberry/strawberry are seeded with allowed_methods=[] (like
+// the serving-state-only ingredients isServingStateOnly covers) but their
+// time_guidance is not a "조리 불필요" statement — it is a real, non-zero
+// time_min/max range whose source text always starts with "필요 시"
+// (optional/conditional cooking, e.g. grape's "필요 시 찌거나 데쳐 부드럽게
+// 처리"). Filling in allowed_methods to give them a mandatory 익힘 확인 timer
+// (the A-1 fix for pear/peach/seaweed/sesame/perilla/cheese) would be
+// inaccurate here — raw serving is the more common real-world case for these
+// three, unlike A-1's ingredients. So this data must stay reachable as
+// optional guidance text WITHOUT switching on the mandatory timer path
+// (isServingStateOnly must keep returning true for these — do not change it,
+// see its own comment on the prior rice/oatmeal regression from a similar
+// generalization attempt). Distinguishes this from the genuine "조리 불필요"
+// 7-fruit group (banana 등, isNoCookingNeededFromView) purely from the two
+// existing fields already on hand — no new column.
+export function hasOptionalCookingGuidance(cooking: {
+  allowed_methods: string[];
+  time_guidance: string | null;
+  recommended_time: { min: number | null; max: number | null; unit: string } | null;
+}): boolean {
+  return (
+    cooking.allowed_methods.length === 0 &&
+    cooking.time_guidance !== null &&
+    !isNoCookingNeededFromView(cooking)
+  );
+}
+
 // Pulled out of CookingModeView.tsx so the label decision is a plain,
 // independently testable function (설계명세 §8) rather than logic buried
 // inside JSX — same isServingStateOnly condition, just named for where
