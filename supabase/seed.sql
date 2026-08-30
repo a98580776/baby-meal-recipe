@@ -1085,3 +1085,15 @@ insert into texture_profiles (id, stage_id, food_form_id, texture, shape, partic
 update ingredients
 set verification_status = 'NEEDS_REVIEW'
 where id = 'tofu';
+
+-- =======================================================================
+-- Migration 0033 addition (append-only, mirrors that migration's data
+-- portion) -- see supabase/migrations/0033_broccoli_choking_hard_raw.sql
+-- and docs/choking-hard-raw-audit.md / docs/choking-hard-raw-runtime-investigation.md /
+-- docs/broccoli-choking-rule-migration-plan.md for full rationale (existing
+-- CHOKING_HARD_RAW rule reused -- E026 already names broccoli directly as a
+-- raw/undercooked choking hazard, no new rule/evidence).
+-- =======================================================================
+
+insert into ingredient_safety_rules (ingredient_id, safety_rule_id) values
+  ('broccoli', 'CHOKING_HARD_RAW');
