@@ -1119,3 +1119,70 @@ update cooking_profiles set allowed_methods = '{steam}' where id = 'cook_seaweed
 update cooking_profiles set allowed_methods = '{steam}' where id = 'cook_sesame';
 update cooking_profiles set allowed_methods = '{steam}' where id = 'cook_perilla';
 update cooking_profiles set allowed_methods = '{microwave}' where id = 'cook_cheese';
+
+-- =======================================================================
+-- Migration 0035 addition (append-only, mirrors that migration's data
+-- portion) -- see supabase/migrations/0035_c2_cutting_guidance_prep_fields.sql
+-- and docs/claude-desktop-handoff/2026-08-31-c2-migration-review-packet.md
+-- for full rationale (C-2: preparation_profiles.cutting_guidance boilerplate
+-- resolved for 9 ingredients -- zucchini/cucumber/spinach/tomato/eggplant/
+-- mushroom get structured fields (peel_rule/seed_removal_rule/
+-- core_tough_part_rule) filled while cutting_guidance stays boilerplate and
+-- evidence_id stays E010 unchanged; seaweed/chestnut/cheese get
+-- cutting_guidance itself replaced with evidence_id updated to the backing
+-- evidence). New evidence E027-E034 (Solid Starts, TIER_1); cheese reuses
+-- existing E016, no new evidence for cheese.
+-- =======================================================================
+
+insert into evidence (id, organization, title, url, source_tier, checked_at, applicability, status) values
+  ('E027', 'Solid Starts', 'Zucchini -- When can babies eat zucchini? (skin handling)', 'https://solidstarts.com/foods/zucchini/', 'TIER_1', '2026-08-31', 'Solid Starts: skin can stay for shape/nutrition, removable from 6mo+.', 'VERIFIED'),
+  ('E028', 'Solid Starts', 'Cucumber -- When can babies eat cucumber? (seed/skin handling)', 'https://solidstarts.com/foods/cucumber/', 'TIER_1', '2026-08-31', 'Solid Starts: seeds not a choking risk; skin optional to remove from 9mo+.', 'VERIFIED'),
+  ('E029', 'Solid Starts', 'Spinach -- When can babies eat spinach? (stem edibility)', 'https://solidstarts.com/foods/spinach/', 'TIER_1', '2026-08-31', 'Solid Starts: stems edible, no unusual choking risk (babies may spit out).', 'VERIFIED'),
+  ('E030', 'Solid Starts', 'Eggplant -- When can babies eat eggplant? (seed/skin handling)', 'https://solidstarts.com/foods/eggplant/', 'TIER_1', '2026-08-31', 'Solid Starts: seeds too small to choke on; skin removable if baby struggles.', 'VERIFIED'),
+  ('E031', 'Solid Starts', 'Mushroom (White Button) -- When can babies eat mushroom? (stem handling)', 'https://solidstarts.com/foods/mushroom-white-button/', 'TIER_1', '2026-08-31', 'Solid Starts: 9mo+ consider removing stem; 18mo+ halve stem lengthwise to reduce choking.', 'VERIFIED'),
+  ('E032', 'Solid Starts', 'Seaweed (Nori) -- When can babies eat seaweed? (cutting guidance)', 'https://solidstarts.com/foods/seaweed/', 'TIER_1', '2026-08-31', 'Solid Starts: crush/chop dried nori small (6mo+), cut bite-sized by 9mo+.', 'VERIFIED'),
+  ('E033', 'Solid Starts', 'Chestnut -- When can babies eat chestnuts? (6/9/12mo+ bands + general intro warning, re-verified)', 'https://solidstarts.com/foods/chestnut/', 'TIER_1', '2026-08-31', 'Solid Starts: peel & cook; grind at 6mo+, slice/crush at 9mo+; avoid whole/candied.', 'VERIFIED'),
+  ('E034', 'Solid Starts', 'Tomato -- When can babies eat tomatoes? (seed/skin handling)', 'https://solidstarts.com/foods/tomato/', 'TIER_1', '2026-08-31', 'Solid Starts: no seed-removal instruction; skin removed only if it bothers baby.', 'VERIFIED');
+
+update preparation_profiles set
+  peel_rule = '껍질은 벗기지 않고 그대로 사용 권장(형태·질감 유지에 도움), 벗겨도 무방(제거는 선택 사항)'
+where id = 'prep_zucchini';
+
+update preparation_profiles set
+  peel_rule = '6개월+: 껍질을 그대로 두면 질식 위험 감소에 도움. 9개월+부터: 필요 시 선택적으로 제거 가능(제거가 필수는 아님)',
+  seed_removal_rule = '제거 불필요(질식 위험 없음)'
+where id = 'prep_cucumber';
+
+update preparation_profiles set
+  core_tough_part_rule = '줄기(잎맥)는 식용 가능하며 특별한 질식 위험이 없어 별도로 제거할 필요 없음(어금니 나기 전엔 뱉어낼 수 있음)'
+where id = 'prep_spinach';
+
+update preparation_profiles set
+  peel_rule = '아기가 불편해할 때만 선택적으로 제거(제거하라는 지시 없음)',
+  seed_removal_rule = '제거 불필요(제거하라는 지시 없음)'
+where id = 'prep_tomato';
+
+update preparation_profiles set
+  peel_rule = '유지 권장(형태 유지에 도움), 아기가 씹기 어려워하면 선택적으로 제거',
+  seed_removal_rule = '제거 불필요(크기가 작아 질식 위험 없음)'
+where id = 'prep_eggplant';
+
+update preparation_profiles set
+  core_tough_part_rule = '9개월+: 밑동(줄기) 제거를 고려(질식 위험 감소). 18개월+: 줄기를 세로로 갈라 사용(원통형 방지)'
+where id = 'prep_mushroom';
+
+update preparation_profiles set
+  cutting_guidance = '마른 김을 잘게 부수거나 작게 잘라서 제공(월령이 올라가면 한입 크기로)',
+  evidence_id = 'E032'
+where id = 'prep_seaweed';
+
+update preparation_profiles set
+  peel_rule = '껍질을 벗긴 밤 사용(모든 단계 공통)',
+  cutting_guidance = '충분히 익히고 껍질을 벗긴 밤 사용. 6개월+: 곱게 갈거나(큰 조각 없을 때까지) 물/모유/분유로 묽게 갠 페이스트로 제공. 9개월+부터: 얇게 썰거나 손가락으로 눌러 부서질 정도로 부드럽게 만들어 제공 가능(부서진 조각은 눌렀을 때 쉽게 으스러지는 상태여야 함). 통밤·썰기만 하고 추가로 눌러 부수지 않은 밤·설탕에 조린 밤은 질식 위험 증가로 피함.',
+  evidence_id = 'E033'
+where id = 'prep_chestnut';
+
+update preparation_profiles set
+  cutting_guidance = '강판에 갈거나 가늘고 짧은 막대 모양으로 잘라서 제공',
+  evidence_id = 'E016'
+where id = 'prep_cheese';

@@ -601,9 +601,9 @@ export const ingredients: Record<string, ResolvedIngredient> = {
       core_tough_part_rule: null,
       bone_removal_rule: null,
       fishbone_removal_rule: null,
-      cutting_guidance: "재료의 질긴 부분·씨·껍질 등은 제공 형태와 재료 상태에 따라 확인",
+      cutting_guidance: "마른 김을 잘게 부수거나 작게 잘라서 제공(월령이 올라가면 한입 크기로)",
       status: "INFERRED",
-      evidence_id: "E010",
+      evidence_id: "E032",
     },
     {
       id: "cook_seaweed",
