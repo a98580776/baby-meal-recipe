@@ -1211,3 +1211,28 @@ insert into ingredient_safety_rules (ingredient_id, safety_rule_id) values
   ('eggplant', 'CHOKING_HARD_RAW'),
   ('radish', 'CHOKING_HARD_RAW'),
   ('cucumber', 'CHOKING_HARD_RAW');
+
+-- =======================================================================
+-- Migration 0037 addition (mirrors that migration's schema+data portion) --
+-- see supabase/migrations/0037_c1c5_ingredient_safety_rules_evidence_id.sql
+-- and docs/claude-desktop-handoff/2026-09-01-c1-c5-ingredient-safety-rules-
+-- evidence-id-design.md for full rationale. The ALTER TABLE itself is not
+-- mirrored here (seed.sql is pure data -- schema lives in migrations only,
+-- and this column is created by migration 0037 before this script's
+-- UPDATEs would ever run against a fresh DB); only the backfill UPDATEs are
+-- mirrored, matching the append-only convention already used for migration
+-- 0035's preparation_profiles UPDATEs above.
+-- =======================================================================
+
+update ingredient_safety_rules set evidence_id = 'E026' where ingredient_id = 'broccoli' and safety_rule_id = 'CHOKING_HARD_RAW';
+update ingredient_safety_rules set evidence_id = 'E035' where ingredient_id = 'cauliflower' and safety_rule_id = 'CHOKING_HARD_RAW';
+update ingredient_safety_rules set evidence_id = 'E036' where ingredient_id = 'zucchini' and safety_rule_id = 'CHOKING_HARD_RAW';
+update ingredient_safety_rules set evidence_id = 'E037' where ingredient_id = 'eggplant' and safety_rule_id = 'CHOKING_HARD_RAW';
+update ingredient_safety_rules set evidence_id = 'E038' where ingredient_id = 'radish' and safety_rule_id = 'CHOKING_HARD_RAW';
+update ingredient_safety_rules set evidence_id = 'E039' where ingredient_id = 'cucumber' and safety_rule_id = 'CHOKING_HARD_RAW';
+update ingredient_safety_rules set evidence_id = 'E014' where ingredient_id in ('corn', 'grape') and safety_rule_id = 'CHOKING_HARD_RAW';
+update ingredient_safety_rules set evidence_id = 'E014' where ingredient_id in ('blueberry', 'strawberry') and safety_rule_id = 'CHOKING_HARD_RAW';
+update ingredient_safety_rules set evidence_id = 'E016' where ingredient_id in ('korean_melon', 'watermelon') and safety_rule_id = 'CHOKING_HARD_RAW';
+update ingredient_safety_rules set evidence_id = 'E015' where ingredient_id in ('sesame', 'perilla') and safety_rule_id = 'CHOKING_HARD_RAW';
+update ingredient_safety_rules set evidence_id = 'E033' where ingredient_id = 'chestnut' and safety_rule_id = 'CHOKING_HARD_RAW';
+-- apple/carrot intentionally left NULL -- see migration 0037 comment.
