@@ -6,6 +6,11 @@
 `scripts_final_backlog_survey.mjs`는 실행 직후 삭제), 기존 16개 조사 문서(§0)를 전부 읽고
 교차 검증했다.
 
+**갱신(2026-08-31)**: C-3/C-4 판정 재확인 — §3-C 표 + §4-4. C-2(cutting_guidance boilerplate
+9건 REPLACE, migration 0035)가 그 사이 실행되면서 C-3(chestnut evidence)의 콘텐츠 gap이
+해소됐고, C-4(pork/cod/tuna/shrimp)는 tempNotes 경로 정상 동작을 재확인했다. 다른 섹션은
+이 갱신의 대상이 아니다 — 최초 작성일(2026-08-30) 기준 스냅샷 그대로 유지.
+
 ---
 
 ## 0. 조사 대상 문서 — 수집 결과
@@ -207,8 +212,8 @@ raw_food/physical_hazard/age_restriction) 어디에도 "희귀 비-IgE 반응"�
 |---|---|---|---|
 | C-1 | `E010`(질병관리청 일반 지침) 범용 placeholder 과다 사용 — 216개 근거-사용 행 중 138회(64%) | 사실상 데이터셋 전체 | BACKLOG(architecture) |
 | C-2 | `preparation_profiles.cutting_guidance`가 18개 재료에서 동일 boilerplate 문장 공유(DB-010) | napa_cabbage, cabbage, zucchini, cucumber, spinach, onion, radish, green_pea, kidney_bean, tomato, eggplant, mushroom, seaweed, chestnut, sesame, perilla, cheese, broccoli | P2 |
-| C-3 | 견과류(chestnut) 전용 choking evidence 부재 — 현재는 일반 E002/E010에만 의존 | chestnut(및 잠재적으로 sesame/perilla) | P2/BACKLOG |
-| C-4 | pork/cod/tuna/shrimp — `allowed_methods=[]` 잔존(단, tempNotes 경로로 실제 UX 오류는 없음, §3-A-1 참고) | pork, cod, tuna, shrimp | P2 |
+| C-3 | 견과류(chestnut) 전용 choking evidence — **콘텐츠는 해소됨**(C-2/migration 0035로 등록한 `E033`이 통밤·설탕조림 회피 등 질식 위험 내용을 이미 `cutting_guidance`로 노출 중). 남은 건 `safety_rules.CHOKING_HARD_RAW.evidence_id`가 재료 무관 공용 `E002`를 가리키는 스키마 구조(재료별 override 컬럼 부재) | chestnut(및 잠재적으로 sesame/perilla) | **CLOSED(콘텐츠)** / BACKLOG(architecture, C-1·C-5와 병합) |
+| C-4 | pork/cod/tuna/shrimp — `allowed_methods=[]` 잔존, `temperature_rule_id`가 있어 tempNotes 경로로 SAFETY_COOKING_REQUIRED가 정상 노출됨(재확인 완료, §3-A-1 참고) — 남은 건 D-1 "조리 방법" 라벨 한 줄 누락뿐, 안전/정확성 문제 아님 | pork, cod, tuna, shrimp | P2 |
 | C-5 | fish-bone 전용 1차 출처 부재 — FISHBONE_REMOVE/BONE_REMOVE/RAW_FISH_BLOCK/CHOKING_HARD_RAW 4개 규칙이 전부 E002 하나 공유 | salmon, cod, tuna (구조적) | BACKLOG |
 | C-6 | cauliflower/zucchini/eggplant/radish/cucumber — CHOKING_HARD_RAW 미연결, evidence gap으로 HOLD 확정(재평가 가능 조건부) | 5개 채소 | BACKLOG(§5 조건부 재조사) |
 | C-7 | barley/oats(brown_rice 포함?) — 글루텐 등 broader-context 알레르기 미검토(가능성만 제기, 확인 안 됨) | barley, oatmeal, brown_rice | BACKLOG |
@@ -219,6 +224,26 @@ raw_food/physical_hazard/age_restriction) 어디에도 "희귀 비-IgE 반응"�
 investigation.md` §2가 이미 정확히 이렇게 지적함). **이것은 이 데이터셋 전체의 구조적 특성이지
 개별 재료의 결함이 아니다** — 요청서 지시대로 지금 당장 138개 행을 전부 개별 출처로 재조사하는
 것은 제안하지 않는다. architecture-level 관찰로만 기록한다.
+
+**C-3/C-4 판정 재확인(2026-08-31)**: 이 문서 최초 작성(2026-08-30) 이후 진행된 C-2 작업의
+부산물로 두 항목을 재확인했다.
+
+- **C-3 — 사실상 CLOSED, architecture backlog로 재분류**: chestnut은 C-2에서 등록한 `E033`
+  (Solid Starts, TIER_1, VERIFIED)이 이미 "통밤·설탕조림 회피" 등 질식 위험 관련 내용을
+  담고 있고, 이 내용이 `preparation_profiles.cutting_guidance`를 통해 사용자에게 이미
+  노출되고 있다 — 콘텐츠 gap은 해소됐다. 남은 건 `safety_rules` 테이블 구조상
+  `CHOKING_HARD_RAW` rule 자체의 `evidence_id`가 재료 무관 공용 `E002`를 가리키는
+  메타데이터 문제뿐이다 — `ingredient_safety_rules`에 재료별 evidence override 컬럼이
+  없는 스키마 구조 문제로, C-1(E010 재사용)/C-5(FISHBONE_REMOVE 등 4개 rule이 E002 공유)와
+  동일한 성격이다. 별도 조사가 더 필요하지 않아 C-1/C-5와 같은 architecture backlog
+  그룹으로 재분류한다.
+- **C-4 — 확인됨, 실제 UX 버그 없음(원판정 재확인)**: pork/cod/tuna/shrimp(및 beef/chicken/
+  salmon)는 `allowed_methods=[]`이지만 `temperature_rule_id`가 설정되어 있어
+  `buildCookingSteps.ts`의 tempNotes 분기(line 95-110)로 우선 라우팅된다 —
+  SAFETY_COOKING_REQUIRED 메시지가 "익힘 확인"+타이머로 정상 노출되고, grape 등(A-2 대상)과
+  달리 정보 손실이 없다. 남은 건 `allowed_methods=[]`라 D-1의 "조리 방법: X" 라벨 한 줄이
+  안 뜨는 완성도 이슈뿐(안전/정확성 문제 아님, cutting/method 정보는 `time_guidance`에 이미
+  서술돼 있음) — A-1과 같은 성격의 재료별 근거 조사가 필요해 현재 우선순위는 낮다, P2 유지.
 
 ---
 
@@ -283,9 +308,12 @@ DB의 `allowed_methods=[]`인 20개 cooking_profile을 **"오류"로 자동 판�
 
 ### 4-4. chestnut — 세 갈래 분리 (§6-4 대응)
 
-- **견과류 evidence coverage(C-3)**: E015("nuts and seeds: chop or flake")가 아직 chestnut
-  texture/safety에 연결되지 않음 — P2/BACKLOG, 즉시 수정 불필요(`chestnut-cooking-method-
-  investigation.md` §4가 "이번 조사 범위 밖"으로 이미 분리).
+- **견과류 evidence coverage(C-3)**: 이 항목 작성 당시(2026-08-30)엔 E015("nuts and seeds:
+  chop or flake")가 chestnut texture/safety에 연결되지 않은 상태였다. **2026-08-31 재확인
+  — 콘텐츠는 이미 CLOSED**: C-2에서 등록한 `E033`(Solid Starts, TIER_1)이 통밤·설탕조림
+  회피 등 질식 위험 내용을 `cutting_guidance`로 이미 노출 중이다. 남은 건
+  `CHOKING_HARD_RAW.evidence_id`가 공용 `E002`를 가리키는 스키마 구조 문제뿐 —
+  C-1/C-5와 병합된 architecture backlog로 재분류(§3-C 표 참고).
 - **texture evidence**: 이미 `shape='mashed'`(E010 근거)로 4-stage 채워져 있음 — 갭 아님.
 - **`peel_rule` 공백**: `prep_chestnut.peel_rule=null`, 겉껍질+속껍질(보늬) 제거가 실제
   핵심 손질 단계인데 전용 문구가 없음(현재는 18개 재료 공용 boilerplate만 있음, §C-2와 중복
