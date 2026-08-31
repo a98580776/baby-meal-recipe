@@ -1236,3 +1236,26 @@ update ingredient_safety_rules set evidence_id = 'E016' where ingredient_id in (
 update ingredient_safety_rules set evidence_id = 'E015' where ingredient_id in ('sesame', 'perilla') and safety_rule_id = 'CHOKING_HARD_RAW';
 update ingredient_safety_rules set evidence_id = 'E033' where ingredient_id = 'chestnut' and safety_rule_id = 'CHOKING_HARD_RAW';
 -- apple/carrot intentionally left NULL -- see migration 0037 comment.
+
+-- =======================================================================
+-- Migration 0038 addition (append-only, mirrors that migration's data
+-- portion) -- see supabase/migrations/0038_fishbone_bone_evidence.sql and
+-- docs/fishbone-bone-evidence-and-gluten-broader-context-investigation.md /
+-- docs/claude-desktop-handoff/2026-09-01-fishbone-bone-evidence-execution-report.md
+-- for full rationale (salmon/cod/tuna DIRECT via Solid Starts, chicken/pork
+-- GENERAL-CATEGORY via CDC poultry/meat/fish category guidance --
+-- FISHBONE_REMOVE/BONE_REMOVE rules' own evidence_id (E002) unchanged).
+-- =======================================================================
+
+insert into evidence (id, organization, title, url, source_tier, checked_at, applicability, status) values
+  ('E040', 'Solid Starts', 'Salmon -- When can babies eat salmon? (bone choking hazard FAQ)', 'https://solidstarts.com/foods/salmon/', 'TIER_1', '2026-09-01', 'Solid Starts: bones in freshly cooked salmon are a choking hazard unless removed; serve age-appropriately.', 'VERIFIED'),
+  ('E041', 'Solid Starts', 'Cod -- When can babies eat cod? (bone choking hazard FAQ)', 'https://solidstarts.com/foods/cod/', 'TIER_1', '2026-09-01', 'Solid Starts: cooked cod is low-risk only once bones and skin are removed; bones can lodge in mouth/throat/esophagus.', 'VERIFIED'),
+  ('E042', 'Solid Starts', 'Tuna -- When can babies eat tuna? (bone choking hazard FAQ, fresh vs canned)', 'https://solidstarts.com/foods/tuna/', 'TIER_1', '2026-09-01', 'Solid Starts: fresh tuna bones pose a choking risk and must be removed; canned tuna bones are softened by canning and safe.', 'VERIFIED'),
+  ('E043', 'CDC', 'When, What, and How to Introduce Solid Foods (poultry/meat/fish bone removal)', 'https://www.cdc.gov/infant-toddler-nutrition/foods-and-drinks/when-what-and-how-to-introduce-solid-foods.html', 'TIER_1', '2026-09-01', 'CDC: remove all fat, skin, and bones from poultry, meat, and fish before cooking -- GENERAL-CATEGORY grade (poultry/meat, not chicken by name). Direct WebFetch of the CDC domain returned 403 in this session; content cross-confirmed via independent WebSearch plus a reader-proxy fetch, not a single unverified snippet.', 'VERIFIED'),
+  ('E044', 'CDC', 'When, What, and How to Introduce Solid Foods (poultry/meat/fish bone removal, reused for pork)', 'https://www.cdc.gov/infant-toddler-nutrition/foods-and-drinks/when-what-and-how-to-introduce-solid-foods.html', 'TIER_1', '2026-09-01', 'CDC: remove all fat, skin, and bones from poultry, meat, and fish before cooking -- GENERAL-CATEGORY grade (meat, not pork by name). Direct WebFetch of the CDC domain returned 403 in this session; content cross-confirmed via independent WebSearch plus a reader-proxy fetch, not a single unverified snippet.', 'VERIFIED');
+
+update ingredient_safety_rules set evidence_id = 'E040' where ingredient_id = 'salmon' and safety_rule_id = 'FISHBONE_REMOVE';
+update ingredient_safety_rules set evidence_id = 'E041' where ingredient_id = 'cod' and safety_rule_id = 'FISHBONE_REMOVE';
+update ingredient_safety_rules set evidence_id = 'E042' where ingredient_id = 'tuna' and safety_rule_id = 'FISHBONE_REMOVE';
+update ingredient_safety_rules set evidence_id = 'E043' where ingredient_id = 'chicken' and safety_rule_id = 'BONE_REMOVE';
+update ingredient_safety_rules set evidence_id = 'E044' where ingredient_id = 'pork' and safety_rule_id = 'BONE_REMOVE';
