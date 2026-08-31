@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { evaluateIngredientSafety } from "@/lib/rules/safety";
+import { withEunNeun } from "@/lib/rules/koreanParticle";
 import { validateRecipeInput } from "@/lib/validation/validateRecipeInput";
-import type { RecipeLookupData } from "@/lib/rules/types";
+import type { ResolvedIngredient, RecipeLookupData } from "@/lib/rules/types";
+import type { CookingProfile } from "@/types/domain";
 import type { RecipeRequestInput } from "@/types/api";
 import { foodForms, ingredients, stages } from "../fixtures/seedData";
 
@@ -284,5 +286,88 @@ describe("18. API Contract QA follow-up — safety_notes에 severity/action 노�
     expect(verificationNote?.rule_id).toBeUndefined();
     expect(verificationNote?.severity).toBeUndefined();
     expect(verificationNote?.action).toBeUndefined();
+  });
+});
+
+describe("19. D-2 — korean_melon/watermelon 부정확한 '충분히 익혀' 안전 경고 수정", () => {
+  // carrot fixture는 CHOKING_HARD_RAW(BLOCK_FORM)를 이미 갖고 있으므로 그 rule 객체를
+  // 그대로 재사용 — seedData.ts의 safetyRules 상수는 module-private이라 여기서 직접
+  // import할 수 없고, 값 자체를 다시 정의하면 원본과 어긋날 위험이 생긴다.
+  const chokingHardRawRule = ingredients.carrot.safetyRules.find((r) => r.id === "CHOKING_HARD_RAW")!;
+
+  function chokingHardRawFruit(id: string, nameKo: string, cookingOverrides: Partial<CookingProfile>): ResolvedIngredient {
+    const cookingProfile: CookingProfile = {
+      id: `cook_${id}`,
+      allowed_methods: [],
+      temperature_rule_id: null,
+      completion_checks: ["과육이 충분히 부드러움"],
+      time_guidance: null,
+      time_status: "INFERRED",
+      evidence_id: "E010",
+      time_min: null,
+      time_max: null,
+      time_unit: "분",
+      whole_cut_temperature_rule_id: null,
+      whole_cut_rest_seconds: null,
+      ...cookingOverrides,
+    };
+    return {
+      ...ingredients.carrot,
+      ingredient: { ...ingredients.carrot.ingredient, id, name_ko: nameKo },
+      preparationProfile: null,
+      cookingProfile,
+      safetyRules: [chokingHardRawRule],
+    };
+  }
+
+  // 실제 seed.sql 값(cook_korean_melon/cook_watermelon): allowed_methods='{}',
+  // time_min=0, time_max=0 — "조리 불필요(숙도와 제공 형태 확인) — 조리하지 않는
+  // 과육 기준"으로 명시된, 진짜 생과일로 제공하는 재료.
+  it.each([
+    ["korean_melon", "참외", "조리 불필요(숙도와 제공 형태 확인) — 조리하지 않는 과육 기준"],
+    ["watermelon", "수박", "조리 불필요(숙도와 제공 형태 확인) — 조리하지 않는 과육 기준"],
+  ] as const)("%s: 새 메시지(씨 제거·크기·질감 위주)를 받고, '충분히 익혀'/'생으로'는 없다", (id, nameKo, timeGuidance) => {
+    const fruit = chokingHardRawFruit(id, nameKo, {
+      time_min: 0,
+      time_max: 0,
+      time_guidance: timeGuidance,
+    });
+    const evalResult = evaluateIngredientSafety(fruit, []);
+    const warning = evalResult.warnings.find((w) => w.rule_id === "CHOKING_HARD_RAW");
+    expect(warning).toBeDefined();
+    expect(warning?.message).not.toContain("충분히 익혀");
+    expect(warning?.message).not.toContain("생으로");
+    expect(warning?.message).toContain("씨를 제거");
+    expect(warning?.message).toContain("통조각이나 딱딱한 상태로 제공하지 마세요");
+  });
+
+  // strawberry/blueberry/grape: allowed_methods=[]이지만 time_min/max가 0이 아님(예:
+  // strawberry 3~5분, "필요 시" 선택적 조리) — 기존 "충분히 익혀" 메시지 그대로 유지.
+  it.each([
+    ["strawberry", "딸기", 3, 5],
+    ["blueberry", "블루베리", 3, 5],
+    ["grape", "포도", 2, 4],
+  ] as const)("%s: time_min/max가 0이 아니므로 기존 메시지가 회귀 없이 그대로 유지된다", (id, nameKo, min, max) => {
+    const fruit = chokingHardRawFruit(id, nameKo, { time_min: min, time_max: max });
+    const evalResult = evaluateIngredientSafety(fruit, []);
+    const warning = evalResult.warnings.find((w) => w.rule_id === "CHOKING_HARD_RAW");
+    expect(warning?.message).toBe(
+      `${withEunNeun(nameKo)} 질식 위험이 있는 재료입니다. 충분히 익혀 잘게 다지거나 으깨어 제공하고, 생으로 또는 딱딱한 통조각 형태로 제공하지 마세요.`,
+    );
+  });
+
+  it("carrot/apple: 기존 메시지가 회귀 없이 그대로 유지된다 (allowed_methods 있음, D-2 조건 미해당)", () => {
+    const carrotWarning = evaluateIngredientSafety(ingredients.carrot, []).warnings.find(
+      (w) => w.rule_id === "CHOKING_HARD_RAW",
+    );
+    expect(carrotWarning?.message).toBe(
+      `${withEunNeun("당근")} 질식 위험이 있는 재료입니다. 충분히 익혀 잘게 다지거나 으깨어 제공하고, 생으로 또는 딱딱한 통조각 형태로 제공하지 마세요.`,
+    );
+
+    const appleWarning = evaluateIngredientSafety(ingredients.apple, []).warnings.find(
+      (w) => w.rule_id === "CHOKING_HARD_RAW",
+    );
+    expect(appleWarning?.message).toContain("충분히 익혀");
+    expect(appleWarning?.message).toContain("생으로");
   });
 });

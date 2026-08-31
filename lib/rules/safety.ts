@@ -1,4 +1,5 @@
 import type { ApiErrorDetail } from "@/types/api";
+import { isNoCookingNeededFromProfile } from "@/lib/recipe/cookingTimeStatus";
 import { withEunNeun } from "./koreanParticle";
 import type { ResolvedIngredient } from "./types";
 
@@ -75,9 +76,26 @@ export function evaluateIngredientSafety(
           // or hard. Before this fix, this branch did nothing at all, so
           // CHOKING_HARD_RAW silently never reached the user for any
           // ingredient with a cooking_profile (most of them).
+          //
+          // D-2 fix: the message above assumes the ingredient needs actual
+          // cooking to become safe ("충분히 익혀"/"생으로 ... 제공하지
+          // 마세요"). korean_melon/watermelon are CHOKING_HARD_RAW-linked but
+          // genuinely served raw (allowed_methods=[], time_min=time_max=0 —
+          // isNoCookingNeededFromProfile, same signal already used by
+          // buildCookingSteps.ts's isServingStateOnly/isNoCookingNeededFromView
+          // for the identical 7-fruit "조리 불필요" group) — for these the
+          // cook-them message tells a parent to do the opposite of what's
+          // safe. strawberry/blueberry/grape/chestnut are unaffected: they
+          // either have a non-zero time range (still benefit from the
+          // optional-softening framing the original message gives) or an
+          // actual allowed_methods entry (chestnut={boil}).
+          const cookingProfile = resolved.cookingProfile;
+          const message = isNoCookingNeededFromProfile(cookingProfile)
+            ? `${nameEunNeun} 질식 위험이 있는 재료입니다. 씨를 제거하고 잘게 잘라 부드럽게 으깨어 제공하고, 통조각이나 딱딱한 상태로 제공하지 마세요.`
+            : `${nameEunNeun} 질식 위험이 있는 재료입니다. 충분히 익혀 잘게 다지거나 으깨어 제공하고, 생으로 또는 딱딱한 통조각 형태로 제공하지 마세요.`;
           warnings.push({
             code: "SAFETY_FORM_WARNING",
-            message: `${nameEunNeun} 질식 위험이 있는 재료입니다. 충분히 익혀 잘게 다지거나 으깨어 제공하고, 생으로 또는 딱딱한 통조각 형태로 제공하지 마세요.`,
+            message,
             rule_id: rule.id,
             rule_status: rule.status,
             severity: rule.severity,
