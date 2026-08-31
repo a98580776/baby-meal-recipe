@@ -1186,3 +1186,28 @@ update preparation_profiles set
   cutting_guidance = '강판에 갈거나 가늘고 짧은 막대 모양으로 잘라서 제공',
   evidence_id = 'E016'
 where id = 'prep_cheese';
+
+-- =======================================================================
+-- Migration 0036 addition (append-only, mirrors that migration's data
+-- portion) -- see supabase/migrations/0036_5veg_choking_hard_raw.sql and
+-- docs/choking-hard-raw-5veg-evidence-investigation.md /
+-- docs/claude-desktop-handoff/2026-08-31-5veg-choking-hard-raw-migration-draft.md
+-- for full rationale (cauliflower/zucchini/eggplant/radish/cucumber all
+-- graded DIRECT via Solid Starts choking-hazard FAQ, existing
+-- CHOKING_HARD_RAW rule reused -- no new rule, rule's own evidence_id
+-- (E002) unchanged).
+-- =======================================================================
+
+insert into evidence (id, organization, title, url, source_tier, checked_at, applicability, status) values
+  ('E035', 'Solid Starts', 'Cauliflower -- When can babies eat cauliflower? (choking hazard FAQ)', 'https://solidstarts.com/foods/cauliflower/', 'TIER_1', '2026-08-31', 'Explicit safety note: raw or undercooked cauliflower is firm and hard to chew, increasing choking risk.', 'VERIFIED'),
+  ('E036', 'Solid Starts', 'Zucchini -- When can babies eat zucchini? (choking hazard FAQ)', 'https://solidstarts.com/foods/zucchini/', 'TIER_1', '2026-08-31', 'Explicit safety note: raw or undercooked zucchini is firm and hard to chew, increasing choking risk.', 'VERIFIED'),
+  ('E037', 'Solid Starts', 'Eggplant -- When can babies eat eggplant? (choking hazard FAQ)', 'https://solidstarts.com/foods/eggplant/', 'TIER_1', '2026-08-31', 'Explicit safety note: raw or undercooked eggplant is firm and slippery, increasing choking risk.', 'VERIFIED'),
+  ('E038', 'Solid Starts', 'Radish -- When can babies eat radishes? (choking hazard FAQ)', 'https://solidstarts.com/foods/radish/', 'TIER_1', '2026-08-31', 'Explicit safety note: raw radish is very firm and crunchy, increasing choking risk.', 'VERIFIED'),
+  ('E039', 'Solid Starts', 'Cucumber -- When can babies eat cucumber? (choking hazard FAQ)', 'https://solidstarts.com/foods/cucumber/', 'TIER_1', '2026-08-31', 'Explicit safety note: raw cucumber is firm, slippery, chewy and tapered-shaped, increasing choking risk.', 'VERIFIED');
+
+insert into ingredient_safety_rules (ingredient_id, safety_rule_id) values
+  ('cauliflower', 'CHOKING_HARD_RAW'),
+  ('zucchini', 'CHOKING_HARD_RAW'),
+  ('eggplant', 'CHOKING_HARD_RAW'),
+  ('radish', 'CHOKING_HARD_RAW'),
+  ('cucumber', 'CHOKING_HARD_RAW');
