@@ -166,6 +166,15 @@ const safetyRules: Record<string, SafetyRule> = {
     evidence_id: "E011",
     status: "VERIFIED",
   },
+  PORK_ALLERGEN: {
+    id: "PORK_ALLERGEN",
+    rule_type: "allergen",
+    severity: "HIGH",
+    condition_json: { allergen: "PORK" },
+    action: "WARN_OR_BLOCK",
+    evidence_id: "E011",
+    status: "VERIFIED",
+  },
 };
 
 function resolved(
@@ -365,6 +374,46 @@ export const ingredients: Record<string, ResolvedIngredient> = {
     },
     ["GROUND_MEAT_TEMP", "MEAT_POULTRY_TEMP_MFDS", "BEEF_ALLERGEN"],
     [{ code: "BEEF" }],
+    "BASE_AND_ADD_ON",
+    "CONFIRMED",
+  ),
+
+  pork: resolved(
+    "pork",
+    "돼지고기",
+    "meat",
+    "INFERRED",
+    "BASE_AND_TOPPING",
+    {
+      id: "prep_pork",
+      wash_rule: null,
+      peel_rule: null,
+      seed_removal_rule: null,
+      core_tough_part_rule: null,
+      bone_removal_rule: "뼈가 있는 경우 제거",
+      fishbone_removal_rule: null,
+      cutting_guidance: "육류용 도구를 구분해 사용하고 충분히 익힌 뒤 잘게 다지거나 부드럽게 제공",
+      status: "INFERRED",
+      evidence_id: "E010",
+    },
+    {
+      id: "cook_pork",
+      allowed_methods: [],
+      temperature_rule_id: "MEAT_POULTRY_TEMP_MFDS",
+      completion_checks: ["속까지 완전히 익음"],
+      time_guidance: "추천 10~20분 (시작 기준) — 잘게 썬 살코기, 충분히 가열",
+      time_status: "INFERRED",
+      evidence_id: "E010",
+      time_min: 10,
+      time_max: 20,
+      time_unit: "분",
+      // migration 0039: whole_cut_rest_seconds=180 (E024 재사용, beef와 동일값 --
+      // USDA가 2011년 pork whole-cut을 beef/veal/lamb와 같은 145F+3분으로 통일).
+      whole_cut_temperature_rule_id: null,
+      whole_cut_rest_seconds: 180,
+    },
+    ["MEAT_POULTRY_TEMP_MFDS", "PORK_ALLERGEN", "BONE_REMOVE"],
+    [{ code: "PORK" }],
     "BASE_AND_ADD_ON",
     "CONFIRMED",
   ),

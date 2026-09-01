@@ -1259,3 +1259,20 @@ update ingredient_safety_rules set evidence_id = 'E041' where ingredient_id = 'c
 update ingredient_safety_rules set evidence_id = 'E042' where ingredient_id = 'tuna' and safety_rule_id = 'FISHBONE_REMOVE';
 update ingredient_safety_rules set evidence_id = 'E043' where ingredient_id = 'chicken' and safety_rule_id = 'BONE_REMOVE';
 update ingredient_safety_rules set evidence_id = 'E044' where ingredient_id = 'pork' and safety_rule_id = 'BONE_REMOVE';
+
+-- =======================================================================
+-- Migration 0039 addition (append-only, mirrors that migration's data
+-- portion) -- see supabase/migrations/0039_pork_whole_cut_rest_seconds.sql
+-- and docs/pork-whole-cut-rest-seconds-investigation.md /
+-- docs/claude-desktop-handoff/2026-09-01-pork-meatform-execution-report.md
+-- for full rationale (E024 already covered pork whole-cut via USDA's 2011
+-- policy unification with beef/veal/lamb -- applicability text widened,
+-- no new evidence row; cook_pork.whole_cut_rest_seconds backfilled to match
+-- cook_beef's existing 180).
+-- =======================================================================
+
+update evidence set applicability =
+  'Whole cuts of beef, pork, veal, and lamb (steaks/chops/roasts): 145F/62.8C internal temperature plus a minimum 3-minute rest before carving/serving -- distinct from E004''s ground-meat (71.1C), poultry (73.9C), and fish (62.8C) figures, which remain ground/whole-form defaults for their respective categories. USDA unified pork with beef/veal/lamb at this value in a 2011-05-24 policy change (previously pork required 160F with no rest). Cross-checked via an independent mirror (temperaturetool.com) and CIDRAP (cidrap.umn.edu) reporting on the USDA policy after ask.fsis.usda.gov / fsis.usda.gov direct fetch returned 403/certificate errors this session.'
+  where id = 'E024';
+
+update cooking_profiles set whole_cut_rest_seconds = 180 where id = 'cook_pork';

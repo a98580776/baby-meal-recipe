@@ -290,5 +290,32 @@ describe("buildRecipeResponse", () => {
       );
       expect(groundRecipe.safety_notes).toEqual(wholeCutRecipe.safety_notes);
     });
+
+    // pork joined 2026-09-01 (docs/pork-whole-cut-rest-seconds-investigation.md,
+    // migration 0039) -- E024 already covered pork's whole-cut rest time via
+    // USDA's 2011 policy unification with beef, so cook_pork.whole_cut_rest_seconds
+    // is the same 180 as cook_beef's.
+    it("pork + whole_cut: rest_guidance가 beef와 동일하게 채워진다", () => {
+      const recipe = buildRecipeResponse(
+        { ...input, ingredient_ids: ["pork"], meat_forms: { pork: "whole_cut" } },
+        { ...data, ingredients: new Map([["pork", ingredients.pork]]) },
+        storageRule,
+        null,
+        [],
+      );
+      const pork = recipe.ingredients.find((i) => i.id === "pork");
+      expect(pork?.cooking?.rest_guidance).toBe("조리 후 3분간 그대로 두었다가 제공하면 육즙이 더 안정적입니다.");
+    });
+
+    it("pork + ground: rest_guidance는 null", () => {
+      const recipe = buildRecipeResponse(
+        { ...input, ingredient_ids: ["pork"], meat_forms: { pork: "ground" } },
+        { ...data, ingredients: new Map([["pork", ingredients.pork]]) },
+        storageRule,
+        null,
+        [],
+      );
+      expect(recipe.ingredients.find((i) => i.id === "pork")?.cooking?.rest_guidance).toBeNull();
+    });
   });
 });

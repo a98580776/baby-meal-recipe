@@ -487,4 +487,14 @@ describe("validateRecipeInput — meat_form 도메인 모델 (docs/meat-form-dom
     expect(result.valid).toBe(true);
     expect(result.warnings.some((w) => w.code === "MEAT_FORM_IGNORED")).toBe(true);
   });
+
+  // pork joined 2026-09-01 (docs/pork-whole-cut-rest-seconds-investigation.md,
+  // migration 0039) -- mirrors the beef case above.
+  it("pork + whole_cut: 에러/경고 없이 통과하고 normalized_input에 반영된다", () => {
+    const input = baseInput({ ingredient_ids: ["pork"], meat_forms: { pork: "whole_cut" } });
+    const result = validateRecipeInput(input, lookup({}, ["pork"]));
+    expect(result.valid).toBe(true);
+    expect(result.warnings.filter((w) => w.code === "MEAT_FORM_IGNORED")).toHaveLength(0);
+    expect(result.normalized_input.meat_forms).toEqual({ pork: "whole_cut" });
+  });
 });

@@ -1,9 +1,13 @@
 // meat_form 도메인 모델 (docs/meat-form-domain-model-design.md). Ground vs
 // whole-cut only matters for beef/pork-type red meat under USDA's cooking
-// temperatures (poultry stays 73.9°C either way) -- this round covers beef
-// only, decided with the user 2026-08-29. Pork needs its own evidence
-// registration before joining this set.
-export const MEAT_FORM_SUPPORTED_INGREDIENT_IDS = new Set(["beef"]);
+// temperatures (poultry stays 73.9°C either way) -- beef was decided with
+// the user 2026-08-29. Pork joined 2026-09-01: USDA unified whole-cut pork
+// with beef/veal/lamb at 145°F/62.8°C + 3-minute rest in a 2011 policy
+// change, so E024 (beef's whole-cut rest evidence) already covers pork too
+// -- no separate evidence row was needed, only cooking_profiles.
+// whole_cut_rest_seconds backfilled for cook_pork (docs/pork-whole-cut-rest-
+// seconds-investigation.md).
+export const MEAT_FORM_SUPPORTED_INGREDIENT_IDS = new Set(["beef", "pork"]);
 
 export type MeatForm = "ground" | "whole_cut";
 
