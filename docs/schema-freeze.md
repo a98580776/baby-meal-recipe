@@ -597,3 +597,43 @@ ingredient_tips"`. 전체 SQL은 `supabase/migrations/0043_ingredient_tips.sql` 
 범위 밖(§9 참고).
 
 ---
+
+## 16. Amendment — `0044_grain_consistency_texture`: 곡물 4종 `texture_profiles` 등록 (구현 및 원격 적용 완료, 2026-09-01)
+
+**분류(§1-1 기준)**: 순수 DML(신규 evidence 1행 + `texture_profiles` 16행 INSERT). DDL
+없음 — 신규 컬럼/테이블/enum 전혀 없음. `§1-1` 목록은 갱신 불필요(스키마 자체는 무변경,
+0026~0033/0034~0041과 동일 성격).
+
+**배경**: `docs/schema-freeze.md` §10-1이 "곡물 4종은 `shape` 대상에서 제외"라고만
+정책화했을 뿐, 자유서술 `texture_profiles.texture` 컬럼 자체를 배제한 결정은 아니었다.
+이번 조사(`docs/claude-desktop-handoff/2026-09-01-grain-consistency-policy-design.md`)로
+"정량적 배율(10배죽 등)"과 "정성적 되기(숟가락에서 흘러내리지 않을 정도)"가 서로 다른
+개념임을 확인 — 전자는 Tier 1/2 근거를 찾지 못해 **설계하지 않기로 결정**(CLAUDE.md §19),
+후자는 기존 TIER_1 evidence(E010 계열, 질병관리청 국가건강정보포털)에서 "전 단계 공통
+원칙"으로 확인되어 기존 `texture` 컬럼에 그대로 채웠다.
+
+**적용 내용**: `insert into evidence` 1행(`E047`, 질병관리청 `cntnts_sn=5470`, TIER_1) +
+`insert into texture_profiles` 16행(rice/oatmeal/brown_rice/barley × stage_1~4, 재료당
+4-stage 균일값). `shape`/`particle_size`는 전부 null 유지(§10-1 정책 그대로), 재료별
+문구는 각자의 `cook_*.completion_checks`에서 self-derived("쌀알"/"현미 알갱이"/"보리
+알갱이"/"오트밀" 등 재료 고유 표현 유지, self-derived-first 원칙 §10 재적용).
+
+**검증**: pre-snapshot(원격 DB) — 4종 `texture_profiles` 0행, `texture_profiles` 총 184행,
+`evidence` 총 46행, `E047` 부재 확인. 실행(순수 DML이라 Claude Code가 service-role
+client로 직접 insert, DDL이 아니므로 Dashboard 경유 불필요) 후 post-snapshot: 4종 16행
+신규 확인(재료당 4행, 값 draft와 100% 일치), `texture_profiles` 총 200행(184+16),
+`evidence` 총 47행(46+1), **다른 46개 재료의 `texture_profiles` 184행 전량 무변화**
+확인. API 실측(`POST /api/v1/recipes/generate`, `stage_2`+`porridge`, 로컬 dev server +
+실 원격 DB): rice/oatmeal/brown_rice/barley 4종 전부 응답의 texture 필드에 신규 문구가
+그대로 노출됨을 코드 변경 없이 확인(설계 문서 §4 예측대로 — 기존 쿼리 경로가 재료별 분기
+없이 `texture_profiles`를 조회하므로 자동 노출). 상세는
+`docs/claude-desktop-handoff/2026-09-01-grain-consistency-texture-execution-report.md` 참고.
+
+**seed.sql 처리**: 기존 `0026`~`0043`과 동일한 append-only 패턴(원본 INSERT 문 무수정,
+`0044`의 evidence/texture_profiles INSERT 블록을 파일 하단에 추가).
+
+**별도 이슈(이번 범위 밖)**: 설계 조사 중 `evidence.E010`(질병관리청, `cntnts_sn=5212`,
+40개 이상 재료의 prep/cook evidence로 재사용 중)의 등록 URL이 현재 404임이 발견됨 — 이
+amendment에서 고치지 않고 별도 조사 안건으로 분리한다(설계 문서 §6).
+
+---
