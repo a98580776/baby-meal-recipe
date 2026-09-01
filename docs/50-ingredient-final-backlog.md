@@ -11,6 +11,15 @@
 해소됐고, C-4(pork/cod/tuna/shrimp)는 tempNotes 경로 정상 동작을 재확인했다. 다른 섹션은
 이 갱신의 대상이 아니다 — 최초 작성일(2026-08-30) 기준 스냅샷 그대로 유지.
 
+**갱신(2026-09-02)**: 이 문서 작성 이후 완료된 작업 6건을 §2 CLOSED에 추가(CLOSED-18~23)하고,
+그중 3건(migration 0044/0042, E-7 조사)이 §3 backlog 항목(E-3/E-4/E-7)의 상태를 실제로
+바꿔서 §3-E/§6/§7/최종 보고를 함께 갱신했다. **이번 갱신은 상태 반영 + 재확인만이고 새로운
+정책 결정은 하지 않았다** — E-3/E-4는 그 사이 실행된 migration이 이미 정책을 확정했기 때문에
+CLOSED로 옮긴 것이고(이번에 새로 결정한 것 아님), E-7/B-1(E-1)/B-2(E-2)는 상태를 재확인만
+했을 뿐 그대로 BLOCKED/BACKLOG 유지다. 상세 근거는 아래 각 섹션 인라인 주석 참고. 다른
+섹션(§1 DB 스냅샷, §4, §5, C-1/C-5/C-6/C-7 등)은 이번 갱신 대상이 아니다 — 요청 범위가
+"새로 완료된 작업 반영 + E-7/B-1/B-2 재확인"으로 명시적으로 한정됨.
+
 ---
 
 ## 0. 조사 대상 문서 — 수집 결과
@@ -102,10 +111,17 @@
 | CLOSED-15 | egg cooking-method(allowed_methods) 재검증 — 변경 불필요 확인(KEEP) | `docs/egg-cooking-method-investigation.md` | 조사만, commit 없음 |
 | CLOSED-16 | chestnut cooking-method(allowed_methods) 재검증 — 변경 불필요 확인(KEEP) | `docs/chestnut-cooking-method-investigation.md` | 조사만, commit 없음 |
 | CLOSED-17 | cod/tuna FISHBONE_REMOVE 근거 재검증 — 기존 연결 타당성 재확인(LINK 유지) | `docs/cod-tuna-fishbone-investigation.md` | 조사만, commit 없음 |
+| CLOSED-18 | `completion_check_type`(form/doneness) 컬럼 추가 + seaweed/sesame/perilla/cheese 오분류 수정 — **E-4 정책 결정 실행**(§3-E) | migration 0042 | `90010e2` |
+| CLOSED-19 | `ingredient_tips` 테이블 신규 생성(스키마만, TIP 콘텐츠 기능의 데이터 계층) | migration 0043 | `3dc86b8` |
+| CLOSED-20 | 곡물 4종(rice/oatmeal/brown_rice/barley) texture_profiles 등록 + `shape=null` 유지 정책 확정 — **E-3 정책 결정 실행**(§3-E), texture coverage 46/50 → 50/50 | migration 0044 | `24ca24c` |
+| CLOSED-21 | `evidence.E010` URL 404 정리(url 제거, status VERIFIED→NEEDS_REVIEW) | migration 0045 | `015b5ed` |
+| CLOSED-22 | `ingredient_tips` 파일럿 데이터 16건 INSERT(8재료×2건, API 노출은 별도 후속 범위로 미포함) | migration 0046 | `a363c5a` |
+| CLOSED-23 | E-7(레거시 `ingredient_role` 컬럼 제거) 안전성 조사 — "시기상조" 결론(제거 조건 4개 중 2개 미충족 + 신규 리스크 1건 발견), DDL draft 미작성 | `docs/ingredient-role-legacy-column-removal-investigation.md` | 조사만, `9b484a0` |
 
-**CLOSED 17건.** CLOSED-15~17은 "새 데이터를 추가"한 것이 아니라 "기존 상태가 여전히 맞는지
-재검증해서 변경 불필요로 결론낸 것"이다 — 이것도 유효한 작업 완료로 집계한다(재조사 낭비를
-막기 위한 증거이기도 하다, §5).
+**CLOSED 23건.** CLOSED-15~17, 23은 "새 데이터를 추가"한 것이 아니라 "기존 상태가 여전히
+맞는지 재검증해서 변경 불필요/시기상조로 결론낸 것"이다 — 이것도 유효한 작업 완료로 집계한다
+(재조사 낭비를 막기 위한 증거이기도 하다, §5). CLOSED-18/20이 각각 E-4/E-3의 정책 결정을
+**실행**한 것이라, 아래 §3-E 표에서 두 항목을 BACKLOG(정책 결정 대기)에서 CLOSED로 옮겼다.
 
 **OPS-001(2026-08-29 발견된 미커밋 리스크) 상태 갱신**: 당시 "modified 28개 + untracked 60개
 이상"이었던 것이 현재 `git status --short` 기준 **untracked 5개**(전부 이번 세션 이전에
@@ -198,6 +214,15 @@ grape/blueberry/strawberry는 "**필요 시**" 찌기/데치기로, 실제로는
 로드맵에 오를 때만 재검토한다. B-2도 같은 이유로 지금 건드릴 필요가 없다 — texture_profile
 stage 작업과 자연스럽게 연결되는 훨씬 큰 스키마/정책 결정이다.
 
+**B-1/B-2 재확인(2026-09-02, 트리거 미발생)**: 두 항목의 재검토 트리거를 코드 기준으로
+다시 확인했다 — (1) raw-serving을 실제 옵션으로 노출하는 기능: `lib/`/`app/`/`components/`
+grep 결과 `cookingTimeStatus.ts:83`의 주석 하나("raw serving is the more common
+real-world case")만 있을 뿐 실제 기능 코드/food_form 추가는 없음. (2) `safety_action`
+enum 재설계: `supabase/migrations/0001_initial_schema.sql`에서 정의된 6개 값
+(`BLOCK_INGREDIENT`/`BLOCK_FORM`/`CONTINUE_COOKING`/`REMOVE_BONE`/`REMOVE_FISH_BONES`/
+`WARN`) 그대로이고, 0001 이후 이 enum을 건드린 migration 없음(전수 grep 확인). **두
+트리거 모두 발생하지 않았다 — 계속 BLOCKED, 상태 변동 없음.**
+
 **B-5(tofu FPIES) 판정**: `safety_rules.rule_type`(choking/allergen/cooking_temperature/
 raw_food/physical_hazard/age_restriction) 어디에도 "희귀 비-IgE 반응"이 들어갈 자리가 없다.
 새 rule_type을 만들지, 완전히 무시할지는 정책 결정이며 이번 조사에서 결론 내지 않는다 —
@@ -224,6 +249,13 @@ raw_food/physical_hazard/age_restriction) 어디에도 "희귀 비-IgE 반응"�
 investigation.md` §2가 이미 정확히 이렇게 지적함). **이것은 이 데이터셋 전체의 구조적 특성이지
 개별 재료의 결함이 아니다** — 요청서 지시대로 지금 당장 138개 행을 전부 개별 출처로 재조사하는
 것은 제안하지 않는다. architecture-level 관찰로만 기록한다.
+
+**C-1 관련 갱신(2026-09-02)**: migration 0045(commit `015b5ed`)로 `E010.url`이 404 확인 후
+`null` 처리되고 `status`가 `VERIFIED`→`NEEDS_REVIEW`로 하향됐다(`organization`/`title`/
+`source_tier`/`applicability`는 유지, §"C-1 판정" 서술 자체는 여전히 유효). **이 변경은
+C-1(과다 재사용 구조)을 해소하지 않는다** — 여전히 138개 행이 E010 하나를 공유한다. 다만
+그 138개 행이 참조하는 evidence의 status가 이제 `NEEDS_REVIEW`라는 점은 C-1 우선순위
+재평가 시 참고할 새 사실이다(재사용량 자체는 이번 갱신에서 재조사하지 않음, BACKLOG 유지).
 
 **C-3/C-4 판정 재확인(2026-08-31)**: 이 문서 최초 작성(2026-08-30) 이후 진행된 C-2 작업의
 부산물로 두 항목을 재확인했다.
@@ -265,15 +297,61 @@ investigation.md` §2가 이미 정확히 이렇게 지적함). **이것은 이 
 
 | ID | 제목 | 근거 문서 | 우선순위 |
 |---|---|---|---|
-| E-1(=B-1) | raw/cooked 레시피 인스턴스 domain state 부재 | `choking-hard-raw-runtime-investigation.md` | BACKLOG |
-| E-2(=B-2) | stage 조건부 safety action 강도 부재 | `p0-safety-fixes-investigation.md` §8-4 | BACKLOG |
-| E-3 | 곡물 4종(rice/oatmeal/brown_rice/barley) — `shape` 필드가 죽 농도 개념에 적용 가능한지 정책 미결정 | `remaining-21-texture-survey.md`, `current-roadmap.md` POLICY-001 | **BACKLOG(정책 결정 대기)** |
-| E-4 | sesame/perilla/seaweed/watermelon/cheese — `completion_checks`의 의미를 "조리 완료"로 유지할지 "준비 상태"까지 포함할지 재정의 보류 | 메모리(`project_texture_profiles_status`), `current-roadmap.md` | BACKLOG(정책 결정 대기) |
+| E-1(=B-1) | raw/cooked 레시피 인스턴스 domain state 부재 | `choking-hard-raw-runtime-investigation.md` | **BACKLOG(2026-09-02 재확인, 변동 없음)** |
+| E-2(=B-2) | stage 조건부 safety action 강도 부재 | `p0-safety-fixes-investigation.md` §8-4 | **BACKLOG(2026-09-02 재확인, 변동 없음)** |
+| E-3 | 곡물 4종(rice/oatmeal/brown_rice/barley) — `shape` 필드가 죽 농도 개념에 적용 가능한지 정책 미결정 | `remaining-21-texture-survey.md`, `current-roadmap.md` POLICY-001 | **CLOSED(2026-09-01, migration 0044)** — 아래 참고 |
+| E-4 | sesame/perilla/seaweed/watermelon/cheese — `completion_checks`의 의미를 "조리 완료"로 유지할지 "준비 상태"까지 포함할지 재정의 보류 | 메모리(`project_texture_profiles_status`), `current-roadmap.md` | **CLOSED(2026-09-01, migration 0042, 4/5재료)** — 아래 참고 |
 | E-5 | `meat_form` 모델의 pork whole-cut 확장(E024류 evidence 확장 필요) | `project_beef_whole_cut_followup` 메모리 §"남은 후속 과제" | LATER |
 | E-6 | `BEEF_WHOLE_CUT_TEMP` 연결 여부 — 연결하지 않기로 이미 최종 결정, 재론 조건만 기록 | 위와 동일 | **DO NOT DO**(§9) |
-| E-7 | 구 `ingredient_role`(5-value) 컬럼 제거 | `current-roadmap.md` DB-011 | P2 |
-| E-8 | TIP 콘텐츠 스키마/데이터(CLAUDE.md §12 차별화 요소) | `current-roadmap.md` CONTENT-001 | LATER |
+| E-7 | 구 `ingredient_role`(5-value) 컬럼 제거 | `current-roadmap.md` DB-011, `docs/ingredient-role-legacy-column-removal-investigation.md` | **P2, BLOCKED(2026-09-02 재확인)** — 아래 참고 |
+| E-8 | TIP 콘텐츠 스키마/데이터(CLAUDE.md §12 차별화 요소) | `current-roadmap.md` CONTENT-001 | **부분 진행**(스키마+파일럿 16건 완료, API 노출 LATER) — 아래 참고 |
 | E-9 | `docs/schema-freeze.md` amendment 로그가 0008에서 멈춤(현재 0033까지 진행) | `current-roadmap.md` DOC-001 | P2 |
+
+**E-3 판정 갱신(2026-09-02, migration 0044 반영)**: `docs/claude-desktop-handoff/
+2026-09-01-grain-consistency-policy-design.md`에서 결정되고 migration 0044(commit
+`24ca24c`)로 실행됨 — **`shape`/`particle_size`는 계속 `null`로 유지**("죽은 조각 모양
+개념이 성립하지 않는다"), 대신 `texture`(자유서술) 필드에 4종 균일 4-stage 문구를 채우는
+것으로 정책이 확정됐다. `texture_profiles` coverage가 46/50 → **50/50**으로 완결됐다.
+이번 갱신에서 새로 결정한 것이 아니라 이미 실행된 결정을 문서에 반영한 것뿐이다.
+
+**E-4 판정 갱신(2026-09-02, migration 0042 반영)**: `docs/claude-desktop-handoff/
+2026-09-01-a1-completion-check-type-mislabel-design.md`에서 결정되고 migration 0042
+(commit `90010e2`)로 실행됨 — `cooking_profiles.completion_check_type`(`form`|`doneness`)
+컬럼을 신설해 "완료 신호가 형태(form)인지 익힘 정도(doneness)인지"를 명시적으로 분리했다.
+sesame/perilla/seaweed/cheese 4건은 `form`으로 override되어 Cooking Mode 오분류가
+해소됨(API 실측 확인 완료, 실행 보고서 §2). **watermelon은 별도 override 없이 이미
+올바르게 처리돼 있었다** — `cook_watermelon` row는 실제로 존재하며(`seed.sql:368`,
+`allowed_methods='{}'`, `completion_checks='{"씨가 없고 적절한 크기로 제공"}'`),
+migration 0042의 기본 백필 규칙(`case when allowed_methods = '{}' then 'form' else
+'doneness' end`)이 `allowed_methods='{}'`인 row에 자동으로 `'form'`을 부여한다. 반면
+seaweed/sesame/perilla/cheese 4종은 (migration 0034에서) `allowed_methods`가 채워져
+있어 이 default case로는 `'doneness'`가 됐을 것이므로 별도 override가 필요했던
+것이다 — watermelon은 애초에 이 default case만으로 이미 정답이었기 때문에 override
+대상에 없었을 뿐, "row가 없어서 범위 밖"이었던 것이 아니다(2026-09-03 정정, seed.sql
+직접 grep으로 재확인). 따라서 E-4는 원래 대상 5재료 중 sesame/perilla/seaweed/cheese
+4재료가 명시적 override로 CLOSED, watermelon 1재료는 default 로직만으로 이미 CLOSED
+상태였다는 것이 정확한 설명이다.
+
+**E-7 재확인(2026-09-02, 정책 변경 없음)**: `docs/ingredient-role-legacy-column-removal-
+investigation.md`(commit `9b484a0`, 2026-09-01)가 이미 "시기상조"로 결론냈다. 이번에
+그 문서가 제시한 두 가지 제거 조건을 실제 코드 grep으로 재검증했고 **둘 다 그대로 미충족**
+이다:
+- **API `select("*")` 노출**: `lib/supabase/queries.ts:37`(`getIngredientsList`,
+  `GET /api/v1/ingredients`)과 `:101`(`getIngredientById`, `GET /api/v1/ingredients/:id`)
+  둘 다 여전히 `.select("*")`로 raw row를 그대로 반환 — `ingredients.ingredient_role`(5값
+  레거시 컬럼)이 응답에 계속 노출되는 상태 그대로.
+- **`seed.sql` mirror 블록 존재**: `supabase/seed.sql:468-487`에 migration 0005를 mirror한
+  `update ingredients set ingredient_role = '...'` 5개 UPDATE 문이 그대로 남아있음 —
+  컬럼을 지금 DROP하면 fresh-clone 부트스트랩(전체 migration → seed.sql 실행) 시 "존재하지
+  않는 컬럼" 에러로 깨지는 리스크가 여전히 유효하다(투자 문서 §4).
+
+**결론: 조건 재확인만 했고 정책은 바꾸지 않는다 — 계속 BLOCKED.** DDL draft도 작성하지 않음.
+
+**E-8 상태 갱신(2026-09-02)**: 스키마(migration 0043, `ingredient_tips` 테이블)와 파일럿
+데이터(migration 0046, 8재료×2건=16행)가 완료됐다(§2 CLOSED-19/22). **API 응답에 TIP을
+노출하는 코드 작업(`lib/`/`app/`)은 아직 착수 전** — 두 실행 보고서 모두 명시적으로 "이번
+범위 아님, 후속 작업"이라고 기록했다. 따라서 E-8은 완전히 CLOSED가 아니라 **"데이터 계층
+완료, 제품 노출 LATER"**로 상태를 세분화한다(§7).
 
 ---
 
@@ -384,24 +462,34 @@ cauliflower/zucchini/eggplant/radish/cucumber(HOLD, 조건부) 8개뿐이다.
 | A-1(6개 재료 allowed_methods 보정) | pear/peach/seaweed/sesame/perilla/cheese | **PARALLEL_SAFE** — 서로 다른 `cooking_profiles` row, 기존 rice/egg/chestnut 배치 처리 선례(0007)와 동일 패턴 |
 | D-1(allowed_methods 라벨 매핑) | 코드 1개 파일 | **PARALLEL_SAFE** — A-1과도 독립적(라벨 매핑은 값이 아니라 표시 방식) |
 | C-2(prep boilerplate 조사) | 18개 재료 | **PARALLEL_SAFE** — 서로 다른 `preparation_profiles` row, 조사 단계는 재료별로 나눠도 결과를 한 migration으로 묶을 수 있음(기존 배치 관례) |
-| E-7(레거시 컬럼 제거) | 스키마 변경 1건 | **SEQUENTIAL** — DDL이라 다른 DML 작업과 동시 진행보다는 별도 시점에 단독 실행 권장(회귀 위험 최소화) |
+| E-7(레거시 컬럼 제거) | 스키마 변경 1건 | **BLOCKED(2026-09-02 재확인)** — 조사 완료(`9b484a0`), 제거 조건 2개 미충족 그대로(API `select("*")` 노출, seed.sql mirror 존재) — 조건 충족 전까지 실행하지 않음 |
 | E-9(schema-freeze.md 갱신) | 문서 1건 | **PARALLEL_SAFE** — 다른 모든 작업과 독립 |
 | A-2(grape/blueberry/strawberry) | 3개 재료 | **BLOCKED** — "선택적 조리" 표현 정책이 먼저 필요(§3) |
-| B-1/E-1(raw/cooked domain state) | 스키마 확장 | **BLOCKED** — product가 raw-serving 옵션을 실제로 도입하기 전까지 |
-| B-2/E-2(stage 조건부 강도) | safety_rules.action 확장 | **BLOCKED** — action enum 재설계 필요, texture stage 작업과 결합 필요 |
-| E-3(곡물 shape 정책) | 4개 재료 | **BLOCKED** — 정책 결정 선행 |
-| E-4(completion_checks 의미 재정의) | 5개 재료 | **BLOCKED** — 정책 결정 선행 |
+| B-1/E-1(raw/cooked domain state) | 스키마 확장 | **BLOCKED(2026-09-02 재확인, 변동 없음)** — product가 raw-serving 옵션을 실제로 도입하기 전까지 |
+| B-2/E-2(stage 조건부 강도) | safety_rules.action 확장 | **BLOCKED(2026-09-02 재확인, 변동 없음)** — action enum 재설계 필요, texture stage 작업과 결합 필요 |
+| E-8 API 노출(TIP 콘텐츠) | 코드 작업 | **PARALLEL_SAFE** — 데이터 계층(migration 0043/0046) 이미 완료, 착수 시 다른 작업과 독립 |
 | C-6(HOLD 5개 채소) | cauliflower 등 | **BLOCKED** — 신규 evidence 확보 전까지 |
 | B-5(tofu FPIES) | rule_type 설계 | **BLOCKED** — 정책 결정 선행 |
+
+~~E-3(곡물 shape 정책)~~ / ~~E-4(completion_checks 의미 재정의)~~ — **CLOSED**(migration
+0044/0042), 아래 표에서 제거함.
 
 ---
 
 ## 7. 최종 추천 실행 순서
 
+**갱신(2026-09-02)**: A-1/D-1/C-2/E-9는 이 문서 작성(2026-08-30) 이후에도 실행되지 않은
+채 그대로 남아있다(코드/migration 이력에서 확인 — A-1 대상 6개 재료의 `allowed_methods`,
+`allowedMethodLabels`류 매핑 파일, `cutting_guidance` 문구, schema-freeze.md 0009~0033
+로그 전부 미착수 상태 그대로). 아래 NOW/NEXT는 최초 작성 시점 그대로 유지하되, E-7만
+**실행 가능 목록에서 제거**했다(재확인 결과 조건 미충족 지속, 위 §3-E 참고) — 다른 항목의
+순서/우선순위는 이번 갱신에서 재판단하지 않는다.
+
 ### NOW (다음 세션에서 바로)
 
-1. **OPS housekeeping**: 남은 untracked 조사 문서 5개(`choking-hard-raw-audit.md` 등)를
-   커밋한다 — 위험 0, OPS-001의 완전한 마무리.
+1. **OPS housekeeping**: 남은 untracked 조사 문서를 커밋한다 — 위험 0, OPS-001의 완전한
+   마무리(2026-09-02 기준 `20260830/`, `260824/broccoli/`,
+   `docs/egg-cooking-time-evidence-investigation.md`, `public/images/` 등 여전히 untracked).
 2. **A-1**: pear/peach/seaweed/sesame/perilla/cheese 6개의 `allowed_methods` 보정 —
    기존 rice/egg/chestnut(migration 0007) 패턴을 그대로 재사용, 조사 부담 낮음, 실제
    사용자에게 매 레시피마다 노출되는 결함이라 우선순위가 높다.
@@ -415,20 +503,31 @@ cauliflower/zucchini/eggplant/radish/cucumber(HOLD, 조건부) 8개뿐이다.
    설계한다.
 2. **C-2**: 18개 재료의 boilerplate `cutting_guidance`를 재료별 구체 문구로 보강 —
    안전에 영향 없는 콘텐츠 품질 개선, 배치 조사 가능.
-3. **E-9**: `docs/schema-freeze.md` amendment 로그를 0009~0033까지 갱신 — 순수 문서 작업.
-4. **E-7**: 레거시 `ingredient_role`(5-value) 컬럼 제거 — 단독 DDL migration.
+3. **E-9**: `docs/schema-freeze.md` amendment 로그를 0009~0046까지 갱신 — 순수 문서 작업
+   (2026-09-02 기준 이미 §14/§17/§18까지는 개별 migration 실행 시점마다 amendment로
+   기록돼 있으나, §9-A "column 전체 목록" 자체의 일괄 갱신은 아직 안 됨 — E-9 범위 그대로).
+4. **E-8 API 노출**: `ingredient_tips` 데이터 계층은 완료(migration 0043/0046) — 레시피
+   응답에 TIP을 실제로 노출하는 코드 작업(`buildRecipeResponse.ts` 등)을 여기로 승격.
+
+~~**E-7**: 레거시 `ingredient_role`(5-value) 컬럼 제거~~ — **NEXT에서 제거함(2026-09-02)**.
+조사 완료(`9b484a0`) 결과 제거 조건 4개 중 2개가 미충족이라 지금 실행하면 안 된다 —
+DDL을 단독 migration으로 실행 가능한 상태가 아니다. LATER로 재분류.
 
 ### LATER (MVP 이후 또는 정책 결정 대기)
 
 1. **B-1/E-1**: raw/cooked 레시피 인스턴스 domain state — product가 raw-serving을 실제
-   옵션으로 도입할 때.
-2. **B-2/E-2**: stage 조건부 safety action 강도 — texture stage 작업과 결합해 재설계할 때.
-3. **E-3**: 곡물 4종 shape/consistency 정책 결정.
-4. **E-4**: sesame/perilla/seaweed/watermelon/cheese `completion_checks` 의미 재정의.
-5. **E-5**: `meat_form` pork whole-cut 확장.
-6. **E-8**: TIP 콘텐츠 스키마(신규 기능, CLAUDE.md §12).
-7. **B-3/B-4**: egg 온도 safety rule 신설 여부 + NHS 5분 값 반영 여부.
-8. **C-1/C-3/C-5**: evidence 품질 고도화(E010 의존도, 견과류 전용 근거, 생선가시 전용 근거).
+   옵션으로 도입할 때(2026-09-02 재확인: 트리거 미발생, BLOCKED 유지).
+2. **B-2/E-2**: stage 조건부 safety action 강도 — texture stage 작업과 결합해 재설계할 때
+   (2026-09-02 재확인: 트리거 미발생, BLOCKED 유지).
+3. **E-5**: `meat_form` pork whole-cut 확장.
+4. **E-7**: 레거시 `ingredient_role`(5-value) 컬럼 제거 — §16 조건 4개 전부 충족 + seed.sql
+   mirror 블록 처리 방식에 대한 별도 정책 결정이 먼저 필요(2026-09-02 조사 결과 신규 편입).
+5. **B-3/B-4**: egg 온도 safety rule 신설 여부 + NHS 5분 값 반영 여부.
+6. **C-1/C-3/C-5**: evidence 품질 고도화(E010 의존도, 견과류 전용 근거, 생선가시 전용 근거).
+
+**LATER에서 제거(CLOSED로 이동, 2026-09-02)**: ~~E-3(곡물 4종 shape/consistency 정책
+결정)~~, ~~E-4(sesame/perilla/seaweed/watermelon/cheese completion_checks 의미
+재정의)~~ — 둘 다 migration 0044/0042로 정책이 실제 결정·실행됨(§3-E, §2 CLOSED-18/20).
 
 ### DO NOT DO
 
@@ -444,9 +543,10 @@ cauliflower/zucchini/eggplant/radish/cucumber(HOLD, 조건부) 8개뿐이다.
    재론하지 않는다.
 4. **tofu FPIES를 기존 필드에 억지로 끼워 넣는 것** — `rule_type` taxonomy 재설계 없이
    `completion_checks`나 기존 allergen 문구에 슬쩍 추가하면 스키마 의미가 왜곡된다.
-5. **곡물 4종의 `shape`를 "기술적으로 채울 수 있다"는 이유로 채우는 것** — 정책 질문
-   (E-3)이 먼저다, 데이터를 채우면서 동시에 필드 의미를 재정의하면 나중에 되돌리기 어렵다
-   ([[feedback_db_content_workflow]] 원칙과 동일).
+5. ~~**곡물 4종의 `shape`를 "기술적으로 채울 수 있다"는 이유로 채우는 것**~~ — **해소됨
+   (2026-09-02)**: E-3 정책이 migration 0044로 결정·실행됐고, 그 결정 자체가 이 항목이
+   금지하려던 것과 정확히 반대 방향(`shape`는 채우지 않고 `texture` 자유서술만 채움)이라
+   이 DO NOT DO는 이제 "지켜진 채로 마감된 항목"이다 — 별도 재발 방지 조치 불필요.
 6. **A-2(grape/blueberry/strawberry)를 A-1과 기계적으로 동일하게 처리하는 것** — "선택적
    조리"와 "필수 조리"를 같은 방식으로 표현하면 오히려 새로운 부정확함을 만든다.
 
@@ -466,31 +566,50 @@ cauliflower/zucchini/eggplant/radish/cucumber(HOLD, 조건부) 8개뿐이다.
 - [x] `verification_status` 변경 없음
 - [x] commit 없음(이 문서 파일 신규 추가만)
 
+**갱신(2026-09-02) invariant**: 이번 갱신 작업 중에도:
+
+- [x] DB 실행 없음 — 이번 세션은 코드/파일 grep(로컬 파일시스템, `git log`)만 수행,
+  원격 Supabase에 대한 조회조차 하지 않음(§3-E/§3-B 재확인은 전부 코드/git 근거)
+- [x] `supabase/migrations/`, `supabase/seed.sql` 무변경
+- [x] production 코드/테스트 무변경 — grep으로만 읽음
+- [x] E-7/B-1/B-2 정책을 이번에 새로 결정하지 않음 — E-7은 계속 BLOCKED, B-1/B-2는 계속
+  BLOCKED로 재확인만 함(트리거 미발생)
+- [x] E-3/E-4를 CLOSED로 옮긴 것은 이번 조사 결정이 아니라 이미 실행된 migration
+  0044/0042(각각 commit `24ca24c`/`90010e2`)를 문서에 반영한 것
+- [x] commit 없음(이 문서 파일 수정만, 요청서 지시대로 승인 대기)
+
 ---
 
 ## 최종 보고
 
+**(2026-09-02 갱신 — 아래 수치는 갱신 후 최신 상태. 최초 작성 시점 수치는 §2/§3의 각 갱신
+인라인 노트 참고)**
+
 - **전체 ingredient**: 50
-- **CLOSED**: 17건(§2)
+- **CLOSED**: 23건(§2, CLOSED-18~23 신규)
 - **P0**: 0건(현재 MVP 핵심 흐름을 막는 P0 없음 — 이전 OPS-001/DB-008 P0 2건 모두 이미 CLOSED)
 - **P1**: 2건(A-1 Cooking Mode 타이머 오분류 6개 재료, D-1 allowed_methods 라벨 미매핑)
-- **P2**: 8건(A-2, B-3, B-4, C-2, C-3, C-4, D-2, E-7, E-9 — 일부 항목은 우선순위 표에서
-  BACKLOG와 병기, 정확한 개수는 §3 표 참고)
-- **BACKLOG**: 10건(B-1/E-1, B-2/E-2, B-5, C-1, C-5, C-6, C-7, E-3, E-4, E-5, E-6은 DO NOT DO로 별도 표기)
+- **P2**: 8건(A-2, B-3, B-4, C-2, C-3, C-4, D-2, E-9 — E-7은 BLOCKED로 재분류되어 이 목록에서
+  제외, 정확한 개수는 §3 표 참고)
+- **BACKLOG**: 9건(B-1/E-1, B-2/E-2, B-5, C-1, C-5, C-6, C-7, E-7, E-6은 DO NOT DO로 별도
+  표기) — E-3/E-4는 CLOSED로 이동해 이 목록에서 제외
+- **부분 진행**: 1건(E-8 — 데이터 계층 완료/migration 0043,0046, API 노출은 LATER)
 - **재조사 필요 재료**: **0개(무조건)**, 조건부 재조사 후보 5그룹(§5) — 전부 정책 결정이
-  선행되어야 의미가 있음
-- **병렬 가능 작업**: A-1, D-1, C-2, E-9(§6, PARALLEL_SAFE)
-- **순차 작업**: E-7(SEQUENTIAL, 단독 DDL)
-- **현재 MVP blocker**: **없음** — CLOSED-17건이 이전에 식별된 모든 P0급 이슈(미커밋 리스크,
-  cod/tuna 가시, egg/chestnut 조리법, CHOKING_HARD_RAW 침묵, broccoli/tofu UNSUPPORTED)를
-  전부 해소했다
+  선행되어야 의미가 있음(이번 갱신 대상 아님, §5는 최초 작성 시점 그대로)
+- **병렬 가능 작업**: A-1, D-1, C-2, E-9, E-8 API 노출(§6, PARALLEL_SAFE)
+- **BLOCKED(2026-09-02 재확인 완료)**: E-7(제거 조건 2개 미충족 지속), B-1/E-1·B-2/E-2
+  (트리거 미발생 지속) — 전부 상태 변동 없음, 정책 재결정 안 함
+- **현재 MVP blocker**: **없음** — CLOSED-23건이 이전에 식별된 모든 P0급 이슈(미커밋 리스크,
+  cod/tuna 가시, egg/chestnut 조리법, CHOKING_HARD_RAW 침묵, broccoli/tofu UNSUPPORTED)와
+  두 정책 결정 대기 항목(E-3 곡물 shape, E-4 completion_checks 재정의)을 전부 해소했다
 - **권장 NOW**: OPS housekeeping(문서 커밋) + A-1(6개 재료 allowed_methods 보정) + D-1(라벨 매핑)
-- **권장 NEXT**: A-2 정책 결정 + C-2(prep 문구 보강) + E-9(schema-freeze 갱신) + E-7(레거시 컬럼 제거)
-- **권장 LATER**: B-1/E-1, B-2/E-2, E-3, E-4, E-5, E-8, B-3/B-4, C-1/C-3/C-5
-- **DO NOT DO**: 50개 전수 재조사, 형제 채소 유사성만으로 CHOKING_HARD_RAW 연결, BEEF_WHOLE_CUT_TEMP 재검토, tofu FPIES 임시방편 반영, 곡물 shape 성급한 채움, A-2를 A-1과 동일 처리
+- **권장 NEXT**: A-2 정책 결정 + C-2(prep 문구 보강) + E-9(schema-freeze 갱신) + E-8 API 노출
+  (E-7은 조건 미충족으로 NEXT에서 제외, LATER로 재분류)
+- **권장 LATER**: B-1/E-1, B-2/E-2, E-5, E-7(제거 조건 재충족 시), B-3/B-4, C-1/C-3/C-5
+- **DO NOT DO**: 50개 전수 재조사, 형제 채소 유사성만으로 CHOKING_HARD_RAW 연결, BEEF_WHOLE_CUT_TEMP 재검토, tofu FPIES 임시방편 반영, A-2를 A-1과 동일 처리, E-7을 조건 미충족 상태에서 실행
 
-DB 변경: NONE
+DB 변경: NONE(이번 갱신 — grep/git log만 실행, 원격 조회 없음)
 seed 변경: NONE
 code 변경: NONE
 test 변경: NONE
-commit: NONE
+commit: NONE(요청서 지시대로 승인 대기)
