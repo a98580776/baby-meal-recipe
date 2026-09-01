@@ -108,6 +108,20 @@ const safetyRules: Record<string, SafetyRule> = {
     evidence_id: "E008",
     status: "VERIFIED",
   },
+  // migration 0040 -- non-IgE, delayed-onset reaction, distinct mechanism
+  // from SOY_ALLERGEN (IgE-mediated) above; added, not a replacement.
+  SOY_FPIES: {
+    id: "SOY_FPIES",
+    rule_type: "non_ige_reaction",
+    severity: "HIGH",
+    condition_json: {
+      description:
+        "soy protein-induced enterocolitis syndrome (FPIES) -- non-IgE-mediated, delayed onset 1-4h after ingestion, repetitive vomiting/diarrhea; distinct mechanism from immediate-type IgE allergy already covered by SOY_ALLERGEN",
+    },
+    action: "WARN",
+    evidence_id: "E045",
+    status: "VERIFIED",
+  },
   HONEY_UNDER_12M: {
     id: "HONEY_UNDER_12M",
     rule_type: "age_restriction",
@@ -496,7 +510,7 @@ export const ingredients: Record<string, ResolvedIngredient> = {
       whole_cut_temperature_rule_id: null,
       whole_cut_rest_seconds: null,
     },
-    ["SOY_ALLERGEN"],
+    ["SOY_ALLERGEN", "SOY_FPIES"],
     [{ code: "SOY" }],
     "BASE_ONLY",
     "REVIEW",

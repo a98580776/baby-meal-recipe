@@ -1276,3 +1276,24 @@ update evidence set applicability =
   where id = 'E024';
 
 update cooking_profiles set whole_cut_rest_seconds = 180 where id = 'cook_pork';
+
+-- =======================================================================
+-- Migration 0040 addition (append-only, mirrors that migration's data
+-- portion) -- see supabase/migrations/0040_tofu_fpies.sql and
+-- docs/claude-desktop-handoff/2026-09-01-tofu-fpies-design.md /
+-- docs/claude-desktop-handoff/2026-09-01-tofu-fpies-execution-report.md for
+-- full rationale (SOY_FPIES is additive to SOY_ALLERGEN, not a replacement --
+-- non-IgE delayed-onset reaction vs immediate-type IgE allergy. First rule
+-- to use action='WARN'; lib/rules/safety.ts case "WARN" was updated
+-- alongside this DML, see that file's own comment).
+-- =======================================================================
+
+insert into evidence (id, organization, title, url, source_tier, checked_at, applicability, status) values
+  ('E045', 'Solid Starts', 'Tofu -- When can babies eat tofu? (FPIES section)', 'https://solidstarts.com/foods/tofu/', 'TIER_1', '2026-09-01', 'Solid Starts: soy can cause FPIES -- acute (delayed repetitive vomiting/diarrhea, onset a few hours after ingestion) vs chronic (reflux, weight loss, failure to thrive) forms; generally outgrown by age 3-5; untreated reactions risk significant dehydration.', 'VERIFIED'),
+  ('E046', 'AAAAI', 'International FPIES Consensus Guidelines (2017) -- review of soy as common trigger and acute reaction severity', 'https://pmc.ncbi.nlm.nih.gov/articles/PMC5804009/', 'TIER_1', '2026-09-01', 'AAAAI 2017 consensus guideline review: soy is a common FPIES trigger in the USA and South Korea; about 15% of acute FPIES reactions present with hypotension/hypovolemic shock; onset 1-4h after ingestion, no anaphylaxis/skin/respiratory symptoms (mechanistically distinct from IgE-mediated allergy). NOTE: an attempt this session to verify this exact sentence against the specific fpies.org-hosted NIAID workshop manuscript (Final-FPIES-Manuscript.pdf) that Claude Desktop referenced was inconclusive -- the PDF''s text layer could not be extracted via WebFetch across multiple attempts (font/structure issue), so the citation was kept as this independently-verified PMC review instead of swapping to an unread source.', 'VERIFIED');
+
+insert into safety_rules (id, rule_type, severity, condition_json, action, evidence_id, status) values
+  ('SOY_FPIES', 'non_ige_reaction', 'HIGH', '{"description": "soy protein-induced enterocolitis syndrome (FPIES) -- non-IgE-mediated, delayed onset 1-4h after ingestion, repetitive vomiting/diarrhea; distinct mechanism from immediate-type IgE allergy already covered by SOY_ALLERGEN"}', 'WARN', 'E045', 'VERIFIED');
+
+insert into ingredient_safety_rules (ingredient_id, safety_rule_id, evidence_id) values
+  ('tofu', 'SOY_FPIES', 'E046');

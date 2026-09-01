@@ -371,3 +371,48 @@ describe("19. D-2 — korean_melon/watermelon 부정확한 '충분히 익혀' �
     expect(appleWarning?.message).toContain("생으로");
   });
 });
+
+describe("20. tofu FPIES(SOY_FPIES) — 비-IgE 지연형 반응, IgE형 SOY_ALLERGEN과 별개로 노출", () => {
+  // migration 0040 (docs/claude-desktop-handoff/2026-09-01-tofu-fpies-design.md,
+  // 안 A): action='WARN'을 실제로 쓰는 첫 rule -- 이전까지는 case "WARN"이
+  // 데드 코드였다(어떤 rule도 이 action을 쓰지 않았음). SOY_ALLERGEN(WARN_OR_BLOCK)
+  // 과는 완전히 별개의 rule/메시지로 동시에 노출되어야 한다.
+  it("SOY_FPIES 경고가 설계 문서 §3-3 문구 그대로 노출된다", () => {
+    const evalResult = evaluateIngredientSafety(ingredients.tofu, []);
+    const fpiesWarning = evalResult.warnings.find((w) => w.rule_id === "SOY_FPIES");
+    expect(fpiesWarning).toBeDefined();
+    expect(fpiesWarning?.code).toBe("SAFETY_WARNING");
+    expect(fpiesWarning?.severity).toBe("HIGH");
+    expect(fpiesWarning?.action).toBe("WARN");
+    expect(fpiesWarning?.message).toBe(
+      `${withEunNeun("두부")} 즉시형 알레르기와 다른 지연형 반응(FPIES)이 나타날 수 있는 재료입니다. 섭취 몇 시간 후 반복적인 구토·설사가 나타날 수 있으니, 처음 시도할 때는 소량으로 시작하고 증상을 지켜봐 주세요.`,
+    );
+  });
+
+  it("SOY_ALLERGEN(IgE형) 경고도 SOY_FPIES와 별개로 동시에 노출된다 — 중복/대체 없음", () => {
+    const evalResult = evaluateIngredientSafety(ingredients.tofu, []);
+    const allergenWarning = evalResult.warnings.find((w) => w.rule_id === "SOY_ALLERGEN");
+    const fpiesWarning = evalResult.warnings.find((w) => w.rule_id === "SOY_FPIES");
+    expect(allergenWarning).toBeDefined();
+    expect(fpiesWarning).toBeDefined();
+    expect(allergenWarning?.message).not.toBe(fpiesWarning?.message);
+    expect(evalResult.warnings.filter((w) => w.rule_id === "SOY_FPIES")).toHaveLength(1);
+  });
+
+  it("SOY 알레르기를 declared해도 SOY_FPIES는 여전히 WARN(차단 아님) — WARN_OR_BLOCK과 다른 동작", () => {
+    // declaredAllergies가 SOY_ALLERGEN은 BLOCK으로 승격시키지만, SOY_FPIES는
+    // action='WARN'이라 declaredAllergies와 무관하게 항상 WARN만 낸다.
+    const evalResult = evaluateIngredientSafety(ingredients.tofu, ["SOY"]);
+    expect(evalResult.errors.some((e) => e.rule_id === "SOY_FPIES")).toBe(false);
+    expect(evalResult.warnings.some((w) => w.rule_id === "SOY_FPIES")).toBe(true);
+  });
+
+  it("다른 재료(carrot)의 WARN이 아닌 응답은 무변화 — SOY_FPIES는 tofu 전용", () => {
+    const evalResult = evaluateIngredientSafety(ingredients.carrot, []);
+    expect(evalResult.warnings.some((w) => w.rule_id === "SOY_FPIES")).toBe(false);
+    // case "WARN"의 기존 범용 placeholder 문구 자체가 회귀 없이 그대로
+    // 남아있는지도 함께 확인(단, carrot에는 WARN action rule이 연결되어
+    // 있지 않으므로 이 경로 자체는 여전히 도달하지 않음 -- 회귀 없음의 의미는
+    // "다른 재료에 새로운 경고가 생기지 않았다"는 것).
+  });
+});

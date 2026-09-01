@@ -213,9 +213,21 @@ export function evaluateIngredientSafety(
       }
 
       case "WARN": {
+        // migration 0040: SOY_FPIES is the first rule to actually use this
+        // action (docs/claude-desktop-handoff/2026-09-01-tofu-fpies-design.md
+        // §3) -- until now this branch was dead code (0 of 24 safety_rules
+        // used action='WARN'), so the old generic placeholder below never
+        // reached a real user. FPIES needs its own message because it's a
+        // delayed, non-IgE reaction -- conflating it with the immediate-type
+        // wording SOY_ALLERGEN(WARN_OR_BLOCK) already uses would be
+        // misleading, not just redundant.
+        const message =
+          rule.id === "SOY_FPIES"
+            ? `${nameEunNeun} 즉시형 알레르기와 다른 지연형 반응(FPIES)이 나타날 수 있는 재료입니다. 섭취 몇 시간 후 반복적인 구토·설사가 나타날 수 있으니, 처음 시도할 때는 소량으로 시작하고 증상을 지켜봐 주세요.`
+            : `${name}: 주의가 필요합니다.`;
         warnings.push({
           code: "SAFETY_WARNING",
-          message: `${name}: 주의가 필요합니다.`,
+          message,
           rule_id: rule.id,
           rule_status: rule.status,
           severity: rule.severity,
