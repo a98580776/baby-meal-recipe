@@ -1334,3 +1334,37 @@ set completion_check_type = case when allowed_methods = '{}' then 'form' else 'd
 
 update cooking_profiles set completion_check_type = 'form'
 where id in ('cook_seaweed', 'cook_sesame', 'cook_perilla', 'cook_cheese');
+
+-- =======================================================================
+-- Migration 0043 addition (append-only, mirrors that migration's schema
+-- portion -- no data) -- see supabase/migrations/0043_ingredient_tips.sql
+-- and docs/claude-desktop-handoff/2026-09-01-ingredient-tips-schema-design.md
+-- for full rationale. First new table added to this project since 0001~0004
+-- (schema-freeze.md §15). Pilot ingredient TIP content INSERTs are explicit
+-- future work, not included here.
+-- =======================================================================
+
+create table ingredient_tips (
+  id text primary key,
+  ingredient_id text not null references ingredients (id),
+  category text not null,
+  body_ko text not null,
+  sort_order integer not null default 0,
+  status verification_status not null default 'NEEDS_REVIEW',
+  evidence_id text references evidence (id),
+  source_note text,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint ingredient_tips_basis_required
+    check (evidence_id is not null or source_note is not null)
+);
+
+create index ingredient_tips_ingredient_id_idx on ingredient_tips (ingredient_id);
+
+create trigger ingredient_tips_set_updated_at
+  before update on ingredient_tips
+  for each row execute function set_updated_at();
+
+alter table ingredient_tips enable row level security;
+create policy "public read ingredient_tips" on ingredient_tips for select using (true);

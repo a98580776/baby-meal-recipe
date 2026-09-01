@@ -542,3 +542,58 @@ test`(170/170)·`npm run typecheck`·`npm run lint`·`npm run test:integration`(
 `0042`의 ALTER/UPDATE 블록을 파일 하단에 추가).
 
 ---
+
+## 15. Amendment — `0043_ingredient_tips`: 신규 테이블 추가, 스키마만 (구현 및 원격 적용 완료, 2026-09-01)
+
+**분류(§1-1 기준)**: 순수 DDL(신규 테이블 1개 + index 1개 + trigger 1개 + RLS 정책 1개).
+DML 없음(파일럿 재료 TIP 데이터 INSERT는 별도 후속 작업). `§1-1`의 "table 14개" 목록은
+이제 15개로 갱신해서 읽는다 — 기존 14개 테이블·6개 enum·컬럼·FK·제약·nullable 여부는
+전혀 변경하지 않는다(순수 additive, 새 테이블 1개만 추가).
+
+**배경**: `docs/claude-desktop-handoff/2026-09-01-ingredient-tips-schema-design.md` 참고.
+이 프로젝트 최초의 신규 테이블 추가 — §3 검토(왜 현재 스키마로 불가능한가 → 기존
+`claims`/join 테이블로 우회 가능한가 → 정말 필요한가) 및 근거(evidence) 2단계 체계
+(Tier A `evidence_id` / Tier B `source_note`, 둘 중 하나 필수) 전부 사용자 승인 완료.
+
+**신규 테이블**:
+
+| 컬럼 | 타입 | 제약 |
+|---|---|---|
+| `id` | text | primary key |
+| `ingredient_id` | text | not null, references `ingredients(id)` |
+| `category` | text | not null — DB enum 아님, `allowed_methods`/`completion_check_type`와 동일하게 앱 레벨 vocabulary(§10 원칙 재사용) |
+| `body_ko` | text | not null |
+| `sort_order` | integer | not null default 0 |
+| `status` | `verification_status` | not null default `'NEEDS_REVIEW'` (기존 enum 재사용, 신규 enum 없음) |
+| `evidence_id` | text | nullable, references `evidence(id)` |
+| `source_note` | text | nullable |
+| `is_active` | boolean | not null default true |
+| `created_at` / `updated_at` | timestamptz | not null default now(), `set_updated_at()` 트리거(0001 기존 함수 재사용) |
+
+`constraint ingredient_tips_basis_required check (evidence_id is not null or source_note is
+not null)` — 근거 없는 행(둘 다 null)은 insert 자체가 불가능. RLS는 `0002_rls_public_read.sql`과
+동일한 공개 read 정책.
+
+**적용 내용**: `create table ingredient_tips` + `create index
+ingredient_tips_ingredient_id_idx` + `create trigger ingredient_tips_set_updated_at` +
+`alter table ... enable row level security` + `create policy "public read
+ingredient_tips"`. 전체 SQL은 `supabase/migrations/0043_ingredient_tips.sql` 참고.
+
+**검증**: pre-snapshot(원격 DB 재조회, 실행 전) — `ingredient_tips` 테이블 부재 확인
+(`PGRST205`), `ingredients` 50행(기준선 무변화) 확인. 실행(Supabase Dashboard SQL Editor,
+사용자 직접 실행, 0037/0042와 동일 경로 — Claude Code는 DDL을 직접 실행할 수 없음, §14 §0
+참고) 후 post-snapshot: 기존 14개 테이블 행 수 전부 무변화(`stages`4/`food_forms`4/
+`evidence`46/`allergens`13/`preparation_profiles`50/`cooking_profiles`50/
+`texture_profiles`184/`safety_rules`25/`reheat_rules`2/`storage_rules`4/`ingredients`50/
+`ingredient_allergens`15/`ingredient_safety_rules`49/`claims`0), `ingredient_tips` 신규
+0행 확인. CHECK 제약 실동작 테스트: `evidence_id`/`source_note` 둘 다 null인 행 insert
+시도 → **실패**(`23514 check constraint "ingredient_tips_basis_required"` 위반) 확인,
+`source_note`만 채운 행 insert는 성공 후 즉시 delete로 정리(잔여 0행 확인) — 상세는
+`docs/claude-desktop-handoff/2026-09-01-ingredient-tips-schema-execution-report.md` 참고.
+
+**seed.sql 처리**: 이번 건은 데이터가 없으므로(스키마만) `0026`~`0042`의 "DML append" 패턴이
+아니라 **DDL 자체**(0037/0042가 이미 확립한 대로 seed.sql도 ALTER 등 DDL을 그대로 미러링하는
+관례)를 파일 하단에 추가한다. INSERT 문은 없다 — 파일럿 재료 TIP INSERT는 이 amendment
+범위 밖(§9 참고).
+
+---
