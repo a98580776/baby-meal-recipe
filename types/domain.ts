@@ -102,6 +102,10 @@ export interface CookingProfile {
   allowed_methods: string[];
   temperature_rule_id: string | null;
   completion_checks: string[];
+  // migration 0042: completion_checks가 서술하는 완료 신호의 종류. null이면(백필
+  // 이전 상태) allowed_methods 유무로 폴백 — cookingTimeStatus.ts 참고. DB enum
+  // 아님(allowed_methods/texture_profiles.shape와 동일 컨벤션, schema-freeze.md §10).
+  completion_check_type: "form" | "doneness" | null;
   time_guidance: string | null;
   time_status: VerificationStatus;
   evidence_id: string | null;

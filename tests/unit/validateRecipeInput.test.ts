@@ -149,6 +149,7 @@ describe("validateRecipeInput — Recipe Engine Step 4 (조리 방법 등록 여
         allowed_methods: [],
         temperature_rule_id: null,
         completion_checks: ["잘 익은 과육이 쉽게 으깨짐"],
+        completion_check_type: "form" as const,
         time_guidance: "조리 불필요(숙도와 제공 형태 확인) — 조리하지 않는 과육 기준",
         time_status: "INFERRED" as const,
         evidence_id: "E010",

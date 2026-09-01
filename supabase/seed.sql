@@ -1316,3 +1316,21 @@ update cooking_profiles set
   time_guidance = '추천 15분 (시작 기준) — 완숙 기준으로 삶기',
   evidence_id = 'E018'
 where id = 'cook_egg';
+
+-- =======================================================================
+-- Migration 0042 addition (append-only, mirrors that migration's data
+-- portion) -- see supabase/migrations/0042_completion_check_type.sql and
+-- docs/claude-desktop-handoff/2026-09-01-a1-completion-check-type-mislabel-design.md
+-- for full rationale (separates "조리법 등록 여부"(allowed_methods) from
+-- "completion_checks가 서술하는 완료 신호의 종류"(FORM vs DONENESS) --
+-- seaweed/sesame/perilla/cheese had allowed_methods populated by 0034 but
+-- completion_checks is still a FORM description, not a doneness state).
+-- =======================================================================
+
+alter table cooking_profiles add column completion_check_type text;
+
+update cooking_profiles
+set completion_check_type = case when allowed_methods = '{}' then 'form' else 'doneness' end;
+
+update cooking_profiles set completion_check_type = 'form'
+where id in ('cook_seaweed', 'cook_sesame', 'cook_perilla', 'cook_cheese');

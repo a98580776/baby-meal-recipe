@@ -105,6 +105,7 @@ export interface RecipeIngredientView {
   cooking: {
     allowed_methods: string[];
     completion_checks: string[];
+    completion_check_type: "form" | "doneness" | null;
     // Legacy display text — kept verbatim, not derived from recommended_time.
     time_guidance: string | null;
     // Recipe Engine (migration 0004 time_min/time_max/time_unit): the

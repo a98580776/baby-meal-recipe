@@ -74,6 +74,28 @@ describe("isServingStateOnly", () => {
   it("a real registered cooking method -> false", () => {
     expect(isServingStateOnly({ allowed_methods: ["steam"] })).toBe(false);
   });
+
+  // migration 0042: completion_check_type, when present, overrides the
+  // allowed_methods-based fallback — this is the seaweed/sesame/perilla/
+  // cheese fix (조리법은 등록됐지만 completion_checks는 형태 서술인 경우).
+  it("completion_check_type='form' overrides a registered allowed_methods -> true (seaweed/sesame/perilla/cheese)", () => {
+    expect(
+      isServingStateOnly({ allowed_methods: ["steam"], completion_check_type: "form" }),
+    ).toBe(true);
+  });
+
+  it("completion_check_type='doneness' -> false even if allowed_methods is empty", () => {
+    expect(
+      isServingStateOnly({ allowed_methods: [], completion_check_type: "doneness" }),
+    ).toBe(false);
+  });
+
+  it("completion_check_type=null falls back to allowed_methods (pre-backfill / not yet set)", () => {
+    expect(
+      isServingStateOnly({ allowed_methods: ["steam"], completion_check_type: null }),
+    ).toBe(false);
+    expect(isServingStateOnly({ allowed_methods: [], completion_check_type: null })).toBe(true);
+  });
 });
 
 describe("completionCheckLabel", () => {

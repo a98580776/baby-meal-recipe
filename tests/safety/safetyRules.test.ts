@@ -301,6 +301,7 @@ describe("19. D-2 — korean_melon/watermelon 부정확한 '충분히 익혀' �
       allowed_methods: [],
       temperature_rule_id: null,
       completion_checks: ["과육이 충분히 부드러움"],
+      completion_check_type: "form",
       time_guidance: null,
       time_status: "INFERRED",
       evidence_id: "E010",

@@ -34,6 +34,7 @@ function makeRecipeWithCarrot(overrides: Partial<RecipeResponse["ingredients"][n
         cooking: {
           allowed_methods: ["steam", "boil"],
           completion_checks: ["포크로 눌렀을 때 쉽게 으깨지는지 확인"],
+          completion_check_type: "doneness",
           time_guidance: null,
           recommended_time: null,
         },
@@ -167,6 +168,7 @@ describe("buildStepInfoRows", () => {
             cooking: {
               allowed_methods: [],
               completion_checks: ["으깨어 제공"],
+              completion_check_type: "form",
               time_guidance: null,
               recommended_time: null,
             },
@@ -216,6 +218,7 @@ describe("buildStepInfoRows", () => {
             cooking: {
               allowed_methods: [],
               completion_checks: ["으깨어 제공"],
+              completion_check_type: "form",
               time_guidance: null,
               recommended_time: null,
             },
@@ -232,6 +235,7 @@ describe("buildStepInfoRows", () => {
             cooking: {
               allowed_methods: ["boil"],
               completion_checks: ["속까지 갈색으로 완전히 익은 상태"],
+              completion_check_type: "doneness",
               time_guidance: null,
               recommended_time: null,
             },

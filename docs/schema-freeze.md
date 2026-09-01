@@ -505,3 +505,40 @@ DB/seed.sql에 적용되지 않음"이라고 적혀 있는데, 이는 draft 작�
 참고, §8 원칙과 동일하게 여기 재기재하지 않는다).
 
 ---
+
+## 14. Amendment — `0042_completion_check_type`: A-1 후속 결함(seaweed/sesame/perilla/cheese "완료 기준" 오표시) 수정 (구현 및 원격 적용 완료, 2026-09-01)
+
+**분류(§1-1 기준)**: DDL(nullable text 컬럼 추가) + DML(전체 백필 + 4건 override).
+`§1-1`의 "column 전체" 목록은 이제 `cooking_profiles.completion_check_type`
+(nullable, DB enum 아님 — `allowed_methods`/`texture_profiles.shape`와 동일하게 애플리케이션
+레벨 vocabulary 계약, §10 참고) 추가를 반영해서 읽는다. 나머지 13개 테이블·5개 enum·기존
+FK/제약/nullable 여부는 무변경.
+
+**배경**: `0034`(§13)가 seaweed/sesame/perilla/cheese 4건의 `allowed_methods`를
+`{}`→`{steam}`/`{microwave}`로 채웠으나, 이 4건의 `completion_checks`는 애초에 익힘
+상태가 아니라 분쇄/파쇄/제공 형태 서술이다. `lib/recipe/cookingTimeStatus.ts`의
+`isServingStateOnly()`가 "조리법 등록 여부"(`allowed_methods`)와 "완료 신호의 종류"(FORM
+vs DONENESS)를 단일 bool로 뭉쳐 판정하던 것이 근본 원인 — `0034`가 전자만 고치면서 이
+4건에서 후자와 어긋났다. 상세 조사·옵션 비교는
+`docs/claude-desktop-handoff/2026-09-01-a1-completion-check-type-mislabel-design.md` 참고.
+
+**적용 내용**:
+
+| 항목 | 내용 |
+|---|---|
+| DDL | `alter table cooking_profiles add column completion_check_type text` |
+| 백필 | 전체 50행: `allowed_methods='{}' → 'form'`, 아니면 `'doneness'` (기존 `isServingStateOnly` 판정과 100% 동일 — 이 UPDATE 자체는 무동작 변경) |
+| override | `cook_seaweed`/`cook_sesame`/`cook_perilla`/`cook_cheese` 4건만 `'form'`로 재설정 |
+| 코드 변경 | `types/domain.ts`(`CookingProfile.completion_check_type`)/`types/api.ts`(`RecipeIngredientView.cooking.completion_check_type`)/`lib/recipe/buildRecipeResponse.ts`(응답에 필드 전달)/`lib/recipe/cookingTimeStatus.ts`(`isServingStateOnly`가 `completion_check_type` 우선, null이면 `allowed_methods` 폴백) |
+| 회귀 범위 | 전수 대조 결과 동작이 바뀐 건 정확히 4건(seaweed/sesame/perilla/cheese)뿐 — watermelon·곡물류·A-2 과일(grape/blueberry/strawberry)·pear/peach·육류/난류 전부 무영향 |
+
+**검증**: 원격 DB 재조회로 50행 전체가 §4 백필 규칙과 100% 일치(mismatch 0건, null 0건)
+확인. API 실측(`/api/v1/recipes/generate`, 실 원격 DB)으로 seaweed/sesame/cheese/perilla가
+`completion_check_type:"form"`으로, pear가 `"doneness"`로 응답에 노출됨을 확인. `npm
+test`(170/170)·`npm run typecheck`·`npm run lint`·`npm run test:integration`(46/46, 실
+원격 DB) 전부 PASS.
+
+**seed.sql 처리**: 기존 `0026`~`0041`과 동일한 append-only 패턴(원본 INSERT 문 무수정,
+`0042`의 ALTER/UPDATE 블록을 파일 하단에 추가).
+
+---

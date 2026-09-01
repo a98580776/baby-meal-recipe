@@ -36,6 +36,7 @@ function toIngredientViews(
         ? {
             allowed_methods: resolved.cookingProfile.allowed_methods,
             completion_checks: resolved.cookingProfile.completion_checks,
+            completion_check_type: resolved.cookingProfile.completion_check_type,
             time_guidance: resolved.cookingProfile.time_guidance,
             recommended_time: resolved.cookingProfile.time_unit
               ? {

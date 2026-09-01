@@ -126,6 +126,7 @@ describe("buildCookingSteps", () => {
           cooking: {
             allowed_methods: [],
             completion_checks: ["잘 익은 과육이 쉽게 으깨짐"],
+            completion_check_type: "form",
             time_guidance: "조리 불필요(숙도와 제공 형태 확인) — 조리하지 않는 과육 기준",
             recommended_time: { min: 0, max: 0, unit: "분" },
           },
@@ -147,21 +148,21 @@ describe("buildCookingSteps", () => {
     expect(steps.some((s) => s.actionLabel === "익힘 확인")).toBe(false);
   });
 
-  it("A-1 이후 — 조리방법이 등록된 토핑(김)은 익힘 확인 타이머 스텝을 만든다", () => {
-    // seaweed: A-1에서 allowed_methods=[]→["steam"]으로 보정됨(조리방법이 실제로
-    // 등록됨). isServingStateOnly()가 더 이상 true를 반환하지 않으므로
-    // completion_checks는 "완료"/타이머없음이 아니라 다른 조리 필요 재료와
-    // 동일하게 "익힘 확인"/타이머있음 스텝이 된다 — 이는 버그가 아니라 A-1이
-    // 의도한 정확한 동작(Cooking Mode에 등록된 조리시간이 있는데 타이머가
-    // 안 뜨던 문제 해결).
+  it("migration 0042 이후 — 조리방법은 등록됐지만 completion_check_type='form'인 토핑(김)은 타이머 없는 완료 스텝을 만든다", () => {
+    // seaweed: A-1에서 allowed_methods=[]→["steam"]으로 보정되며 한때
+    // isServingStateOnly()가 false를 반환해 "익힘 확인"/타이머있음으로
+    // 바뀌었었다. 그러나 seaweed의 completion_checks("질긴 큰 조각 없이 잘게
+    // 부순 상태")는 애초에 익힘 상태가 아니라 분쇄/파쇄 형태 서술이었다 —
+    // migration 0042가 이 축을 completion_check_type='form'으로 분리해
+    // allowed_methods 유무와 무관하게 원래 의도(완료/타이머없음)로 되돌린다.
     const steps = buildCookingSteps(makeRecipe(["carrot"], ["seaweed"]));
     const seaweedCompletionStep = steps.find(
       (s) => s.ingredientId === "seaweed" && s.instruction.includes("질긴 큰 조각 없이 잘게 부순 상태"),
     );
     expect(seaweedCompletionStep).toBeDefined();
-    expect(seaweedCompletionStep?.actionLabel).toBe("익힘 확인");
-    expect(seaweedCompletionStep?.timerEnabled).toBe(true);
-    expect(seaweedCompletionStep?.recommendedTime).toEqual({ min: 1, max: 2, unit: "분" });
+    expect(seaweedCompletionStep?.actionLabel).toBe("완료");
+    expect(seaweedCompletionStep?.timerEnabled).toBe(false);
+    expect(seaweedCompletionStep?.recommendedTime).toBeNull();
   });
 
   it("김 재조사 — 조리방법 미등록 재료는 base로 선택해도 타이머 없는 완료 스텝을 만든다 (isTopping 무관)", () => {
@@ -190,8 +191,9 @@ describe("buildCookingSteps", () => {
             cutting_guidance: null,
           },
           cooking: {
-            allowed_methods: [],
+            allowed_methods: ["steam"],
             completion_checks: ["질긴 큰 조각 없이 잘게 부순 상태"],
+            completion_check_type: "form",
             time_guidance: "추천 1~2분 (시작 기준) — 필요 시 살짝 가열/구워 수분 제거",
             recommended_time: { min: 1, max: 2, unit: "분" },
           },
@@ -242,6 +244,7 @@ describe("buildCookingSteps", () => {
             cooking: {
               allowed_methods: ["boil"],
               completion_checks: [timeText],
+              completion_check_type: "doneness",
               time_guidance: "추천 (시작 기준) — 끓이기",
               recommended_time: { min: 3, max: 45, unit: "분" },
             },
@@ -294,6 +297,7 @@ describe("buildCookingSteps", () => {
             cooking: {
               allowed_methods: ["boil"],
               completion_checks: [completionText],
+              completion_check_type: "doneness",
               time_guidance: "추천 (시작 기준) — 삶기",
               recommended_time: { min, max, unit: "분" },
             },
@@ -330,6 +334,7 @@ describe("buildCookingSteps", () => {
           cooking: {
             allowed_methods: ["boil"],
             completion_checks: ["속이 완전히 부드럽게 익음", "곱게 다지거나 으깨어 덩어리 없이 제공"],
+            completion_check_type: "doneness",
             time_guidance: "추천 20~30분 (시작 기준) — 껍질 제거 후 삶기",
             recommended_time: { min: 20, max: 30, unit: "분" },
           },
@@ -377,6 +382,7 @@ describe("buildCookingSteps", () => {
             cooking: {
               allowed_methods: [],
               completion_checks: ["충분히 부드러움"],
+              completion_check_type: "form",
               time_guidance: timeGuidance,
               recommended_time: { min, max, unit: "분" },
             },
@@ -429,6 +435,7 @@ describe("buildCookingSteps", () => {
             cooking: {
               allowed_methods: [],
               completion_checks: ["잘 익은 과육이 쉽게 으깨짐"],
+              completion_check_type: "form",
               time_guidance: "조리 불필요(숙도와 제공 형태 확인) — 조리하지 않는 과육 기준",
               recommended_time: { min: 0, max: 0, unit: "분" },
             },

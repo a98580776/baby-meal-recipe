@@ -60,7 +60,16 @@ export function isNoCookingNeededFromView(cooking: {
 // CONTINUE_COOKING safety-rule path (lib/rules/safety.ts →
 // recipe.safety_notes) in buildCookingSteps.ts *before* this function is
 // ever consulted, so this rule can never weaken a safety-required cook.
-export function isServingStateOnly(cooking: { allowed_methods: string[] }): boolean {
+export function isServingStateOnly(cooking: {
+  allowed_methods: string[];
+  completion_check_type?: "form" | "doneness" | null;
+}): boolean {
+  // completion_check_type이 있으면 그것이 우선(설계 결함 수정 — allowed_methods
+  // 유무와 completion_checks의 의미는 독립 축). null/미제공이면 과거 동작(allowed_methods
+  // 유무)으로 폴백 — 신규 재료 추가 시 컬럼을 깜빡 채우지 않아도 기존 수준의 정확도는 유지.
+  if (cooking.completion_check_type != null) {
+    return cooking.completion_check_type === "form";
+  }
   return cooking.allowed_methods.length === 0;
 }
 
