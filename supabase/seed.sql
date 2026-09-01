@@ -1402,3 +1402,20 @@ insert into texture_profiles (id, stage_id, food_form_id, texture, shape, partic
   ('texture_oatmeal_stage_2', 'stage_2', null, '오트밀이 완전히 퍼져 부드럽고, 숟가락에서 흘러내리지 않을 정도로 걸쭉한 농도', null, null, 'UNSUPPORTED', 'E047', 'oatmeal'),
   ('texture_oatmeal_stage_3', 'stage_3', null, '오트밀이 완전히 퍼져 부드럽고, 숟가락에서 흘러내리지 않을 정도로 걸쭉한 농도', null, null, 'UNSUPPORTED', 'E047', 'oatmeal'),
   ('texture_oatmeal_stage_4', 'stage_4', null, '오트밀이 완전히 퍼져 부드럽고, 숟가락에서 흘러내리지 않을 정도로 걸쭉한 농도', null, null, 'UNSUPPORTED', 'E047', 'oatmeal');
+
+-- =======================================================================
+-- Migration 0045 addition (append-only, mirrors that migration's data
+-- portion) -- see supabase/migrations/0045_e010_url_404_fix.sql and
+-- docs/claude-desktop-handoff/2026-09-01-e010-url-404-investigation.md for
+-- full rationale (E010's registered URL returns 404; no Wayback snapshot and
+-- no matching page found on the KDCA site, so the URL is cleared rather than
+-- replaced -- option 1 from the investigation doc). organization/title/
+-- source_tier/checked_at/applicability are left untouched; only url and
+-- status change. Does not touch the 134 rows across preparation_profiles/
+-- cooking_profiles/texture_profiles that reference E010 as evidence_id.
+-- =======================================================================
+
+update evidence
+set url = null,
+    status = 'NEEDS_REVIEW'
+where id = 'E010';

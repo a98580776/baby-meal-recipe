@@ -637,3 +637,37 @@ client로 직접 insert, DDL이 아니므로 Dashboard 경유 불필요) 후 pos
 amendment에서 고치지 않고 별도 조사 안건으로 분리한다(설계 문서 §6).
 
 ---
+
+## 17. Amendment — `0045_e010_url_404_fix`: E010 URL 정리(제거 + NEEDS_REVIEW 하향) (구현 및 원격 적용 완료, 2026-09-01)
+
+**분류(§1-1 기준)**: 순수 DML(`evidence` 1행 UPDATE). DDL 없음, `§1-1` 목록 갱신 불필요.
+
+**배경**: `docs/claude-desktop-handoff/2026-09-01-e010-url-404-investigation.md` 조사
+결과 — E010(`cntnts_sn=5212`)의 등록 URL이 404, Wayback Machine 스냅샷 없음(복구 불가),
+KDCA 사이트 내 정확히 대응하는 이전 페이지도 발견되지 않음(§16의 `E047`/`cntnts_sn=5470`은
+유사 주제를 다루는 **다른 페이지**일 뿐 5212의 이전판이 아니며, "과일 씨·껍질 제거" 항목은
+커버하지 않음). 조사 문서가 제시한 3개 옵션 중 **옵션 1**(URL 제거 + `NEEDS_REVIEW` 하향,
+나머지 필드 유지) 채택 승인됨.
+
+**적용 내용**: `update evidence set url = null, status = 'NEEDS_REVIEW' where id = 'E010'`.
+`organization`/`title`/`source_tier`/`checked_at`/`applicability`는 전부 그대로 유지 —
+"근거가 있었다는 기록은 남기되 원문 URL은 현재 검증 불가"임을 명시하는 상태 전환일 뿐,
+근거 자체를 삭제하지 않는다.
+
+**영향 범위**: E010을 `evidence_id`로 참조하는 134행(`preparation_profiles` 38 /
+`cooking_profiles` 39 / `texture_profiles` 57, `safety_rules`/`ingredient_safety_rules`는
+0건 — 안전 정보에는 영향 없음, 조사 문서 §2 재확인)은 이 UPDATE로 **전혀 변경되지 않는다**
+— `evidence_id` 값 자체(문자열 `'E010'`)는 그대로이고, 그 evidence row의 `url`/`status`
+필드만 바뀐다.
+
+**검증**: pre-snapshot — E010 `url`이 유효해 보이는 문자열, `status='VERIFIED'` 확인.
+UPDATE 실행(순수 DML, Claude Code가 service-role client로 직접 실행) 후 post-snapshot —
+`url=null`, `status='NEEDS_REVIEW'`, 나머지 필드(`organization`/`title`/`source_tier`/
+`checked_at`/`applicability`) 무변화 확인. Invariant: `evidence` 총 행 수 47(무변화),
+E010을 참조하는 `preparation_profiles`/`cooking_profiles`/`texture_profiles` 행 수 각각
+38/39/57(무변화, 대상 행 자체가 사라지거나 늘지 않음) 확인.
+
+**seed.sql 처리**: 기존 `0026`~`0044`와 동일한 append-only 패턴(원본 INSERT 문 무수정,
+`0045`의 UPDATE 블록을 파일 하단에 추가).
+
+---
