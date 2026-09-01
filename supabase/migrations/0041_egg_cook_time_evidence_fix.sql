@@ -1,5 +1,6 @@
--- Egg 조리시간(time_min/max) 출처 불명 문제 교정 -- DRAFT, 아직 원격 DB/seed.sql에
--- 적용되지 않음.
+-- Egg 조리시간(time_min/max) 출처 불명 문제 교정 -- APPLIED 2026-09-01
+-- (원격 Supabase DB에 service-role client로 직접 실행, seed.sql에도 append-only로
+-- mirror됨). 실행 보고서: docs/claude-desktop-handoff/2026-09-01-egg-cook-time-migration-0041-execution-report.md
 -- Source: docs/egg-cooking-time-evidence-investigation.md(1차 조사, NHS 5분 vs 기존 8~10분
 -- 불일치 발견) + docs/egg-cook-time-evidence-matrix.md(이 draft의 evidence matrix/정책
 -- 결정, 옵션 A/B/C 비교, 옵션 C 채택).

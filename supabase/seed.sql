@@ -1297,3 +1297,22 @@ insert into safety_rules (id, rule_type, severity, condition_json, action, evide
 
 insert into ingredient_safety_rules (ingredient_id, safety_rule_id, evidence_id) values
   ('tofu', 'SOY_FPIES', 'E046');
+
+-- =======================================================================
+-- Migration 0041 addition (append-only, mirrors that migration's data
+-- portion) -- see supabase/migrations/0041_egg_cook_time_evidence_fix.sql
+-- and docs/egg-cooking-time-evidence-investigation.md /
+-- docs/egg-cook-time-migration-0041-review-packet.md for full rationale
+-- (cook_egg.time_min/max=8/10 was linked to E010, whose text has no time
+-- figure at all; E018 -- already in this DB, Solid Starts, egg-specific --
+-- states "simmer 15 minutes" for hard-boiled egg, matching this project's
+-- allowed_methods={boil} and completion_checks unchanged. time_status
+-- stays 'INFERRED' per migration 0035 precedent).
+-- =======================================================================
+
+update cooking_profiles set
+  time_min = 15,
+  time_max = 15,
+  time_guidance = '추천 15분 (시작 기준) — 완숙 기준으로 삶기',
+  evidence_id = 'E018'
+where id = 'cook_egg';
