@@ -671,3 +671,37 @@ E010을 참조하는 `preparation_profiles`/`cooking_profiles`/`texture_profiles
 `0045`의 UPDATE 블록을 파일 하단에 추가).
 
 ---
+
+## 18. Amendment — `0046_ingredient_tips_pilot_data`: ingredient_tips 파일럿 데이터 16건 INSERT (구현 및 원격 적용 완료, 2026-09-02)
+
+**분류(§1-1 기준)**: 순수 DML(`ingredient_tips` 16행 INSERT). DDL 없음, `§1-1` 목록 갱신
+불필요. `0043`에서 스키마만 생성한 `ingredient_tips` 테이블에 최초로 데이터를 채우는 작업.
+
+**배경**: `docs/claude-desktop-handoff/2026-09-01-ingredient-tips-schema-design.md` 승인
+설계를 따라, 파일럿 재료 8종(broccoli/tofu/carrot/kabocha/potato/sweet_potato/chicken/
+apple) 각 2건씩 TIP 콘텐츠 삽입.
+
+**적용 내용**: `insert into ingredient_tips (...)` 16행. `evidence_id`가 지정된 항목(11건)은
+기존 evidence(E002/E003/E009/E016/E026/E043/E046) 재사용, `source_note`만 있는 항목(5건,
+carrot/kabocha/potato×2/sweet_potato×2/chicken 중 completion_checks·wash_rule 필드
+인용분)은 기존 DB 필드를 근거로 명시(Tier B). 새 evidence row 생성 없음. 전부
+`status='NEEDS_REVIEW'`로 삽입(스키마 기본값과 동일, 별도 VERIFIED 승격 없음).
+
+**영향 범위**: `ingredient_tips` 외 다른 13개 테이블은 전혀 건드리지 않음. 코드
+(`lib/`/`app/`/`components/`) 변경 없음 — API 응답에 TIP을 노출하는 작업은 별도 후속
+범위.
+
+**검증**: pre-snapshot — `ingredient_tips` 0행, 대상 ingredient_id 8종/evidence_id 7종
+전부 원격 DB에 존재 확인. INSERT 실행(순수 DML, Claude Code가 service-role client로 직접
+실행, DDL이 아니므로 Dashboard 경유 불필요) 후 post-snapshot: `ingredient_tips` 16행,
+재료별 정확히 2건씩, `ingredient_tips_basis_required` CHECK 제약 위반 0건, 기존 14개
+테이블 행 수 전량 무변화(`stages` 4 / `food_forms` 4 / `evidence` 47 / `allergens` 13 /
+`preparation_profiles` 50 / `cooking_profiles` 50 / `texture_profiles` 200 /
+`safety_rules` 25 / `reheat_rules` 2 / `storage_rules` 4 / `ingredients` 50 /
+`ingredient_allergens` 15 / `ingredient_safety_rules` 49 / `claims` 0) 확인.
+`npm run typecheck`/`npm run lint` 재실행, 둘 다 통과.
+
+**seed.sql 처리**: 기존 `0026`~`0045`와 동일한 append-only 패턴(원본 INSERT 문 무수정,
+`0046`의 INSERT 블록을 파일 하단에 추가).
+
+---
