@@ -462,3 +462,46 @@ evidence 조사가 필요한 항목 — pork whole-cut evidence 조사를 별도
 않는다 — `docs/50-ingredient-final-backlog.md` §7 DO NOT DO 4번이 이미 이 원칙을 재확인했다.
 
 ---
+
+## 13. Amendment — `0034`~`0040`: A-1 fix / C-2 prep 필드 / 5채소 CHOKING_HARD_RAW / evidence_id 컬럼 / fishbone·bone backfill / pork whole-cut / tofu FPIES (구현 및 원격 적용 완료, 2026-08-30~2026-09-01)
+
+`§8`~`§11`이 `0009`~`0033`까지는 이미 기록했으나, 그 이후 `0034`~`0040` 7개 migration이
+문서에 반영되지 않은 채 남아 있었다 — 이번 amendment로 그 공백을 메운다.
+
+**분류(§1-1 기준)**: 7개 중 6개(`0034`/`0035`/`0036`/`0038`/`0039`/`0040`)는 순수
+DML이다. `0037` 1건만 DDL(`alter table ingredient_safety_rules add column evidence_id
+text references evidence (id)`, nullable, additive)을 포함한다 — §3 사전 검토 절차를
+거쳐 승인된 뒤(`docs/claude-desktop-handoff/2026-09-01-c1-c5-ingredient-safety-rules-evidence-id-design.md`)
+구현됐다. §1-1의 "column 전체" 목록은 이제 `ingredient_safety_rules.evidence_id`
+(nullable, `evidence(id)` FK) 추가를 반영해서 읽는다 — 나머지 13개 테이블·6개 enum·
+기존 FK/제약/nullable 여부는 무변경.
+
+| Migration | 대상 | DDL/DML | 성격 | 관련 커밋 | 원격 적용일 |
+|---|---|---|---|---|---|
+| `0034_a1_allowed_methods_fix` | pear/peach/seaweed/sesame/perilla/cheese | DML | `cooking_profiles.allowed_methods`가 `{}`인데 time_min/max는 이미 채워져 있던 6건 보정(UPDATE 6행) — Cooking Mode의 `isServingStateOnly()`가 `allowed_methods.length===0`만으로 "조리 불필요"를 오판정하던 문제 | `4a0c708` | 2026-08-30 |
+| `0035_c2_cutting_guidance_prep_fields` | zucchini/cucumber/spinach/tomato/eggplant/mushroom/seaweed/chestnut/cheese | DML | `preparation_profiles` catch-all `cutting_guidance` boilerplate를 구조화 필드(`peel_rule`/`seed_removal_rule`/`core_tough_part_rule`)로 대체(6건) 또는 `cutting_guidance` 자체를 REPLACE(3건, evidence_id 갱신 포함). 신규 evidence 8건(E027~E034) | `6687bf0` | 2026-08-31 |
+| `0036_5veg_choking_hard_raw` | cauliflower/zucchini/eggplant/radish/cucumber | DML | 기존 `CHOKING_HARD_RAW`(E002/CDC) rule을 5개 채소에 재사용 연결(broccoli/`0033`과 동일 패턴). 신규 evidence 5건(E035~E039) | `645712d` | 2026-08-31 |
+| `0037_c1c5_ingredient_safety_rules_evidence_id` | `ingredient_safety_rules` 테이블 구조 + 17개 `CHOKING_HARD_RAW` 링크 중 15건 | **DDL** + DML | 조인 테이블에 재료별 evidence override용 nullable `evidence_id` 컬럼 추가(`safety_rules.evidence_id`는 "rule 대표 근거"로 그대로 유지, 둘은 별개 축) + backfill UPDATE 15건(apple/carrot 2건은 원 설계대로 의도적 NULL 유지) | `00084be` | 2026-09-01 |
+| `0038_fishbone_bone_evidence` | salmon/cod/tuna(`FISHBONE_REMOVE`), chicken/pork(`BONE_REMOVE`) | DML | `0037`이 추가한 `ingredient_safety_rules.evidence_id` 컬럼에 재료별 근거 backfill(salmon/cod/tuna는 DIRECT, chicken/pork는 GENERAL-CATEGORY 등급). 신규 evidence 5건(E040~E044) | `afac2f0` | 2026-09-01 |
+| `0039_pork_whole_cut_rest_seconds` | pork | DML | `E024`(기존 beef whole-cut 근거)의 `applicability` 텍스트를 beef 한정에서 beef/pork/veal/lamb로 갱신 + `cook_pork.whole_cut_rest_seconds=180` 채움(`whole_cut_temperature_rule_id`는 beef와 동일하게 NULL 유지 — §12-1 정책 그대로 pork에도 적용). 신규 evidence 없음(E024 재사용) | `88d307f` | 2026-09-01 |
+| `0040_tofu_fpies` | tofu | DML | 신규 `safety_rules` 행 1건(`SOY_FPIES`, `rule_type='non_ige_reaction'`는 자유 text라 신규 enum 불필요, `action='WARN'`은 기존 enum 값 재사용) + tofu 연결(`ingredient_safety_rules` 1행) — 기존 `SOY_ALLERGEN`(IgE)을 대체하지 않고 별개 기전으로 추가. 신규 evidence 2건(E045/E046) | `ecb2824` | 2026-09-01 |
+
+**seed.sql 처리**: 7건 전부 `0026`~`0033`과 동일한 append-only 패턴(원본 INSERT 문 무수정,
+UPDATE/INSERT 블록을 파일 하단에 추가)을 따랐다 — 개별 실행 보고서
+(`docs/claude-desktop-handoff/2026-08-30-a1-allowed-methods-migration-executed.md`,
+`2026-08-31-c2-migration-0035-executed.md`, `2026-08-31-5veg-choking-hard-raw-execution-report.md`,
+`2026-09-01-c1-c5-migration-0037-execution-report.md`, `2026-09-01-fishbone-bone-evidence-execution-report.md`,
+`2026-09-01-pork-meatform-execution-report.md`, `2026-09-01-tofu-fpies-execution-report.md`)에
+pre/post snapshot·invariant·API 실측 결과가 각각 기록돼 있다.
+
+**SQL 파일 헤더 주석 정정**: `0035`/`0036`/`0037` 세 파일의 첫 주석은 "DRAFT — 아직 원격
+DB/seed.sql에 적용되지 않음"이라고 적혀 있는데, 이는 draft 작성 시점(review packet 이전)의
+서술이 실행 완료 후에도 갱신되지 않고 그대로 남은 것이다(`0005`/`0006` 때와 동일한 종류의
+문서-실태 지연, §6 최초 문단 참고) — 위 표와 각 실행 보고서가 실제 최종 상태다. 파일 내용
+자체(SQL 문)는 실행된 내용과 완전히 일치하며, 정정이 필요한 건 헤더 주석 문구뿐이다.
+
+**검증**: 7건 모두 `npm test`(vitest)·`npm run typecheck`·`npm run lint`·
+`npm run test:integration`(실 원격 DB) PASS 확인 후 반영됐다(세부 수치는 각 실행 보고서
+참고, §8 원칙과 동일하게 여기 재기재하지 않는다).
+
+---
