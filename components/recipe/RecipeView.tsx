@@ -13,6 +13,7 @@ import { particleSizeLabel, shapeLabel } from "@/lib/recipe/textureLabels";
 import { cookingMethodLabels } from "@/lib/recipe/cookingMethodLabels";
 import { verificationStatusBadgeText } from "@/lib/ingredients/verificationStatusLabel";
 import { SafetyNoteItem } from "@/components/shared/SafetyNoteItem";
+import { IngredientTipList } from "@/components/shared/IngredientTipList";
 
 const SCOPE_LABEL: Record<"KR_MFDS_19" | "BROADER_ALLERGEN_CONTEXT", string> = {
   KR_MFDS_19: "법정 표시대상",
@@ -375,6 +376,25 @@ export function RecipeView() {
                       </li>
                     ))}
                   </ul>
+                </div>
+              ))}
+          </div>
+        </section>
+      )}
+
+      {/* CLAUDE.md §6 표시 순서(...완성 상태 확인→TIP→주의사항→보관)에 맞춰
+          주의할 점 바로 앞에 배치. base+topping 전부 대상 — ingredient_tips
+          (migration 0043/0046)가 있는 재료만 카드로 표시. */}
+      {[...recipe.ingredients, ...recipe.toppings].some((ing) => ing.tips.length > 0) && (
+        <section className="mb-6">
+          <h2 className="mb-2 text-base font-semibold">TIP</h2>
+          <div className="flex flex-col gap-3">
+            {[...recipe.ingredients, ...recipe.toppings]
+              .filter((ing) => ing.tips.length > 0)
+              .map((ing) => (
+                <div key={ing.id} className="rounded-lg border border-gray-200 p-3">
+                  <p className="mb-1.5 text-sm font-semibold">{ing.name_ko}</p>
+                  <IngredientTipList tips={ing.tips} />
                 </div>
               ))}
           </div>

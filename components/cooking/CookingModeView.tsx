@@ -8,6 +8,7 @@ import { parseInputFromParams } from "@/lib/recipe/parseRequestParams";
 import { buildCookingSteps, type CookingStep } from "@/lib/recipe/buildCookingSteps";
 import { buildStepInfoRows, stepInfoRowKey, type StepInfoRow } from "@/lib/recipe/buildStepInfoRows";
 import { SafetyNoteItem } from "@/components/shared/SafetyNoteItem";
+import { IngredientTipList } from "@/components/shared/IngredientTipList";
 
 function StepInfoTable({ rows }: { rows: StepInfoRow[] }) {
   if (rows.length === 0) return null;
@@ -251,6 +252,15 @@ export function CookingModeView() {
         <CookingPhotoPlaceholder />
         <p className="text-xl font-semibold leading-relaxed">{step.instruction}</p>
         <StepInfoTable rows={infoRows} />
+        {step.tips.length > 0 && (
+          // Deliberately below StepInfoTable, inside the scrollable content
+          // area — visually separate from the shrink-0 safetyWarnings
+          // banner above the STEP header, so a TIP is never read as a
+          // safety warning (요청 범위: "기존 안전 경고 표시 영역과는 별도").
+          <div className="w-full">
+            <IngredientTipList tips={step.tips} />
+          </div>
+        )}
         {step.timerEnabled && <StepTimer key={step.id} timeGuidance={step.timeGuidance} />}
       </div>
       <div className="flex shrink-0 gap-3">

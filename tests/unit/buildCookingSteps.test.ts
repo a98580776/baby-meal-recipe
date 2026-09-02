@@ -499,4 +499,41 @@ describe("buildCookingSteps", () => {
       expect(steps.every((s) => s.safetyWarnings.length === 0)).toBe(true);
     });
   });
+
+  describe("ingredient_tips (migration 0043/0046) passthrough", () => {
+    it("attaches tips only to the ingredient's first STEP, verbatim, in the same order as recipe.ingredients[].tips", () => {
+      const recipe = makeRecipe(["carrot"]);
+      const carrot = recipe.ingredients.find((i) => i.id === "carrot")!;
+      carrot.tips = [
+        { category: "prep", body_ko: "당근 TIP 1" },
+        { category: "general", body_ko: "당근 TIP 2(안전 관련)" },
+      ];
+      const steps = buildCookingSteps(recipe);
+      const carrotSteps = steps.filter((s) => s.ingredientId === "carrot");
+      expect(carrotSteps.length).toBeGreaterThan(1);
+      expect(carrotSteps[0].tips).toEqual(carrot.tips);
+      for (const step of carrotSteps.slice(1)) {
+        expect(step.tips).toHaveLength(0);
+      }
+    });
+
+    it("서로 다른 재료의 TIP이 섞이지 않는다 — 각 재료의 TIP은 그 재료 자신의 첫 STEP에만 붙는다", () => {
+      const recipe = makeRecipe(["carrot", "beef"]);
+      const carrot = recipe.ingredients.find((i) => i.id === "carrot")!;
+      const beef = recipe.ingredients.find((i) => i.id === "beef")!;
+      carrot.tips = [{ category: "prep", body_ko: "당근 TIP" }];
+      beef.tips = [{ category: "cooking", body_ko: "소고기 TIP" }];
+      const steps = buildCookingSteps(recipe);
+      const carrotFirst = steps.find((s) => s.ingredientId === "carrot");
+      const beefFirst = steps.find((s) => s.ingredientId === "beef");
+      expect(carrotFirst?.tips).toEqual(carrot.tips);
+      expect(beefFirst?.tips).toEqual(beef.tips);
+    });
+
+    it("tips가 등록되지 않은 재료(현재 fixture 기본값)는 모든 STEP에서 tips가 빈 배열이다", () => {
+      const steps = buildCookingSteps(makeRecipe(["rice"]));
+      expect(steps.length).toBeGreaterThan(0);
+      expect(steps.every((s) => s.tips.length === 0)).toBe(true);
+    });
+  });
 });

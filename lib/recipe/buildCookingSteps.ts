@@ -31,6 +31,11 @@ export interface CookingStep {
   // which rule fires) is untouched — this only carries the already-computed
   // safety_notes through to Cooking Mode, same source RecipeView.tsx reads.
   safetyWarnings: ApiErrorDetail[];
+  // ingredient_tips (migration 0043/0046) passthrough — same "only the
+  // FIRST step for this ingredient" placement as safetyWarnings above, so
+  // Cooking Mode shows each ingredient's tips once, at its introduction.
+  // Never derived/reworded — copied verbatim from RecipeIngredientView.tips.
+  tips: RecipeResponse["ingredients"][number]["tips"];
 }
 
 /**
@@ -64,6 +69,7 @@ export function buildCookingSteps(recipe: RecipeResponse): CookingStep[] {
         recommendedTime: actionLabel === "익힘 확인" ? (ing.cooking?.recommended_time ?? null) : null,
         timerEnabled: actionLabel === "익힘 확인",
         safetyWarnings: [],
+        tips: [],
       });
     };
 
@@ -139,6 +145,10 @@ export function buildCookingSteps(recipe: RecipeResponse): CookingStep[] {
     );
     if (otherNotes.length > 0 && steps.length > stepsStartIndex) {
       steps[stepsStartIndex].safetyWarnings = otherNotes;
+    }
+
+    if (ing.tips.length > 0 && steps.length > stepsStartIndex) {
+      steps[stepsStartIndex].tips = ing.tips;
     }
   }
 
