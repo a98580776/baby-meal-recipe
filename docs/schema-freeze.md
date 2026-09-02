@@ -762,3 +762,55 @@ egg는 그중 대체 가능한 재료-직접 evidence(E018)가 이미 DB에 존�
 무수정, `0041`의 UPDATE 1건을 파일 하단에 추가).
 
 ---
+
+## 20. Amendment — `0047_c2_remaining_8_prep_fields`: C-2 남은 8건 cutting_guidance boilerplate 해소 (구현 및 원격 적용 완료, 2026-09-04)
+
+**분류(§1-1 기준)**: 순수 DML(`evidence` 8행 INSERT + `preparation_profiles` 8행 UPDATE).
+DDL 없음, `§1-1` 목록 갱신 불필요.
+
+**배경**: `docs/c2-remaining-9-investigation.md`(조사+evidence matrix+migration draft)
+승인 → 이 amendment(실행 결과). migration `0035`가 처리한 9건(zucchini/cucumber/
+spinach/tomato/eggplant/mushroom/seaweed/chestnut/cheese)과 동일한 C-2 boilerplate
+해소 작업의 나머지 대상 9건 중 8건(napa_cabbage/cabbage/onion/radish/green_pea/
+kidney_bean/sesame/broccoli) — perilla 1건은 Solid Starts를 포함한 TIER_1 출처가 없어
+이번 migration에서 제외했다(투자 문서 §2-9, boilerplate/`E010` 상태 그대로 유지).
+
+**적용 내용**: Solid Starts(TIER_1) 개별 페이지 8곳에서 확인한 손질 가이드로 신규
+evidence `E048`~`E055` 8건 등록 후, 대상 8개 `preparation_profiles` 행의
+`cutting_guidance`를 boilerplate("재료의 질긴 부분·씨·껍질 등은 제공 형태와 재료 상태에
+따라 확인")에서 재료별 실제 문구로 REPLACE(`evidence_id`도 함께 갱신). broccoli만
+`peel_rule`도 추가로 채움(줄기 겉껍질 처리, chestnut migration `0035` 패턴과 동일하게
+두 필드 동시 사용). 형제 재료(napa_cabbage↔cabbage, green_pea↔kidney_bean)는 각각
+개별 Solid Starts 페이지에서 독립 확인, evidence row도 서로 다름 — 근거 전이 없음.
+radish는 Solid Starts 원문이 서구 소형 품종 기준이고 이 프로젝트의 `radish`(무)는 한국
+대형 daikon형 품종이라, 원문의 구체적 크기 표현은 옮기지 않고 품종 무관 질감 기준
+("포크로 눌러질 정도로 푹 익힘")만 반영했다(투자 문서 §2-4 caveat).
+
+**영향 범위**: 대상 8개 `preparation_profiles` 행 외 나머지 42개 행은 `WHERE id = '...'`
+개별 조건으로 구조적으로 영향 불가. `ingredients`/`cooking_profiles`/`texture_profiles`/
+`safety_rules` 테이블은 전혀 건드리지 않음. `perilla`(`prep_perilla`)는 명시적으로
+제외 — boilerplate/`E010` 그대로 유지 확인(검증 참고).
+
+**검증**: pre-snapshot — `evidence` 47행, 대상 9개(8건 대상 + perilla) `preparation_profiles`
+행 전부 boilerplate+`E010` 확인, `E048`~`E055` 원격 DB에 미존재 확인. INSERT+UPDATE 실행
+(순수 DML, Claude Code가 service-role client로 직접 실행, DDL이 아니므로 Dashboard 경유
+불필요) 후 post-snapshot: `evidence` 55행(47+8), 대상 8행의 `cutting_guidance`/
+`evidence_id`가 draft와 완전히 일치, `peel_rule`은 broccoli만 채워짐(나머지 7건은
+`null` 유지) 확인. `perilla`(`prep_perilla`)는 UPDATE 대상에서 제외돼 boilerplate/
+`E010` 그대로임을 재조회로 명시적 확인. 기존 14개 테이블 행 수 전량 무변화(`preparation_
+profiles` 50행 그대로, 나머지 12개 테이블도 무변화) 확인. 잔여 boilerplate
+`preparation_profiles` 행 수는 47(pre 9건 boilerplate 그룹의 일부)에서 이번 migration
+후 7건으로 감소 — migration `0035`가 구조화 필드만 채우고 `cutting_guidance`는
+boilerplate로 남긴 6건(zucchini/cucumber/spinach/tomato/eggplant/mushroom) + 이번에
+제외한 perilla 1건 = 7건과 정확히 일치, 의도치 않은 잔존/변경 없음을 교차 확인. FK
+무결성: `E048`~`E055` 8개 전부 `evidence` 테이블에 존재 확인. API 실측
+(`GET /api/v1/ingredients/broccoli`) — 응답의 `preparationProfile.peel_rule`/
+`cutting_guidance`/`evidence_id`가 draft 예측과 완전히 일치. `npm test`(172/172 PASS,
+회귀 없음)·`npm run test:integration`(46/46 PASS, perilla 응답의 `cutting_guidance`가
+여전히 boilerplate임을 통합테스트 응답에서도 재확인)·`npm run typecheck`·`npm run lint`
+전부 통과.
+
+**seed.sql 처리**: 기존 `0026`~`0046`과 동일한 append-only 패턴(원본 INSERT 문 무수정,
+`0047`의 INSERT+UPDATE 블록을 파일 하단에 추가).
+
+---
