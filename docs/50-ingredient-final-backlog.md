@@ -128,8 +128,10 @@ E-7 등)은 이번 갱신 대상이 아니다.
 | CLOSED-24 | A-1(pear/peach/seaweed/sesame/perilla/cheese 6개 `allowed_methods` 보정) — `supabase/seed.sql` migration 0034 mirror 블록에서 이미 `'{}'`→실값(`{steam}`/`{microwave}`)으로 채워짐, 이후 되돌린 migration 없음(전수 grep 확인, §3-A 참고) | migration 0034 | (문서에 P1/NOW로 잘못 남아있던 것을 CLOSED로 정정, 원 커밋 미상 — 0034 파일 자체가 근거) |
 | CLOSED-25 | D-1(`allowed_methods` 한국어 라벨 매핑) — `lib/recipe/cookingMethodLabels.ts` 이미 존재, `RecipeView.tsx`/`buildCookingSteps.ts`/`buildStepInfoRows.ts` 3곳에 이미 연결됨(grep 재확인) | `lib/recipe/cookingMethodLabels.ts` | (문서에 P1/NOW로 잘못 남아있던 것을 CLOSED로 정정) |
 | CLOSED-26 | A-2(grape/blueberry/strawberry "선택적 조리" 표현 정책) — `lib/recipe/cookingTimeStatus.ts`의 `hasOptionalCookingGuidance()` + `buildCookingSteps.ts:123-125`에 이미 구현됨(강제 타이머 없이 "(선택 사항)" 텍스트로만 노출), 관련 테스트 40건(`cookingTimeStatus.test.ts` 15 + `buildCookingSteps.test.ts` 25) 전부 PASS 재확인 | `lib/recipe/cookingTimeStatus.ts` | (문서에 P2/NEXT "정책 결정 필요"로 잘못 남아있던 것을 CLOSED로 정정) |
+| CLOSED-27 | B-3(egg 조리온도 계열 safety_rule 미연결) — `EGG_DONENESS_REQUIRED`(CRITICAL/CONTINUE_COOKING, evidence E018 재사용) 신규 등록 + egg 연결. `min_internal_temp_c`는 채우지 않음(가정에서 달걀 온도계 측정이 비실용적이라는 정책 결정) — `lib/rules/safety.ts`의 기존 null-fallback 경로("충분히 익혀야 합니다")를 코드 변경 없이 그대로 사용 | migration 0048 | 미커밋(승인 대기) |
+| CLOSED-28 | B-4(egg `time_min/max` 8~10분 vs NHS E017 5분 수치 불일치) — 원 문제(8~10분 숫자의 출처 미기록)는 이미 `migration 0041`(`cook_egg.time_min/max=15/15`, `evidence_id=E018`)로 해소돼 있었음. 이번엔 문서 상태만 CLOSED로 정정, 새 DB 변경 없음 | migration 0041(기존) | `2c937a1`(기존 실행분) |
 
-**CLOSED 26건.** CLOSED-15~17, 23은 "새 데이터를 추가"한 것이 아니라 "기존 상태가 여전히
+**CLOSED 28건.** CLOSED-15~17, 23은 "새 데이터를 추가"한 것이 아니라 "기존 상태가 여전히
 맞는지 재검증해서 변경 불필요/시기상조로 결론낸 것"이다 — 이것도 유효한 작업 완료로 집계한다
 (재조사 낭비를 막기 위한 증거이기도 하다, §5). CLOSED-18/20이 각각 E-4/E-3의 정책 결정을
 **실행**한 것이라, 아래 §3-E 표에서 두 항목을 BACKLOG(정책 결정 대기)에서 CLOSED로 옮겼다.
@@ -236,8 +238,8 @@ mirror 블록(`update cooking_profiles set allowed_methods = '{steam}' where id 
 |---|---|---|---|---|
 | B-1 | CHOKING_HARD_RAW: raw/cooked 레시피 인스턴스 상태를 표현할 schema 없음 (DATA_MODEL_GAP) | CHOKING_HARD_RAW 연결 12개 전체(구조적) | `choking-hard-raw-runtime-investigation.md` | **BACKLOG** |
 | B-2 | stage 조건부 safety action 강도 부재(초기든 완료기든 동일 WARN) | chestnut(직접 지적됨), CHOKING_HARD_RAW 연결 12개 전체(구조적으로 동일 영향) | `p0-safety-fixes-investigation.md` §8-4 | BACKLOG |
-| B-3 | egg — 조리온도 계열 safety_rule 미연결(`temperature_rule_id=null`) | egg | `egg-cooking-method-investigation.md` §7 | P2 |
-| B-4 | egg — `time_min/max`(8~10분) vs NHS E017(5분) 수치 불일치 | egg | 위와 동일 §6 | P2 |
+| B-3 | egg — 조리온도 계열 safety_rule 미연결(`temperature_rule_id=null`) | egg | `egg-cooking-method-investigation.md` §7 | ~~P2~~ **CLOSED**(migration 0048, §2 CLOSED-27) |
+| B-4 | egg — `time_min/max`(8~10분) vs NHS E017(5분) 수치 불일치 | egg | 위와 동일 §6 | ~~P2~~ **CLOSED**(migration 0041, §2 CLOSED-28) |
 | B-5 | tofu FPIES(비-IgE 알레르기) — 신규 발견, 현재 taxonomy에 반영 불가 | tofu | `tofu-block-policy-reinvestigation.md` §2-6, `tofu-migration-plan.md` §5 | BACKLOG |
 
 **B-1/B-2 판정(요청서 §6-1 명시 대응)**: `choking-hard-raw-runtime-investigation.md`가 내린
@@ -415,16 +417,32 @@ DB의 `allowed_methods=[]`인 20개 cooking_profile을 **"오류"로 자동 판�
 **"빈 배열 = 오류"라고 가정하지 않는다는 지시를 정확히 지켰다** — 20개 중 7개는 의도된 설계,
 9개는 실제 버그, 4개는 안전에는 영향 없는 완성도 이슈로 서로 다른 결론이다.
 
-### 4-3. egg — 두 이슈 분리 (§6-3 대응)
+### 4-3. egg — 두 이슈 분리 (§6-3 대응) — **둘 다 CLOSED로 정정(2026-09-02)**
 
-- **B-3(온도 safety rule 부재)**: `completion_checks="흰자와 노른자가 모두 완전히 응고"`가
-  사실상 doneness 대리 지표 역할을 하고 있어 당장 안전 실패는 아니다. 정식 `CONTINUE_COOKING`
-  규칙으로 격상할지는 정책 결정 — **지금 변경 불필요, P2로 기록만.**
-- **B-4(8~10분 vs NHS 5분 불일치)**: 두 수치 모두 근거가 있다(내부 값은 원본 seed, NHS는
-  E017) — 어느 쪽이 틀렸다고 단정할 근거가 없다. **지금 변경 불필요, P2로 기록만.**
+- **B-3(온도 safety rule 부재) — CLOSED(migration 0048, §2 CLOSED-27)**: 이 문서
+  최초 작성 시점엔 `completion_checks="흰자와 노른자가 모두 완전히 응고"`가 doneness
+  대리 지표 역할을 하고 있어 "정식 규칙으로 격상할지는 정책 결정"으로 P2 보류했으나, 이번에
+  그 정책 결정을 실행했다 — `EGG_DONENESS_REQUIRED`(`rule_type='cooking_doneness'`,
+  `CRITICAL`/`CONTINUE_COOKING`, evidence `E018` 재사용, `status='NEEDS_REVIEW'`) 신규
+  등록 후 egg에 연결. `min_internal_temp_c`는 의도적으로 비워둔다 — 육류/생선과 달리
+  달걀은 가정에서 온도계로 내부 온도를 재는 것이 비실용적이라, 수치 대신 doneness 문구
+  ("완전히 응고")로 충분하다는 것이 이번 정책 결정이다. `lib/rules/safety.ts`의
+  `case "CONTINUE_COOKING"`이 `threshold == null`일 때 이미 `"충분히 익혀야 합니다"`로
+  폴백하는 경로를 갖고 있어 코드 변경은 전혀 필요 없었다. API 실측
+  (`POST /api/v1/recipes/generate`, egg)으로 `SAFETY_COOKING_REQUIRED`("달걀: 충분히
+  익혀야 합니다") 신규 노출 확인, chicken/beef/carrot 회귀 없음 확인. 상세는
+  `docs/schema-freeze.md` §21.
+- **B-4(8~10분 vs NHS 5분 불일치) — CLOSED(migration 0041, §2 CLOSED-28)**: 이 문서
+  최초 작성 시점엔 "두 수치 모두 근거가 있어 단정할 근거가 없다"로 P2 보류했으나, 실제로는
+  원 문제(8~10분이라는 숫자 자체의 출처가 프로젝트 어디에도 기록돼 있지 않았다는 점)가
+  이 문서 작성 이전인 `migration 0041`(`cook_egg.time_min/max=8/10`→`15/15`,
+  `evidence_id=E010`→`E018`)로 이미 해소돼 있었다 — `docs/schema-freeze.md` §19가 이
+  실행을 소급 기록하고 있음에도 이 backlog 문서만 갱신되지 않아 stale했다. 이번엔 새 DB
+  변경 없이 문서 상태만 정정한다.
 
 두 이슈 모두 `docs/egg-cooking-method-investigation.md`가 "이번 조사(allowed_methods) 범위
-밖"이라고 이미 명시적으로 분리해뒀던 것을 그대로 유지한다.
+밖"이라고 명시적으로 분리해뒀던 것 자체는 여전히 유효하다 — 그 분리 이후 별도 정책 결정/
+실행(B-3: 이번 migration 0048, B-4: 기존 migration 0041)으로 각각 CLOSED됐을 뿐이다.
 
 ### 4-4. chestnut — 세 갈래 분리 (§6-4 대응)
 
@@ -569,12 +587,15 @@ DDL을 단독 migration으로 실행 가능한 상태가 아니다. LATER로 재
 3. **E-5**: `meat_form` pork whole-cut 확장.
 4. **E-7**: 레거시 `ingredient_role`(5-value) 컬럼 제거 — §16 조건 4개 전부 충족 + seed.sql
    mirror 블록 처리 방식에 대한 별도 정책 결정이 먼저 필요(2026-09-02 조사 결과 신규 편입).
-5. **B-3/B-4**: egg 온도 safety rule 신설 여부 + NHS 5분 값 반영 여부.
-6. **C-1/C-3/C-5**: evidence 품질 고도화(E010 의존도, 견과류 전용 근거, 생선가시 전용 근거).
+5. **C-1/C-3/C-5**: evidence 품질 고도화(E010 의존도, 견과류 전용 근거, 생선가시 전용 근거).
 
 **LATER에서 제거(CLOSED로 이동, 2026-09-02)**: ~~E-3(곡물 4종 shape/consistency 정책
 결정)~~, ~~E-4(sesame/perilla/seaweed/watermelon/cheese completion_checks 의미
 재정의)~~ — 둘 다 migration 0044/0042로 정책이 실제 결정·실행됨(§3-E, §2 CLOSED-18/20).
+
+**LATER에서 제거(CLOSED로 이동, 2026-09-02)**: ~~B-3/B-4(egg 온도 safety rule 신설 여부 +
+NHS 5분 값 반영 여부)~~ — B-3는 migration 0048로 정책 결정·실행됨, B-4는 기존 migration
+0041로 이미 해소돼 있던 것을 문서만 정정(§4-3, §2 CLOSED-27/28).
 
 ### DO NOT DO
 
@@ -645,12 +666,13 @@ DDL을 단독 migration으로 실행 가능한 상태가 아니다. LATER로 재
 인라인 노트 참고)**
 
 - **전체 ingredient**: 50
-- **CLOSED**: 26건(§2, CLOSED-24~26 신규 — A-1/D-1/A-2가 실제로는 이미 구현 완료돼 있던
-  것을 이번에 코드 grep으로 확인해 문서만 정정)
+- **CLOSED**: 28건(§2, CLOSED-24~26은 A-1/D-1/A-2가 실제로는 이미 구현 완료돼 있던 것을
+  코드 grep으로 확인해 문서만 정정, CLOSED-27/28은 B-3/B-4 — B-3는 migration 0048로 정책
+  결정·실행, B-4는 기존 migration 0041로 이미 해소돼 있던 것을 문서만 정정, 2026-09-02)
 - **P0**: 0건(현재 MVP 핵심 흐름을 막는 P0 없음 — 이전 OPS-001/DB-008 P0 2건 모두 이미 CLOSED)
 - **P1**: **0건**(A-1/D-1이 CLOSED로 이동 — §3-A/§3-D, §2 CLOSED-24/25 참고. 문서에
   P1/NOW로 잘못 남아있던 것이지 실제로 미해결이었던 적이 없음)
-- **P2**: 7건(B-3, B-4, C-2, C-3, C-4, D-2, E-9 — A-2는 CLOSED로 이동해 이 목록에서 제외,
+- **P2**: 5건(C-2, C-3, C-4, D-2, E-9 — A-2/B-3/B-4는 CLOSED로 이동해 이 목록에서 제외,
   E-7은 BLOCKED로 재분류되어 이 목록에서 제외, 정확한 개수는 §3 표 참고)
 - **BACKLOG**: 9건(B-1/E-1, B-2/E-2, B-5, C-1, C-5, C-6, C-7, E-7, E-6은 DO NOT DO로 별도
   표기) — E-3/E-4는 CLOSED로 이동해 이 목록에서 제외
@@ -668,7 +690,8 @@ DDL을 단독 migration으로 실행 가능한 상태가 아니다. LATER로 재
 - **권장 NOW**: OPS housekeeping(문서 커밋) — A-1/D-1은 CLOSED로 이동해 이 목록에서 제외
 - **권장 NEXT**: C-2(prep 문구 보강) + E-9(schema-freeze 갱신) + E-8 API 노출 — A-2는 CLOSED로
   이동해 이 목록에서 제외, E-7은 조건 미충족으로 이 목록에서 제외, LATER로 재분류
-- **권장 LATER**: B-1/E-1, B-2/E-2, E-5, E-7(제거 조건 재충족 시), B-3/B-4, C-1/C-3/C-5
+- **권장 LATER**: B-1/E-1, B-2/E-2, E-5, E-7(제거 조건 재충족 시), C-1/C-3/C-5 — B-3/B-4는
+  CLOSED로 이동해 이 목록에서 제외(2026-09-02)
 - **DO NOT DO**: 50개 전수 재조사, 형제 채소 유사성만으로 CHOKING_HARD_RAW 연결, BEEF_WHOLE_CUT_TEMP 재검토, tofu FPIES 임시방편 반영, E-7을 조건 미충족 상태에서 실행
 
 DB 변경: NONE(이번 갱신 — grep/git log만 실행, 원격 조회 없음)

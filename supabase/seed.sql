@@ -1505,3 +1505,12 @@ update preparation_profiles set
   cutting_guidance = '줄기는 손가락 두 개 굵기·길이의 막대 모양으로 썰되 원통형이 아니라 각지게 썰어 질식 위험을 줄임. 꽃송이는 손가락 세 개 너비 정도로 제공하고, 단단한 꽃송이는 줄기 방향으로 길게 갈라 원통형이 되지 않게 함.',
   evidence_id = 'E055'
 where id = 'prep_broccoli';
+
+-- migration 0048: B-3 정책 결정 실행 -- egg 조리온도 계열 safety_rule 신설 + 연결.
+-- min_internal_temp_c는 채우지 않는다(가정에서 달걀 내부 온도 측정이 비실용적) --
+-- lib/rules/safety.ts의 CONTINUE_COOKING null-fallback 경로를 사용.
+insert into safety_rules (id, rule_type, severity, condition_json, action, evidence_id, status) values
+  ('EGG_DONENESS_REQUIRED', 'cooking_doneness', 'CRITICAL', '{"category": "egg", "doneness": "완전히 응고"}', 'CONTINUE_COOKING', 'E018', 'NEEDS_REVIEW');
+
+insert into ingredient_safety_rules (ingredient_id, safety_rule_id) values
+  ('egg', 'EGG_DONENESS_REQUIRED');

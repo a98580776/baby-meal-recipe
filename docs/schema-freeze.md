@@ -814,3 +814,61 @@ boilerplate로 남긴 6건(zucchini/cucumber/spinach/tomato/eggplant/mushroom) +
 `0047`의 INSERT+UPDATE 블록을 파일 하단에 추가).
 
 ---
+
+## 21. Amendment — `0048_egg_doneness_required`: B-3 정책 결정 실행 — egg 조리 doneness safety_rule 신설 + 연결 (구현 및 원격 적용 완료, 2026-09-02)
+
+**분류(§1-1 기준)**: 순수 DML(`safety_rules` 1행 INSERT + `ingredient_safety_rules` 1행
+INSERT). DDL 없음, `§1-1` 목록 갱신 불필요.
+
+**배경**: `docs/50-ingredient-final-backlog.md` B-3("egg — 조리온도 계열 safety_rule
+미연결, `temperature_rule_id=null`")에 대한 정책 결정 실행. B-3는 지금까지 "완성 기준
+(`completion_checks`="흰자와 노른자가 모두 완전히 응고")이 사실상 doneness 대리 지표
+역할을 해 당장 안전 실패는 아니다"로 P2/기록만 유지돼 왔으나, 이번에 정식 `CONTINUE_COOKING`
+규칙으로 격상하기로 결정했다.
+
+**적용 내용**: 신규 evidence INSERT 없음 — 기존 `E018`(Solid Starts, TIER_1, egg 조리/제공
+가이드, `cook_egg.evidence_id`·`texture_egg_stage_1~4.evidence_id`로 이미 사용 중) 재사용.
+`safety_rules`에 `EGG_DONENESS_REQUIRED`(`rule_type='cooking_doneness'`,
+`severity='CRITICAL'`, `condition_json={"category":"egg","doneness":"완전히 응고"}`,
+`action='CONTINUE_COOKING'`, `evidence_id='E018'`, `status='NEEDS_REVIEW'`) 1행 INSERT +
+`ingredient_safety_rules`에 `(egg, EGG_DONENESS_REQUIRED)` 1행 INSERT.
+`min_internal_temp_c`는 의도적으로 채우지 않는다 — 달걀은 가정에서 온도계로 내부 온도를
+재는 것이 육류/생선과 달리 비실용적이라, 수치 대신 doneness 문구("완전히 응고")로 충분하다는
+것이 정책 결정이다. `lib/rules/safety.ts`의 `case "CONTINUE_COOKING"` 분기는 이미
+`threshold == null`일 때 `"${name}: 충분히 익혀야 합니다."`로 폴백하는 경로를 갖고 있어
+(migration `0004`의 두 카테고리 rule과 무관하게 원래부터 존재하던 분기) 코드 변경이
+전혀 필요하지 않았다.
+
+**영향 범위**: `safety_rules`/`ingredient_safety_rules`에 각 1행 추가 외 나머지 행은
+무변화. `cooking_profiles.completion_checks`/`texture_profiles`/기타 기존 필드는 전혀
+건드리지 않음 — 신규 안전 규칙 연결만 추가(요청서 지정 범위 그대로). `lib/rules/safety.ts`
+등 코드 파일도 무수정.
+
+**검증**: pre-snapshot — `safety_rules` 25행, egg의 `ingredient_safety_rules`는
+`EGG_ALLERGEN` 1건뿐, `EGG_DONENESS_REQUIRED` 미존재, `E018` 존재 확인. INSERT 실행(순수
+DML, Claude Code가 service-role client로 직접 실행, DDL이 아니므로 Dashboard 경유 불필요)
+후 post-snapshot: `safety_rules` 26행(25+1), egg의 `ingredient_safety_rules`가
+`EGG_ALLERGEN`+`EGG_DONENESS_REQUIRED` 2건으로 증가, 신규 행 값이 지정값과 100% 일치.
+나머지 13개 테이블 행 수 전량 무변화. API 실측(`POST /api/v1/recipes/generate`,
+`stage_id=stage_2`/`food_form_id=puree`/`ingredient_ids=["egg"]`) — 응답
+`safety_notes`에 `{"code":"SAFETY_COOKING_REQUIRED","message":"달걀: 충분히 익혀야
+합니다.","rule_id":"EGG_DONENESS_REQUIRED","rule_status":"NEEDS_REVIEW",
+"severity":"CRITICAL","action":"CONTINUE_COOKING"}`이 신규 노출됨(예측과 완전히 일치),
+기존 `SAFETY_ALLERGEN_WARNING`(EGG_ALLERGEN)도 그대로 동시 노출. 회귀 확인: chicken/beef
+(`MEAT_POULTRY_TEMP_MFDS`, "내부 온도 75°C 이상까지 완전히 익혀야 합니다")·carrot
+(`CHOKING_HARD_RAW`) `safety_notes` 전부 무변화(재조회로 확인) — `hasMfdsTempRule` dedup
+로직은 egg에 두 번째 CONTINUE_COOKING rule이 없어 트리거되지 않음. `npm test`(172/172
+PASS)·`npm run test:integration`(46/46 PASS)·`npm run typecheck`·`npm run lint` 전부
+통과(코드 변경이 없어 회귀 위험 자체가 낮았음).
+
+**seed.sql 처리**: 기존 `0026`~`0047`과 동일한 append-only 패턴(원본 INSERT 문 무수정,
+`0048`의 INSERT 2건을 파일 하단에 추가).
+
+**B-4는 별도 변경 없음**: 이번 amendment는 B-3(온도/doneness safety_rule 부재)만 실행한다
+— B-4(`time_min/max` 8~10분 vs NHS E017 5분 수치 불일치)는 이미 `migration 0041`
+(§19)로 `cook_egg.time_min/max`가 15/15·`evidence_id=E018`로 정정되며 원 문제(8~10분
+숫자의 출처 미기록)가 해소됐다. `docs/50-ingredient-final-backlog.md` B-4를 CLOSED로
+정정하는 것은 문서 갱신이며, 이번 migration이 새로 값을 바꾸는 것이 아니다(아래 backlog
+문서 갱신 참고).
+
+---
