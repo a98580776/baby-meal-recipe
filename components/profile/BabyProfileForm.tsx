@@ -3,22 +3,32 @@
 import { useState } from "react";
 import type { BabyProfile } from "@/lib/profile/babyProfile";
 import { calculateAgeDays, formatAgeSummary, recommendStageId } from "@/lib/profile/stageRecommendation";
-import type { Stage } from "@/types/domain";
+import type { Allergen, Stage } from "@/types/domain";
 
 interface BabyProfileFormProps {
   initialProfile?: BabyProfile | null;
   stages: Stage[];
+  allergens: Allergen[];
   onComplete: (profile: BabyProfile) => void;
 }
 
 const MAX_PHOTO_BYTES = 2 * 1024 * 1024; // 2MB, stored as a data URL in localStorage
 
-export function BabyProfileForm({ initialProfile, stages, onComplete }: BabyProfileFormProps) {
+export function BabyProfileForm({ initialProfile, stages, allergens, onComplete }: BabyProfileFormProps) {
   const [name, setName] = useState(initialProfile?.name ?? "");
   const [birthDate, setBirthDate] = useState(initialProfile?.birthDate ?? "");
   const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(initialProfile?.photoDataUrl ?? null);
   const [confirmedStageId, setConfirmedStageId] = useState(initialProfile?.confirmedStageId ?? "");
+  // C2 알레르기 입력 — RecipeInputForm에 있던 것을 여기로 이동(아기 정보에
+  // 한 번만 선언). allergens.code를 그대로 BabyProfile.allergyCodes에
+  // 저장한다 — lib/rules/safety.ts의 declaredAllergies 매칭이 이 코드 값을
+  // 그대로 기대하므로 별도 변환 없이 재사용한다.
+  const [allergyCodes, setAllergyCodes] = useState<string[]>(initialProfile?.allergyCodes ?? []);
   const [error, setError] = useState<string | null>(null);
+
+  function toggleAllergy(code: string) {
+    setAllergyCodes((list) => (list.includes(code) ? list.filter((x) => x !== code) : [...list, code]));
+  }
 
   const today = new Date().toISOString().slice(0, 10);
 
@@ -55,7 +65,7 @@ export function BabyProfileForm({ initialProfile, stages, onComplete }: BabyProf
     if (birthDate > today) return setError("생년월일이 오늘보다 이후일 수 없습니다.");
     if (!selectedStageId) return setError("이유식 단계 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
 
-    onComplete({ name: trimmedName, birthDate, photoDataUrl, confirmedStageId: selectedStageId });
+    onComplete({ name: trimmedName, birthDate, photoDataUrl, confirmedStageId: selectedStageId, allergyCodes });
   }
 
   return (
@@ -141,6 +151,32 @@ export function BabyProfileForm({ initialProfile, stages, onComplete }: BabyProf
           </div>
         </div>
       )}
+
+      <div>
+        <p className="mb-1 text-sm font-semibold text-gray-700">알레르기 (선택)</p>
+        <p className="mb-2 text-xs text-gray-500">
+          해당하는 항목을 선택하면 관련 재료에 안전 경고가 표시됩니다.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {allergens.map((a) => {
+            const selected = allergyCodes.includes(a.code);
+            return (
+              <button
+                key={a.code}
+                type="button"
+                onClick={() => toggleAllergy(a.code)}
+                className={`rounded-full border px-3 py-1.5 text-sm ${
+                  selected
+                    ? "border-red-600 bg-red-50 text-red-700"
+                    : "border-gray-300 bg-white text-gray-700"
+                }`}
+              >
+                {a.name_ko}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 

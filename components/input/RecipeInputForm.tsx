@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import type { ApiErrorDetail, RecipeRequestInput, RecipeValidationResponse } from "@/types/api";
 import type { Allergen, FoodForm, Ingredient, Stage } from "@/types/domain";
@@ -10,6 +10,11 @@ import {
   getRecentIngredientIdsSnapshot,
   subscribeRecentIngredients,
 } from "@/lib/recipe/recentIngredients";
+import {
+  clearRecipeInputDraft,
+  loadRecipeInputDraft,
+  saveRecipeInputDraft,
+} from "@/lib/recipe/recipeInputDraft";
 import { isBaseSelectable, isAddOnSelectable } from "@/lib/rules/ingredientRole";
 import { MEAT_FORM_SUPPORTED_INGREDIENT_IDS, type MeatForm } from "@/lib/rules/meatForm";
 
@@ -18,6 +23,9 @@ interface RecipeInputFormProps {
   foodForms: FoodForm[];
   ingredients: Ingredient[];
   allergens: Allergen[];
+  // BabyProfile.allergyCodes — 알레르기는 이제 여기서 선택하지 않고
+  // 아기 정보 화면에서 한 번만 선언한다(읽기 전용 표시 + 수정 버튼만 노출).
+  allergyCodes: string[];
   // Fresh, age-based system suggestion (재계산됨) — only drives the "추천"
   // badge/helper text below. 인수인계 §9 "추천값과 사용자가 최종 선택한
   // 단계값을 분리".
@@ -40,33 +48,40 @@ export function RecipeInputForm({
   foodForms,
   ingredients,
   allergens,
+  allergyCodes,
   recommendedStageId = null,
   initialStageId = null,
 }: RecipeInputFormProps) {
   const router = useRouter();
 
-  const [stageId, setStageId] = useState<string>(initialStageId ?? recommendedStageId ?? "");
-  const [foodFormId, setFoodFormId] = useState<string>("");
-  const [readiness, setReadiness] = useState(false);
-  const [selectedIngredientIds, setSelectedIngredientIds] = useState<string[]>([]);
+  // "알레르기 정보 수정" 버튼으로 / 로 이동했다가 /plan에 돌아왔을 때 그동안
+  // 선택 중이던 재료/형태가 사라지지 않도록, 마운트 시점에 세션 draft가
+  // 있으면 그걸로 초기값을 채운다(없으면 기존 그대로의 기본값).
+  const [initialDraft] = useState(() => loadRecipeInputDraft());
+
+  const [stageId, setStageId] = useState<string>(
+    () => initialDraft?.stageId || initialStageId || recommendedStageId || "",
+  );
+  const [foodFormId, setFoodFormId] = useState<string>(() => initialDraft?.foodFormId ?? "");
+  const [readiness, setReadiness] = useState(() => initialDraft?.readiness ?? false);
+  const [selectedIngredientIds, setSelectedIngredientIds] = useState<string[]>(
+    () => initialDraft?.selectedIngredientIds ?? [],
+  );
   const [searchOpen, setSearchOpen] = useState(false);
   // Recipe MVP — Part 2 Topping 분리: base(selectedIngredientIds)와 완전히
   // 독립된 상태 — "후첨 재료 추가" 부재료 목록이다(API 필드명은 하위호환을
   // 위해 topping_ingredient_ids 그대로 유지 — docs/ingredient-role-v2-
   // product-rules.md §3). "토핑식" food_form(전체 제공 형태)과는 별개의
   // 축이라, food_form 선택과 무관하게 항상 사용 가능하다.
-  const [toppingIngredientIds, setToppingIngredientIds] = useState<string[]>([]);
+  const [toppingIngredientIds, setToppingIngredientIds] = useState<string[]>(
+    () => initialDraft?.toppingIngredientIds ?? [],
+  );
   const [toppingSearchOpen, setToppingSearchOpen] = useState(false);
   // meat_form 도메인 모델 (docs/meat-form-domain-model-design.md): beef가
   // 선택됐을 때만 UI에 노출되는 다짐육/덩어리살 선택. 재료가 선택 해제되면
   // 아래 selectedIngredients 기반 렌더링에서 자연히 숨겨지고, 값은 남아있어도
   // 서버 검증(validateRecipeInput 3-2)이 선택되지 않은 재료의 입력을 무시한다.
-  const [meatForms, setMeatForms] = useState<Record<string, MeatForm>>({});
-  // C2 — 알레르기 입력 (docs/phase11-ux-product-review.md). allergens.code
-  // (Allergen.code, 예: "SOY")를 그대로 RecipeRequestInput.allergies에
-  // 전달 — lib/rules/safety.ts의 declaredAllergies 매칭이 이 코드 값을
-  // 그대로 기대하므로 별도 변환 없이 재사용한다.
-  const [selectedAllergyCodes, setSelectedAllergyCodes] = useState<string[]>([]);
+  const [meatForms, setMeatForms] = useState<Record<string, MeatForm>>(() => initialDraft?.meatForms ?? {});
 
   const [formError, setFormError] = useState<string | null>(null);
   const [apiErrors, setApiErrors] = useState<ApiErrorDetail[]>([]);
@@ -116,11 +131,16 @@ export function RecipeInputForm({
     );
   }
 
-  function toggleAllergy(code: string) {
-    setSelectedAllergyCodes((list) =>
-      list.includes(code) ? list.filter((x) => x !== code) : [...list, code],
-    );
-  }
+  useEffect(() => {
+    saveRecipeInputDraft({
+      stageId,
+      foodFormId,
+      readiness,
+      selectedIngredientIds,
+      toppingIngredientIds,
+      meatForms,
+    });
+  }, [stageId, foodFormId, readiness, selectedIngredientIds, toppingIngredientIds, meatForms]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -143,7 +163,7 @@ export function RecipeInputForm({
       food_form_id: foodFormId,
       topping_ingredient_ids: toppingIngredientIds,
       ...(Object.keys(meatForms).length > 0 ? { meat_forms: meatForms } : {}),
-      ...(selectedAllergyCodes.length > 0 ? { allergies: selectedAllergyCodes } : {}),
+      ...(allergyCodes.length > 0 ? { allergies: allergyCodes } : {}),
     };
 
     setSubmitting(true);
@@ -172,10 +192,11 @@ export function RecipeInputForm({
       if (meatFormsEntries.length > 0) {
         params.set("meat_forms", meatFormsEntries.map(([id, value]) => `${id}:${value}`).join(","));
       }
-      if (selectedAllergyCodes.length > 0) {
-        params.set("allergies", selectedAllergyCodes.join(","));
+      if (allergyCodes.length > 0) {
+        params.set("allergies", allergyCodes.join(","));
       }
 
+      clearRecipeInputDraft();
       router.push(`/recipe?${params.toString()}`);
     } catch {
       setFormError("네트워크 오류로 확인하지 못했습니다. 잠시 후 다시 시도해주세요.");
@@ -364,29 +385,31 @@ export function RecipeInputForm({
       </section>
 
       <section>
-        <h2 className="mb-2 text-base font-semibold">알레르기 (선택)</h2>
-        <p className="mb-2 text-xs text-gray-500">
-          해당하는 항목을 선택하면 관련 재료에 안전 경고가 표시됩니다.
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {allergens.map((a) => {
-            const selected = selectedAllergyCodes.includes(a.code);
-            return (
-              <button
-                key={a.code}
-                type="button"
-                onClick={() => toggleAllergy(a.code)}
-                className={`rounded-full border px-3 py-1.5 text-sm ${
-                  selected
-                    ? "border-red-600 bg-red-50 text-red-700"
-                    : "border-gray-300 bg-white text-gray-700"
-                }`}
-              >
-                {a.name_ko}
-              </button>
-            );
-          })}
-        </div>
+        <h2 className="mb-2 text-base font-semibold">알레르기</h2>
+        {allergyCodes.length > 0 ? (
+          <div className="mb-2 flex flex-wrap gap-2">
+            {allergyCodes.map((code) => {
+              const allergen = allergens.find((a) => a.code === code);
+              return (
+                <span
+                  key={code}
+                  className="rounded-full border border-red-600 bg-red-50 px-3 py-1.5 text-sm text-red-700"
+                >
+                  {allergen?.name_ko ?? code}
+                </span>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="mb-2 text-sm text-gray-500">등록된 알레르기가 없습니다.</p>
+        )}
+        <button
+          type="button"
+          onClick={() => router.push("/?edit=1")}
+          className="text-sm font-medium text-blue-600 underline"
+        >
+          알레르기 정보 수정
+        </button>
       </section>
 
       <button

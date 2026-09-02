@@ -16,6 +16,12 @@ export interface BabyProfile {
   // lib/profile/stageRecommendation.ts. Only changes when the user
   // re-confirms it via onboarding or 정보 수정.
   confirmedStageId: string;
+  // Allergen.code values (e.g. "SOY"), moved here from the per-recipe
+  // RecipeInputForm input so it only needs to be declared once per baby
+  // instead of every time a recipe is planned. Still device-local (no
+  // account/server storage) and still a 선택 입력 — an empty array is valid
+  // and never blocks onboarding.
+  allergyCodes: string[];
 }
 
 const STORAGE_KEY = "babyMealProject.babyProfile.v1";
@@ -30,6 +36,9 @@ function parseProfile(raw: string | null): BabyProfile | null {
       birthDate: parsed.birthDate,
       photoDataUrl: parsed.photoDataUrl ?? null,
       confirmedStageId: parsed.confirmedStageId,
+      allergyCodes: Array.isArray(parsed.allergyCodes)
+        ? parsed.allergyCodes.filter((c): c is string => typeof c === "string")
+        : [],
     };
   } catch {
     return null;

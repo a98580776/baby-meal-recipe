@@ -55,6 +55,7 @@ export function PlanView({ stages, foodForms, ingredients, allergens }: PlanView
         foodForms={foodForms}
         ingredients={ingredients}
         allergens={allergens}
+        allergyCodes={profile.allergyCodes}
         recommendedStageId={recommendedStageId}
         initialStageId={profile.confirmedStageId}
       />
