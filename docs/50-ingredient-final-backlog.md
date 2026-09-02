@@ -20,6 +20,14 @@ CLOSED로 옮긴 것이고(이번에 새로 결정한 것 아님), E-7/B-1(E-1)/
 섹션(§1 DB 스냅샷, §4, §5, C-1/C-5/C-6/C-7 등)은 이번 갱신 대상이 아니다 — 요청 범위가
 "새로 완료된 작업 반영 + E-7/B-1/B-2 재확인"으로 명시적으로 한정됨.
 
+**갱신(2026-09-04)**: A-1/A-2/D-1을 §2 CLOSED로 이동(CLOSED-24~26). 이 셋은 문서에
+P1/P2·NOW/NEXT 미해결 항목으로 남아있었지만, 실제로는 이미 오래전에 구현·테스트까지 끝나
+있었다는 것을 코드 grep + `npm test` 재검증으로 확인했다 — **"새로 완료"한 것이 아니라
+문서가 실제 코드 상태를 반영하지 못하고 있던 것을 바로잡은 것**이다(A-1: migration 0034,
+D-1: `lib/recipe/cookingMethodLabels.ts`, A-2: `hasOptionalCookingGuidance()`). §2/§3-A/
+§3-D/§6/§7/최종 보고를 함께 갱신했다. 코드/DB 변경 없음, 다른 섹션(C-2, E-9, B-1/B-2,
+E-7 등)은 이번 갱신 대상이 아니다.
+
 ---
 
 ## 0. 조사 대상 문서 — 수집 결과
@@ -117,11 +125,19 @@ CLOSED로 옮긴 것이고(이번에 새로 결정한 것 아님), E-7/B-1(E-1)/
 | CLOSED-21 | `evidence.E010` URL 404 정리(url 제거, status VERIFIED→NEEDS_REVIEW) | migration 0045 | `015b5ed` |
 | CLOSED-22 | `ingredient_tips` 파일럿 데이터 16건 INSERT(8재료×2건, API 노출은 별도 후속 범위로 미포함) | migration 0046 | `a363c5a` |
 | CLOSED-23 | E-7(레거시 `ingredient_role` 컬럼 제거) 안전성 조사 — "시기상조" 결론(제거 조건 4개 중 2개 미충족 + 신규 리스크 1건 발견), DDL draft 미작성 | `docs/ingredient-role-legacy-column-removal-investigation.md` | 조사만, `9b484a0` |
+| CLOSED-24 | A-1(pear/peach/seaweed/sesame/perilla/cheese 6개 `allowed_methods` 보정) — `supabase/seed.sql` migration 0034 mirror 블록에서 이미 `'{}'`→실값(`{steam}`/`{microwave}`)으로 채워짐, 이후 되돌린 migration 없음(전수 grep 확인, §3-A 참고) | migration 0034 | (문서에 P1/NOW로 잘못 남아있던 것을 CLOSED로 정정, 원 커밋 미상 — 0034 파일 자체가 근거) |
+| CLOSED-25 | D-1(`allowed_methods` 한국어 라벨 매핑) — `lib/recipe/cookingMethodLabels.ts` 이미 존재, `RecipeView.tsx`/`buildCookingSteps.ts`/`buildStepInfoRows.ts` 3곳에 이미 연결됨(grep 재확인) | `lib/recipe/cookingMethodLabels.ts` | (문서에 P1/NOW로 잘못 남아있던 것을 CLOSED로 정정) |
+| CLOSED-26 | A-2(grape/blueberry/strawberry "선택적 조리" 표현 정책) — `lib/recipe/cookingTimeStatus.ts`의 `hasOptionalCookingGuidance()` + `buildCookingSteps.ts:123-125`에 이미 구현됨(강제 타이머 없이 "(선택 사항)" 텍스트로만 노출), 관련 테스트 40건(`cookingTimeStatus.test.ts` 15 + `buildCookingSteps.test.ts` 25) 전부 PASS 재확인 | `lib/recipe/cookingTimeStatus.ts` | (문서에 P2/NEXT "정책 결정 필요"로 잘못 남아있던 것을 CLOSED로 정정) |
 
-**CLOSED 23건.** CLOSED-15~17, 23은 "새 데이터를 추가"한 것이 아니라 "기존 상태가 여전히
+**CLOSED 26건.** CLOSED-15~17, 23은 "새 데이터를 추가"한 것이 아니라 "기존 상태가 여전히
 맞는지 재검증해서 변경 불필요/시기상조로 결론낸 것"이다 — 이것도 유효한 작업 완료로 집계한다
 (재조사 낭비를 막기 위한 증거이기도 하다, §5). CLOSED-18/20이 각각 E-4/E-3의 정책 결정을
 **실행**한 것이라, 아래 §3-E 표에서 두 항목을 BACKLOG(정책 결정 대기)에서 CLOSED로 옮겼다.
+
+**CLOSED-24~26 판정(2026-09-04, 코드 grep + `npm test` 재검증으로 확인)**: A-1/A-2/D-1
+셋 다 이 문서가 "미착수"라고 서술해온 것과 달리 **실제로는 이미 오래전에 구현·테스트까지
+끝나 있었다** — 이번 조사에서 "새로 완료"한 것이 아니라 "문서가 실제 코드 상태를 반영하지
+못하고 있던 것"을 코드 근거로 바로잡은 것이다. 상세 근거는 §3-A/§3-D 참고.
 
 **OPS-001(2026-08-29 발견된 미커밋 리스크) 상태 갱신**: 당시 "modified 28개 + untracked 60개
 이상"이었던 것이 현재 `git status --short` 기준 **untracked 5개**(전부 이번 세션 이전에
@@ -138,12 +154,16 @@ CLOSED-15~17로 이미 반영, 이 표에는 없음).
 
 ### A. 실제 데이터 오류
 
+**A-1/A-2 상태(2026-09-04): 둘 다 CLOSED — 이미 구현 완료, 문서만 stale했음.** 아래 표와
+상세 서술은 이 문서 최초 작성(2026-08-30) 시점의 "발견된 버그" 기록을 그대로 남겨두되
+(문제 자체를 이해하려면 여전히 필요한 맥락), 상태 컬럼만 정정한다 — §2 CLOSED-24/26 참고.
+
 | ID | 제목 | 영향 재료 | 문제 | 우선순위 |
 |---|---|---|---|---|
-| A-1 | Cooking Mode 타이머/라벨 오분류 — allowed_methods=[] but 실제 조리시간 존재 | pear, peach, seaweed, sesame, perilla, cheese (6개, "definite" 그룹) | §3-A-1 상세 | **P1** |
-| A-2 | 위와 동일 패턴이지만 "선택적 조리"라 판단이 애매한 하위그룹 | grape, blueberry, strawberry (3개) | §3-A-1 상세 | P2 |
+| A-1 | Cooking Mode 타이머/라벨 오분류 — allowed_methods=[] but 실제 조리시간 존재 | pear, peach, seaweed, sesame, perilla, cheese (6개, "definite" 그룹) | §3-A-1 상세 | ~~**P1**~~ **CLOSED**(migration 0034, §2 CLOSED-24) |
+| A-2 | 위와 동일 패턴이지만 "선택적 조리"라 판단이 애매한 하위그룹 | grape, blueberry, strawberry (3개) | §3-A-1 상세 | ~~P2~~ **CLOSED**(`hasOptionalCookingGuidance()`, §2 CLOSED-26) |
 
-#### A-1/A-2 상세 (이번 조사에서 새로 발견 — 기존 16개 문서 어디에도 없음)
+#### A-1/A-2 상세 (이 문서 최초 작성 시점 기록 — 현재는 CLOSED, 아래는 당시 발견된 문제의 역사적 기록)
 
 `lib/recipe/cookingTimeStatus.ts`에는 "조리 불필요" 판정 함수가 **두 개** 있는데, 서로 다른
 정밀도로 서로 다른 화면에 쓰이고 있다:
@@ -192,7 +212,21 @@ chestnut을 고친 것과 완전히 동일한 패턴(단순 `allowed_methods` �
 grape/blueberry/strawberry는 "**필요 시**" 찌기/데치기로, 실제로는 생과일을 안전한 모양(웨지
 등)으로 잘라 그대로 제공하는 경우가 더 흔한 재료들이다 — 이건 "조리 정보가 빠졌다"가 아니라
 "조리가 선택 사항인 재료를 Cooking Mode가 어떻게 표현할지" 정책 판단이 먼저 필요해서 A-1과
-분리했다(§9 NEXT).
+분리했다.
+
+**해결 완료(2026-09-04 정정)**: 위 두 문단이 서술한 "정책 판단이 먼저 필요"하다는 진단은
+이미 코드로 해소돼 있었다 — `lib/recipe/cookingTimeStatus.ts`의 `hasOptionalCookingGuidance()`
+함수가 정확히 이 정책 판단을 구현한다: `allowed_methods.length === 0` **그리고**
+`time_guidance !== null` **그리고** `!isNoCookingNeededFromView(cooking)`일 때만 true를
+반환해, grape/blueberry/strawberry를 (a) 진짜 조리 불필요 7과일 그룹, (b) A-1의 확정적
+조리 필요 6재료와 구분한다. `buildCookingSteps.ts:123-125`가 이 값을 받아 강제 타이머 없이
+"(선택 사항)" 텍스트로만 노출 — A-1처럼 `allowed_methods`를 채워 넣는 방식이 아니라, 정확히
+이 문단이 요구했던 "별도 라벨 설계" 방식으로 구현돼 있다. `tests/unit/cookingTimeStatus.test.ts`
+(15건) + `tests/unit/buildCookingSteps.test.ts`(25건) = 40건 전부 PASS 재확인(2026-09-04).
+A-1(pear/peach/seaweed/sesame/perilla/cheese)도 `supabase/seed.sql` migration 0034
+mirror 블록(`update cooking_profiles set allowed_methods = '{steam}' where id = 'cook_pear'`
+등)에서 이미 채워져 있고, 이후 이를 되돌린 migration이 없음을 전수 grep으로 재확인했다 —
+둘 다 CLOSED(§2 CLOSED-24/26).
 
 ---
 
@@ -281,15 +315,23 @@ C-1(과다 재사용 구조)을 해소하지 않는다** — 여전히 138개 �
 
 ### D. UX 정밀도
 
+**D-1 상태(2026-09-04): CLOSED — 이미 구현 완료, 문서만 stale했음.** §2 CLOSED-25 참고.
+
 | ID | 제목 | 영향 재료 | 우선순위 |
 |---|---|---|---|
-| D-1 | `allowed_methods` 값이 한국어 라벨 없이 영문 그대로 노출(`"조리 방법: bake, boil"`) | beef, chicken 등 `allowed_methods`가 있는 모든 재료 | **P1** |
+| D-1 | `allowed_methods` 값이 한국어 라벨 없이 영문 그대로 노출(`"조리 방법: bake, boil"`) | beef, chicken 등 `allowed_methods`가 있는 모든 재료 | ~~**P1**~~ **CLOSED**(`lib/recipe/cookingMethodLabels.ts`, §2 CLOSED-25) |
 | D-2 | WARN 문구 "충분히 익혀"가 korean_melon/watermelon(실제로는 raw 제공)에 부정확 | korean_melon, watermelon | P2 |
 
-**D-1**: `beef-safety-rule-schema-investigation.md` §9-A가 조사 중 부산물로 발견한 기존 UX
-갭이다. `textureLabels.ts`(shape/particle_size 라벨 매핑)와 동일한 패턴의 작은 매핑 파일 하나만
-있으면 되는 낮은 난이도 작업이라 P1로 올린다 — 이미 사용자에게 매 레시피마다 노출되는
-문제라서다.
+**D-1(이 문서 최초 작성 시점 기록 — 현재는 CLOSED)**: `beef-safety-rule-schema-investigation.md`
+§9-A가 조사 중 부산물로 발견한 기존 UX 갭이다. `textureLabels.ts`(shape/particle_size 라벨
+매핑)와 동일한 패턴의 작은 매핑 파일 하나만 있으면 되는 낮은 난이도 작업이라 P1로 올린다 —
+이미 사용자에게 매 레시피마다 노출되는 문제라서다.
+
+**해결 완료(2026-09-04 정정)**: 위 진단이 요구한 바로 그 매핑 파일이 `lib/recipe/
+cookingMethodLabels.ts`로 이미 존재하며, 이 문서가 제안한 "textureLabels.ts와 동일한 패턴"
+그대로 구현돼 있다. 소비처 3곳(`RecipeView.tsx`, `buildCookingSteps.ts`, `buildStepInfoRows.ts`)
+전부 grep으로 연결 확인됨(2026-09-04) — `"조리 방법: bake, boil"`처럼 영문이 그대로 노출되는
+문제는 더 이상 재현되지 않는다. CLOSED(§2 CLOSED-25).
 
 ---
 
@@ -459,12 +501,9 @@ cauliflower/zucchini/eggplant/radish/cucumber(HOLD, 조건부) 8개뿐이다.
 
 | 그룹 | 항목 | 병렬성 |
 |---|---|---|
-| A-1(6개 재료 allowed_methods 보정) | pear/peach/seaweed/sesame/perilla/cheese | **PARALLEL_SAFE** — 서로 다른 `cooking_profiles` row, 기존 rice/egg/chestnut 배치 처리 선례(0007)와 동일 패턴 |
-| D-1(allowed_methods 라벨 매핑) | 코드 1개 파일 | **PARALLEL_SAFE** — A-1과도 독립적(라벨 매핑은 값이 아니라 표시 방식) |
 | C-2(prep boilerplate 조사) | 18개 재료 | **PARALLEL_SAFE** — 서로 다른 `preparation_profiles` row, 조사 단계는 재료별로 나눠도 결과를 한 migration으로 묶을 수 있음(기존 배치 관례) |
 | E-7(레거시 컬럼 제거) | 스키마 변경 1건 | **BLOCKED(2026-09-02 재확인)** — 조사 완료(`9b484a0`), 제거 조건 2개 미충족 그대로(API `select("*")` 노출, seed.sql mirror 존재) — 조건 충족 전까지 실행하지 않음 |
 | E-9(schema-freeze.md 갱신) | 문서 1건 | **PARALLEL_SAFE** — 다른 모든 작업과 독립 |
-| A-2(grape/blueberry/strawberry) | 3개 재료 | **BLOCKED** — "선택적 조리" 표현 정책이 먼저 필요(§3) |
 | B-1/E-1(raw/cooked domain state) | 스키마 확장 | **BLOCKED(2026-09-02 재확인, 변동 없음)** — product가 raw-serving 옵션을 실제로 도입하기 전까지 |
 | B-2/E-2(stage 조건부 강도) | safety_rules.action 확장 | **BLOCKED(2026-09-02 재확인, 변동 없음)** — action enum 재설계 필요, texture stage 작업과 결합 필요 |
 | E-8 API 노출(TIP 콘텐츠) | 코드 작업 | **PARALLEL_SAFE** — 데이터 계층(migration 0043/0046) 이미 완료, 착수 시 다른 작업과 독립 |
@@ -474,44 +513,52 @@ cauliflower/zucchini/eggplant/radish/cucumber(HOLD, 조건부) 8개뿐이다.
 ~~E-3(곡물 shape 정책)~~ / ~~E-4(completion_checks 의미 재정의)~~ — **CLOSED**(migration
 0044/0042), 아래 표에서 제거함.
 
+~~A-1(6개 재료 allowed_methods 보정)~~ / ~~D-1(allowed_methods 라벨 매핑)~~ /
+~~A-2(grape/blueberry/strawberry)~~ — **CLOSED(2026-09-04)**, 아래 표에서 제거함(§2
+CLOSED-24~26, §3-A/§3-D 참고) — 이미 구현 완료된 항목이라 "병렬 실행 가능 여부"를 논할
+대상 자체가 아니게 됐다.
+
 ---
 
 ## 7. 최종 추천 실행 순서
 
 **갱신(2026-09-02)**: A-1/D-1/C-2/E-9는 이 문서 작성(2026-08-30) 이후에도 실행되지 않은
-채 그대로 남아있다(코드/migration 이력에서 확인 — A-1 대상 6개 재료의 `allowed_methods`,
-`allowedMethodLabels`류 매핑 파일, `cutting_guidance` 문구, schema-freeze.md 0009~0033
-로그 전부 미착수 상태 그대로). 아래 NOW/NEXT는 최초 작성 시점 그대로 유지하되, E-7만
+채 그대로 남아있다고 서술했었다. 아래 NOW/NEXT는 최초 작성 시점 그대로 유지하되, E-7만
 **실행 가능 목록에서 제거**했다(재확인 결과 조건 미충족 지속, 위 §3-E 참고) — 다른 항목의
 순서/우선순위는 이번 갱신에서 재판단하지 않는다.
+
+**갱신(2026-09-04, 정정)**: 위 2026-09-02 갱신의 "A-1/D-1 미착수" 서술이 **틀렸다** —
+코드 grep으로 재확인한 결과 A-1(migration 0034)과 D-1(`cookingMethodLabels.ts`)은 이미
+오래전에 구현·연결까지 끝나 있었고, A-2도 `hasOptionalCookingGuidance()`로 이미 정책이
+구현돼 있었다(§2 CLOSED-24~26, §3-A/§3-D). 세 항목을 아래 NOW/NEXT에서 제거한다 — "다음에
+할 일"이 아니라 이미 끝난 일이었다.
 
 ### NOW (다음 세션에서 바로)
 
 1. **OPS housekeeping**: 남은 untracked 조사 문서를 커밋한다 — 위험 0, OPS-001의 완전한
    마무리(2026-09-02 기준 `20260830/`, `260824/broccoli/`,
    `docs/egg-cooking-time-evidence-investigation.md`, `public/images/` 등 여전히 untracked).
-2. **A-1**: pear/peach/seaweed/sesame/perilla/cheese 6개의 `allowed_methods` 보정 —
-   기존 rice/egg/chestnut(migration 0007) 패턴을 그대로 재사용, 조사 부담 낮음, 실제
-   사용자에게 매 레시피마다 노출되는 결함이라 우선순위가 높다.
-3. **D-1**: `allowed_methods` 한국어 라벨 매핑 파일 추가 — 낮은 난이도, 코드 전용, DB
-   변경 없음.
+
+~~**A-1**: pear/peach/seaweed/sesame/perilla/cheese 6개의 `allowed_methods` 보정~~ /
+~~**D-1**: `allowed_methods` 한국어 라벨 매핑 파일 추가~~ — **NOW에서 제거함(2026-09-04)**,
+둘 다 CLOSED(§2 CLOSED-24/25) — 이미 구현 완료.
 
 ### NEXT (NOW 완료 후)
 
-1. **A-2**: grape/blueberry/strawberry의 "선택적 조리" Cooking Mode 표현 정책을 먼저
-   결정한 뒤, 결정에 따라 A-1과 같은 패턴으로 처리하거나 별도 라벨(예: "선택 조리")을
-   설계한다.
-2. **C-2**: 18개 재료의 boilerplate `cutting_guidance`를 재료별 구체 문구로 보강 —
+1. **C-2**: 18개 재료의 boilerplate `cutting_guidance`를 재료별 구체 문구로 보강 —
    안전에 영향 없는 콘텐츠 품질 개선, 배치 조사 가능.
-3. **E-9**: `docs/schema-freeze.md` amendment 로그를 0009~0046까지 갱신 — 순수 문서 작업
+2. **E-9**: `docs/schema-freeze.md` amendment 로그를 0009~0046까지 갱신 — 순수 문서 작업
    (2026-09-02 기준 이미 §14/§17/§18까지는 개별 migration 실행 시점마다 amendment로
    기록돼 있으나, §9-A "column 전체 목록" 자체의 일괄 갱신은 아직 안 됨 — E-9 범위 그대로).
-4. **E-8 API 노출**: `ingredient_tips` 데이터 계층은 완료(migration 0043/0046) — 레시피
+3. **E-8 API 노출**: `ingredient_tips` 데이터 계층은 완료(migration 0043/0046) — 레시피
    응답에 TIP을 실제로 노출하는 코드 작업(`buildRecipeResponse.ts` 등)을 여기로 승격.
 
 ~~**E-7**: 레거시 `ingredient_role`(5-value) 컬럼 제거~~ — **NEXT에서 제거함(2026-09-02)**.
 조사 완료(`9b484a0`) 결과 제거 조건 4개 중 2개가 미충족이라 지금 실행하면 안 된다 —
 DDL을 단독 migration으로 실행 가능한 상태가 아니다. LATER로 재분류.
+
+~~**A-2**: grape/blueberry/strawberry의 "선택적 조리" Cooking Mode 표현 정책~~ —
+**NEXT에서 제거함(2026-09-04)**, CLOSED(§2 CLOSED-26) — 이미 구현 완료.
 
 ### LATER (MVP 이후 또는 정책 결정 대기)
 
@@ -547,8 +594,10 @@ DDL을 단독 migration으로 실행 가능한 상태가 아니다. LATER로 재
    (2026-09-02)**: E-3 정책이 migration 0044로 결정·실행됐고, 그 결정 자체가 이 항목이
    금지하려던 것과 정확히 반대 방향(`shape`는 채우지 않고 `texture` 자유서술만 채움)이라
    이 DO NOT DO는 이제 "지켜진 채로 마감된 항목"이다 — 별도 재발 방지 조치 불필요.
-6. **A-2(grape/blueberry/strawberry)를 A-1과 기계적으로 동일하게 처리하는 것** — "선택적
-   조리"와 "필수 조리"를 같은 방식으로 표현하면 오히려 새로운 부정확함을 만든다.
+6. ~~**A-2(grape/blueberry/strawberry)를 A-1과 기계적으로 동일하게 처리하는 것**~~ —
+   **해소됨(2026-09-04)**: A-2가 실제로 구현된 방식(`hasOptionalCookingGuidance()`, §3-A)이
+   정확히 이 항목이 요구한 대로다 — A-1처럼 `allowed_methods`를 채우는 대신 별도 "(선택
+   사항)" 라벨로 구분했다. 이 DO NOT DO도 "지켜진 채로 마감된 항목"이다.
 
 ---
 
@@ -578,35 +627,49 @@ DDL을 단독 migration으로 실행 가능한 상태가 아니다. LATER로 재
   0044/0042(각각 commit `24ca24c`/`90010e2`)를 문서에 반영한 것
 - [x] commit 없음(이 문서 파일 수정만, 요청서 지시대로 승인 대기)
 
+**갱신(2026-09-04) invariant**: A-1/A-2/D-1을 CLOSED로 옮긴 이번 작업 중에도:
+
+- [x] 코드 변경 없음 — A-1/D-1/A-2 모두 이미 구현되어 있어 손댈 것이 없었음(코드 grep +
+  `npm test`/`vitest run` 재실행만 수행, 파일 수정 없음)
+- [x] DB/migration/seed.sql 변경 없음
+- [x] C-2/E-9/B-1/B-2/E-7 등 다른 섹션 무변경 — A-1/A-2/D-1 관련 문구만 수정
+- [x] A-1/A-2/D-1 관련 코드를 리팩터링하거나 "개선"하지 않음 — 이미 완료된 상태를 문서에
+  반영만 함
+- [x] commit 없음(이 문서 파일 수정만, 요청서 지시대로 승인 대기)
+
 ---
 
 ## 최종 보고
 
-**(2026-09-02 갱신 — 아래 수치는 갱신 후 최신 상태. 최초 작성 시점 수치는 §2/§3의 각 갱신
+**(2026-09-04 갱신 — 아래 수치는 갱신 후 최신 상태. 최초 작성 시점 수치는 §2/§3의 각 갱신
 인라인 노트 참고)**
 
 - **전체 ingredient**: 50
-- **CLOSED**: 23건(§2, CLOSED-18~23 신규)
+- **CLOSED**: 26건(§2, CLOSED-24~26 신규 — A-1/D-1/A-2가 실제로는 이미 구현 완료돼 있던
+  것을 이번에 코드 grep으로 확인해 문서만 정정)
 - **P0**: 0건(현재 MVP 핵심 흐름을 막는 P0 없음 — 이전 OPS-001/DB-008 P0 2건 모두 이미 CLOSED)
-- **P1**: 2건(A-1 Cooking Mode 타이머 오분류 6개 재료, D-1 allowed_methods 라벨 미매핑)
-- **P2**: 8건(A-2, B-3, B-4, C-2, C-3, C-4, D-2, E-9 — E-7은 BLOCKED로 재분류되어 이 목록에서
-  제외, 정확한 개수는 §3 표 참고)
+- **P1**: **0건**(A-1/D-1이 CLOSED로 이동 — §3-A/§3-D, §2 CLOSED-24/25 참고. 문서에
+  P1/NOW로 잘못 남아있던 것이지 실제로 미해결이었던 적이 없음)
+- **P2**: 7건(B-3, B-4, C-2, C-3, C-4, D-2, E-9 — A-2는 CLOSED로 이동해 이 목록에서 제외,
+  E-7은 BLOCKED로 재분류되어 이 목록에서 제외, 정확한 개수는 §3 표 참고)
 - **BACKLOG**: 9건(B-1/E-1, B-2/E-2, B-5, C-1, C-5, C-6, C-7, E-7, E-6은 DO NOT DO로 별도
   표기) — E-3/E-4는 CLOSED로 이동해 이 목록에서 제외
 - **부분 진행**: 1건(E-8 — 데이터 계층 완료/migration 0043,0046, API 노출은 LATER)
 - **재조사 필요 재료**: **0개(무조건)**, 조건부 재조사 후보 5그룹(§5) — 전부 정책 결정이
   선행되어야 의미가 있음(이번 갱신 대상 아님, §5는 최초 작성 시점 그대로)
-- **병렬 가능 작업**: A-1, D-1, C-2, E-9, E-8 API 노출(§6, PARALLEL_SAFE)
+- **병렬 가능 작업**: C-2, E-9, E-8 API 노출(§6, PARALLEL_SAFE) — A-1/D-1은 CLOSED로 이동해
+  이 목록에서 제외
 - **BLOCKED(2026-09-02 재확인 완료)**: E-7(제거 조건 2개 미충족 지속), B-1/E-1·B-2/E-2
   (트리거 미발생 지속) — 전부 상태 변동 없음, 정책 재결정 안 함
-- **현재 MVP blocker**: **없음** — CLOSED-23건이 이전에 식별된 모든 P0급 이슈(미커밋 리스크,
+- **현재 MVP blocker**: **없음** — CLOSED-26건이 이전에 식별된 모든 P0급 이슈(미커밋 리스크,
   cod/tuna 가시, egg/chestnut 조리법, CHOKING_HARD_RAW 침묵, broccoli/tofu UNSUPPORTED)와
-  두 정책 결정 대기 항목(E-3 곡물 shape, E-4 completion_checks 재정의)을 전부 해소했다
-- **권장 NOW**: OPS housekeeping(문서 커밋) + A-1(6개 재료 allowed_methods 보정) + D-1(라벨 매핑)
-- **권장 NEXT**: A-2 정책 결정 + C-2(prep 문구 보강) + E-9(schema-freeze 갱신) + E-8 API 노출
-  (E-7은 조건 미충족으로 NEXT에서 제외, LATER로 재분류)
+  두 정책 결정 대기 항목(E-3 곡물 shape, E-4 completion_checks 재정의), 그리고 A-1/A-2/D-1
+  세 항목의 "문서상 미해결" 오기재를 전부 해소했다
+- **권장 NOW**: OPS housekeeping(문서 커밋) — A-1/D-1은 CLOSED로 이동해 이 목록에서 제외
+- **권장 NEXT**: C-2(prep 문구 보강) + E-9(schema-freeze 갱신) + E-8 API 노출 — A-2는 CLOSED로
+  이동해 이 목록에서 제외, E-7은 조건 미충족으로 이 목록에서 제외, LATER로 재분류
 - **권장 LATER**: B-1/E-1, B-2/E-2, E-5, E-7(제거 조건 재충족 시), B-3/B-4, C-1/C-3/C-5
-- **DO NOT DO**: 50개 전수 재조사, 형제 채소 유사성만으로 CHOKING_HARD_RAW 연결, BEEF_WHOLE_CUT_TEMP 재검토, tofu FPIES 임시방편 반영, A-2를 A-1과 동일 처리, E-7을 조건 미충족 상태에서 실행
+- **DO NOT DO**: 50개 전수 재조사, 형제 채소 유사성만으로 CHOKING_HARD_RAW 연결, BEEF_WHOLE_CUT_TEMP 재검토, tofu FPIES 임시방편 반영, E-7을 조건 미충족 상태에서 실행
 
 DB 변경: NONE(이번 갱신 — grep/git log만 실행, 원격 조회 없음)
 seed 변경: NONE
