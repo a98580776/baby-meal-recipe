@@ -173,6 +173,69 @@ describe("buildRecipeResponse", () => {
     });
   });
 
+  describe("ingredient_tips (migration 0043/0046)", () => {
+    it("exposes only category/body_ko for each tip, never the internal fields (id/sort_order/status/evidence_id/source_note)", () => {
+      const broccoliWithTips = {
+        ...ingredients.broccoli,
+        tips: [
+          {
+            id: "tip_broccoli_1",
+            ingredient_id: "broccoli",
+            category: "cooking",
+            body_ko:
+              "브로콜리는 찌거나 삶아서 줄기와 꽃 부분이 포크로 쉽게 으깨질 만큼 충분히 익히세요. 덜 익으면 단단해서 질식 위험이 커질 수 있습니다.",
+            sort_order: 0,
+            status: "NEEDS_REVIEW" as const,
+            evidence_id: "E026",
+            source_note: null,
+          },
+          {
+            id: "tip_broccoli_2",
+            ingredient_id: "broccoli",
+            category: "texture",
+            body_ko: "줄기는 통째로 두지 말고 아기가 쥐기 편한 작은 꽃송이 모양으로 잘라 제공하세요.",
+            sort_order: 0,
+            status: "NEEDS_REVIEW" as const,
+            evidence_id: "E026",
+            source_note: null,
+          },
+        ],
+      };
+      const recipe = buildRecipeResponse(
+        { ...input, ingredient_ids: ["broccoli"] },
+        { ...data, ingredients: new Map([["broccoli", broccoliWithTips]]) },
+        storageRule,
+        null,
+        [],
+      );
+      const broccoli = recipe.ingredients.find((i) => i.id === "broccoli");
+      expect(broccoli?.tips).toEqual([
+        {
+          category: "cooking",
+          body_ko:
+            "브로콜리는 찌거나 삶아서 줄기와 꽃 부분이 포크로 쉽게 으깨질 만큼 충분히 익히세요. 덜 익으면 단단해서 질식 위험이 커질 수 있습니다.",
+        },
+        {
+          category: "texture",
+          body_ko: "줄기는 통째로 두지 말고 아기가 쥐기 편한 작은 꽃송이 모양으로 잘라 제공하세요.",
+        },
+      ]);
+      for (const tip of broccoli?.tips ?? []) {
+        expect(tip).not.toHaveProperty("id");
+        expect(tip).not.toHaveProperty("sort_order");
+        expect(tip).not.toHaveProperty("status");
+        expect(tip).not.toHaveProperty("evidence_id");
+        expect(tip).not.toHaveProperty("source_note");
+      }
+    });
+
+    it("returns tips: [] when no ingredient_tips rows are registered (current fixture default)", () => {
+      const recipe = buildRecipeResponse(input, data, storageRule, null, []);
+      const carrot = recipe.ingredients.find((i) => i.id === "carrot");
+      expect(carrot?.tips).toEqual([]);
+    });
+  });
+
   describe("Recipe MVP — Part 2 Topping 분리", () => {
     it("toppings=[] when no topping_ingredient_ids was given", () => {
       const recipe = buildRecipeResponse(input, data, storageRule, null, []);

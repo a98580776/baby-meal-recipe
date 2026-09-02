@@ -269,6 +269,21 @@ export interface Evidence {
   status: VerificationStatus;
 }
 
+// migration 0043 — 재료별 실전 TIP 콘텐츠(CLAUDE.md §12). evidence_id/source_note 중
+// 하나는 반드시 채워져 있음(DB CHECK 제약 ingredient_tips_basis_required). API 응답에는
+// category/body_ko만 노출한다 — id/sort_order/status/evidence_id/source_note는 내부
+// 검증용 필드이므로 그대로 흘려보내지 않는다(lib/recipe/buildRecipeResponse.ts).
+export interface IngredientTip {
+  id: string;
+  ingredient_id: string;
+  category: string;
+  body_ko: string;
+  sort_order: number;
+  status: VerificationStatus;
+  evidence_id: string | null;
+  source_note: string | null;
+}
+
 export interface Claim {
   id: string;
   entity_type: string;

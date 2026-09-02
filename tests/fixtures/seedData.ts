@@ -233,6 +233,10 @@ function resolved(
       allergen: { id: code, code, name_ko: code, country: "KR", version: null },
       scope,
     })),
+    // migration 0043/0046 — stage-agnostic like textureProfile above; tests
+    // that need tips build their own ResolvedIngredient (see
+    // buildRecipeResponse.test.ts).
+    tips: [],
   };
 }
 

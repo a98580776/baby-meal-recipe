@@ -136,6 +136,11 @@ export interface RecipeIngredientView {
   // 19-item labeling list, BROADER_ALLERGEN_CONTEXT = clinically possible
   // but not legally mandated (see docs/schema-freeze.md §1-1).
   allergens: { code: string; name_ko: string; scope: AllergenScope }[];
+  // migration 0043/0046 (ingredient_tips): category + body_ko only — internal
+  // fields (id/sort_order/status/evidence_id/source_note) are never exposed
+  // here, see types/domain.ts IngredientTip. [] when no tips are registered
+  // for this ingredient (never fabricated client-side).
+  tips: { category: string; body_ko: string }[];
 }
 
 export interface RecipeStorageView {

@@ -60,6 +60,7 @@ function toIngredientViews(
         name_ko: link.allergen.name_ko,
         scope: link.scope,
       })),
+      tips: resolved.tips.map((t) => ({ category: t.category, body_ko: t.body_ko })),
     }));
 }
 

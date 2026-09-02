@@ -5,6 +5,7 @@ import type {
   CookingProfile,
   FoodForm,
   Ingredient,
+  IngredientTip,
   PreparationProfile,
   ReheatRule,
   SafetyRule,
@@ -44,7 +45,7 @@ async function resolveIngredient(
   ingredient: Ingredient,
   stageId?: string,
 ): Promise<ResolvedIngredient> {
-  const [prepRes, cookRes, rulesRes, allergensRes, textureRes] = await Promise.all([
+  const [prepRes, cookRes, rulesRes, allergensRes, textureRes, tipsRes] = await Promise.all([
     ingredient.preparation_profile_id
       ? supabase
           .from("preparation_profiles")
@@ -69,6 +70,22 @@ async function resolveIngredient(
           .eq("stage_id", stageId)
           .maybeSingle()
       : Promise.resolve({ data: null, error: null }),
+    // migration 0043/0046 (ingredient_tips). Same stageId-gating as
+    // textureProfile above: /api/v1/ingredients/:id (getIngredientDetail,
+    // no stageId) spreads ResolvedIngredient's remaining fields as-is
+    // (app/api/v1/ingredients/[id]/route.ts), so an ungated fetch here would
+    // leak raw IngredientTip rows (incl. evidence_id/source_note, internal
+    // fields) into that response. Gating to the recipe-generation path
+    // (stageId present) keeps this addition scoped to
+    // POST /api/v1/recipes/generate, same as the task intended.
+    stageId
+      ? supabase
+          .from("ingredient_tips")
+          .select("*")
+          .eq("ingredient_id", ingredient.id)
+          .eq("is_active", true)
+          .order("sort_order")
+      : Promise.resolve({ data: [], error: null }),
   ]);
 
   if (prepRes.error) throw prepRes.error;
@@ -76,6 +93,7 @@ async function resolveIngredient(
   if (rulesRes.error) throw rulesRes.error;
   if (allergensRes.error) throw allergensRes.error;
   if (textureRes.error) throw textureRes.error;
+  if (tipsRes.error) throw tipsRes.error;
 
   const safetyRules = (
     (rulesRes.data ?? []) as unknown as Array<{ safety_rules: SafetyRule }>
@@ -91,6 +109,7 @@ async function resolveIngredient(
     textureProfile: textureRes.data as TextureProfile | null,
     safetyRules,
     allergens,
+    tips: (tipsRes.data ?? []) as IngredientTip[],
   };
 }
 

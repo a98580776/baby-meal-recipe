@@ -3,6 +3,7 @@ import type {
   FoodForm,
   Ingredient,
   IngredientAllergenLink,
+  IngredientTip,
   PreparationProfile,
   SafetyRule,
   Stage,
@@ -22,6 +23,12 @@ export interface ResolvedIngredient {
   textureProfile: TextureProfile | null;
   safetyRules: SafetyRule[];
   allergens: IngredientAllergenLink[];
+  // migration 0043/0046 (ingredient_tips). Same stageId-gating as
+  // textureProfile above — see lib/supabase/queries.ts resolveIngredient()
+  // for why (avoids leaking raw IngredientTip rows, incl. evidence_id/
+  // source_note, into the stage-agnostic /api/v1/ingredients/:id response,
+  // which spreads ResolvedIngredient's remaining fields as-is).
+  tips: IngredientTip[];
 }
 
 export interface RecipeLookupData {
