@@ -872,3 +872,44 @@ PASS)·`npm run test:integration`(46/46 PASS)·`npm run typecheck`·`npm run lin
 문서 갱신 참고).
 
 ---
+
+## 22. Amendment — `0049_ingredient_tips_batch2`: ingredient_tips 2차 배치 데이터 16건 INSERT (구현 및 원격 적용 완료, 2026-09-02)
+
+**분류(§1-1 기준)**: 순수 DML(`ingredient_tips` 16행 INSERT). DDL 없음, `§1-1` 목록 갱신
+불필요. `0043`(§15)에서 스키마만 생성하고 `0046`(§18)에서 파일럿 8종을 채운
+`ingredient_tips` 테이블에 두 번째로 데이터를 채우는 작업.
+
+**배경**: `docs/claude-desktop-handoff/2026-09-02-ingredient-tips-batch2-candidates.md`(8종
+후보 선정 근거) → `docs/claude-desktop-handoff/2026-09-02-ingredient-tips-batch2-draft-spec.md`
+(조사+명세, 사용자 승인 완료)를 따라, 후속 재료 8종(egg/salmon/pork/onion/kidney_bean/
+green_pea/chestnut/cheese) 각 2건씩 TIP 콘텐츠 삽입. `0046`(파일럿, broccoli/tofu/carrot/
+kabocha/potato/sweet_potato/chicken/apple)과 겹치지 않는 재료만 대상으로 함.
+
+**적용 내용**: `insert into ingredient_tips (...)` 16행, 전부 `status='NEEDS_REVIEW'`
+(스키마 기본값과 동일). `evidence_id`가 지정된 16건 전부 기존 재료-특정 TIER_1 evidence
+재사용(E018/E040/E004/E044/E024/E050/E053/E052/E033/E016/E011) — 신규 evidence row
+생성 없음, `source_note`만 쓰는 항목도 없음(0046과 달리 이번 배치는 전부 Tier A).
+
+**영향 범위**: `ingredient_tips` 외 다른 14개 테이블은 전혀 건드리지 않음. 코드
+(`lib/`/`app/`/`components/`) 변경 없음 — `lib/supabase/queries.ts`의 tips 조회 로직은
+`0043`/`0046` 당시 이미 구현된 그대로 재사용.
+
+**검증**: pre-check — 대상 id(`tip_egg_1` 등) 16개 전부 seed.sql/기존 migration 전수
+grep으로 충돌 없음 확인. INSERT 실행(**이번 건은 사용자가 Dashboard SQL Editor에서 직접
+실행** — `0043`/`0049`와 동일하게 서비스 role client가 아니라 사용자 직접 실행 경로,
+AskUserQuestion으로 경로 선택 후 진행. 근거: `docs/claude-desktop-handoff/
+2026-09-02-ingredient-tips-batch2-execution-report.md` §0), 결과 "Success. No rows
+returned" 확인. `GET /api/v1/ingredients/:id`는 `tips` 필드가 `stageId` 파라미터가 있을
+때만 채워지는 기존 설계라 이 경로로는 8종 전부 빈 배열만 나오는 오탐(false negative)임을
+발견 — 대신 `POST /api/v1/recipes/generate`로 8종 전부(cheese는 주재료 거부 확인 후
+topping 경로로) `body_ko`/`category`가 draft와 완전히 일치함을 프로덕션 엔드포인트
+종단 확인. 실행 시점에는 코드 변경이 없어 `npm run typecheck`/`npm run lint`만 재실행(통과),
+`npm test`/`npm run test:integration`은 재실행하지 않았음(0046과 동일 판단 기준) — 이번
+문서화 작업 시점에 별도로 재실행해 `npm run test:integration`(46/46 PASS)·`npm test`
+(175/175 PASS, vitest worker pool의 1회성 Windows 크래시 이후 재실행 2회 연속 통과)로
+회귀 없음을 재확인했다.
+
+**seed.sql 처리**: 기존 `0026`~`0048`과 동일한 append-only 패턴(원본 INSERT 문 무수정,
+`0049`의 INSERT 16건 블록을 파일 하단에 추가).
+
+---
