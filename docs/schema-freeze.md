@@ -705,3 +705,60 @@ carrot/kabocha/potato×2/sweet_potato×2/chicken 중 completion_checks·wash_rul
 `0046`의 INSERT 블록을 파일 하단에 추가).
 
 ---
+
+## 19. Amendment — `0041_egg_cook_time_evidence_fix`: egg 조리시간 evidence 교정 (구현 및 원격 적용 완료, 2026-09-01)
+
+**분류(§1-1 기준)**: 순수 DML(`cooking_profiles` 1행 UPDATE). DDL 없음, `§1-1` 목록 갱신
+불필요. §13(`0034`~`0040`)과 §14(`0042`) 사이에 amendment 섹션이 누락돼 있던 것을
+보완한다(0041 자체는 §13 이후, §14 이전인 2026-09-01에 실행 완료됨 — 이 섹션은 실행
+시점을 소급해 기록만 한다).
+
+**배경**: `docs/egg-cooking-time-evidence-investigation.md`(1차 조사)가 `cook_egg.
+time_min/max=8/10`이 `evidence_id=E010`에 연결돼 있으나 E010 원문("이유식 시작, 위생,
+과일 씨·껍질 제거, 충분한 가열, 보관")에는 조리 시간 수치가 전혀 없음을 발견했다 — 8~10이라는
+숫자의 실제 출처가 이 프로젝트 어디에도 기록돼 있지 않았다. `docs/egg-cook-time-evidence-
+matrix.md`가 옵션 A(시간만 교정)/B(evidence_id만 교정)/C(둘 다 교정) 3안을 비교해 옵션 C를
+채택했다 — 시간만 바꾸면 숫자와 evidence_id가 내용적으로 연결되지 않고, evidence_id만
+바꾸면 인용 근거(15분)와 저장값(8~10분)이 서로 모순되기 때문이다.
+
+**적용 내용**: `update cooking_profiles set time_min = 15, time_max = 15, time_guidance =
+'추천 15분 (시작 기준) — 완숙 기준으로 삶기', evidence_id = 'E018' where id = 'cook_egg'`.
+E018(Solid Starts, TIER_1)은 이미 이 프로젝트 DB에 존재하던 evidence로(기존에는
+`texture_egg_stage_1~4.evidence_id`로만 쓰임, `cook_egg.evidence_id`로는 이번에 처음
+연결됨), "hard-boiled egg: simmer in boiling water for 15 minutes"를 명시해 이 프로젝트가
+egg에 허용하는 유일한 조리법(`allowed_methods={boil}`)·완성 기준(`completion_checks`=
+"흰자와 노른자가 모두 완전히 응고" = hard-boiled)과 방법론적으로 정확히 일치한다. 신규
+evidence INSERT 없음(기존 E018 행 재사용만). `allowed_methods`/`completion_checks`/
+`time_status`(`INFERRED` 그대로, 별도 승격 없음)는 이번 fix 범위 밖으로 무수정.
+
+**영향 범위**: `cook_egg` 1행 외 `cooking_profiles`의 나머지 49행은 `WHERE id = 'cook_egg'`
+단일 조건으로 구조적으로 영향 불가. `ingredients`/`preparation_profiles`/
+`texture_profiles`/`safety_rules`/`evidence` 테이블은 전혀 건드리지 않음. 코드
+(`lib/`/`app/`/`components/`) 변경 없음 — 이 migration 범위에 코드 변경 대상이 없었다.
+
+**검증**: pre-snapshot — `cook_egg.time_min/max=8/10`, `time_guidance="추천 8~10분 (시작
+기준) — 완숙 기준으로 삶기"`, `evidence_id='E010'` 확인. UPDATE 실행(순수 DML, Claude
+Code가 service-role client로 직접 실행, DDL이 아니므로 Dashboard 경유 불필요) 후
+post-snapshot: `time_min/max=15/15`, `time_guidance`/`evidence_id` draft 예측과 100%
+일치, `allowed_methods`/`completion_checks`/`temperature_rule_id`/`time_status`/
+`time_unit`/`whole_cut_*` 전부 무변화. Invariant: `cooking_profiles` 총 50행(무변화),
+`evidence` 총 46행(무변화, E018 기존 행 재사용만), `cooking_profiles_time_range_check`
+(`15<=15`)·`cooking_profiles_time_unit_required_check` 제약 통과, `evidence(id)` FK로
+E018 존재 확인. API 실측(`GET /api/v1/ingredients/egg`) — 응답의 `cookingProfile`이 draft
+예측과 완전히 일치. 회귀 확인: tofu(`SOY_ALLERGEN`/`SOY_FPIES`)·carrot(`CHOKING_HARD_RAW`)
+`safetyRules` 값 무변화. `npm test`(167/167 PASS, egg는 `tests/fixtures/seedData.ts`에
+fixture로 없어 대상 아님)·`npm run test:integration`(46/46 PASS)·`npm run typecheck`·
+`npm run lint` 전부 통과. 상세는 `docs/claude-desktop-handoff/2026-09-01-egg-cook-time-
+migration-0041-execution-report.md` 참고.
+
+**참고(범위 밖)**: `evidence_id=E010` 패턴은 egg에 국한되지 않고 50개 중 39개
+`cooking_profiles` 행에서 동일하게 나타난다(원격 DB 전수 조회로 이 migration 실행 당시
+재확인) — `docs/50-ingredient-final-backlog.md` C-1이 이미 문서화한 기존 관찰("E010이
+216개 근거-연결 행 중 138개(64%)에서 재사용 중")이며, 이번 fix가 새로 발견한 것이 아니다.
+egg는 그중 대체 가능한 재료-직접 evidence(E018)가 이미 DB에 존재하는 사례라 처리했고,
+나머지 38개는 개별 evidence 조사가 선행되어야 하므로 이 migration에 포함하지 않았다.
+
+**seed.sql 처리**: 기존 `0038`~`0040`과 동일한 append-only 패턴(원본 `cook_egg` INSERT 문
+무수정, `0041`의 UPDATE 1건을 파일 하단에 추가).
+
+---
