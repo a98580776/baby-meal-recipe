@@ -126,6 +126,45 @@ batch5 candidates 문서 §9에서 이미 "evidence 원문이 perilla를 직접 
   grape/kiwi/tangerine/mango/pear/banana/avocado) 각 2건씩
 - 승인되면 순수 DML로 단일 migration(`0053_...`)에 담을 수 있음(DDL 없음).
 
+## D. 원격 DB 재검증 (Desktop 요청, service-role client 직접 조회 원문)
+
+Desktop이 네트워크 제약으로 Supabase에 직접 접근할 수 없어 요청한 2개 항목을 원격
+DB에서 재조회한 원문 그대로:
+
+**D-1. evidence E056~E061 충돌 여부**
+
+```
+found (should be empty): []
+current top 5 evidence ids: [ 'E055', 'E054', 'E053', 'E052', 'E051' ]
+total evidence rows: 55
+```
+
+`seed.sql` 기준과 원격 DB가 정확히 일치 — E055가 현재 최댓값, E056~E061 전부 빈 슬롯.
+
+**D-2. preparation_profiles 6종 boilerplate 상태 (raw select)**
+
+```json
+[
+  { "id": "prep_avocado", "wash_rule": null, "peel_rule": "껍질 제거", "seed_removal_rule": "씨 제거", "core_tough_part_rule": null, "bone_removal_rule": null, "fishbone_removal_rule": null, "cutting_guidance": "과일은 씨와 껍질을 제거하고 발달단계에 맞는 크기·질감으로 준비", "status": "INFERRED", "evidence_id": "E010" },
+  { "id": "prep_banana", "wash_rule": null, "peel_rule": "껍질 제거", "seed_removal_rule": "씨 제거", "core_tough_part_rule": null, "bone_removal_rule": null, "fishbone_removal_rule": null, "cutting_guidance": "과일은 씨와 껍질을 제거하고 발달단계에 맞는 크기·질감으로 준비", "status": "INFERRED", "evidence_id": "E010" },
+  { "id": "prep_kiwi", "wash_rule": null, "peel_rule": "껍질 제거", "seed_removal_rule": "씨 제거", "core_tough_part_rule": null, "bone_removal_rule": null, "fishbone_removal_rule": null, "cutting_guidance": "과일은 씨와 껍질을 제거하고 발달단계에 맞는 크기·질감으로 준비", "status": "INFERRED", "evidence_id": "E010" },
+  { "id": "prep_mango", "wash_rule": null, "peel_rule": "껍질 제거", "seed_removal_rule": "씨 제거", "core_tough_part_rule": null, "bone_removal_rule": null, "fishbone_removal_rule": null, "cutting_guidance": "과일은 씨와 껍질을 제거하고 발달단계에 맞는 크기·질감으로 준비", "status": "INFERRED", "evidence_id": "E010" },
+  { "id": "prep_pear", "wash_rule": null, "peel_rule": "껍질 제거", "seed_removal_rule": "씨 제거", "core_tough_part_rule": null, "bone_removal_rule": null, "fishbone_removal_rule": null, "cutting_guidance": "과일은 씨와 껍질을 제거하고 발달단계에 맞는 크기·질감으로 준비", "status": "INFERRED", "evidence_id": "E010" },
+  { "id": "prep_tangerine", "wash_rule": null, "peel_rule": "껍질 제거", "seed_removal_rule": "씨 제거", "core_tough_part_rule": null, "bone_removal_rule": null, "fishbone_removal_rule": null, "cutting_guidance": "과일은 씨와 껍질을 제거하고 발달단계에 맞는 크기·질감으로 준비", "status": "INFERRED", "evidence_id": "E010" }
+]
+```
+
+6행 전부 §B-1 서술과 완전히 일치(동일 boilerplate 문구, `evidence_id='E010'`,
+`status='INFERRED'`, 나머지 구조화 필드 전부 `null`).
+
+**D-3. (추가 확인) ingredient_tips 18개 신규 id 충돌 여부**
+
+```
+found (should be empty): []
+```
+
+Part A 6개 + Part B 12개, 계획된 id 전부 원격에 미존재 확인 — 충돌 없음.
+
 ## 최종 보고 (3줄 형식)
 
 1. **원격 DB/코드 실제 실행 여부**: 없음 — `evidence`/`preparation_profiles` read-only
