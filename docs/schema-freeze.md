@@ -972,3 +972,55 @@ PASS)/`npm run test:integration`(46/46 PASS) 전부 통과, 회귀 없음.
 `0050`의 INSERT 16건 블록을 파일 하단에 추가).
 
 ---
+
+## 24. Amendment — `0051_ingredient_tips_batch4`: ingredient_tips 4차 배치 데이터 16건 INSERT (구현 및 원격 적용 완료, 2026-09-03)
+
+**분류(§1-1 기준)**: 순수 DML(`ingredient_tips` 16행 INSERT). DDL 없음, `§1-1` 목록 갱신
+불필요. `0043`(§15)에서 스키마만 생성하고 `0046`(§18)/`0049`(§22)/`0050`(§23)에서
+24종을 채운 `ingredient_tips` 테이블에 네 번째로 데이터를 채우는 작업 — 이번 배치 후
+8×4=32종/50종 커버.
+
+**배경**: `docs/claude-desktop-handoff/2026-09-03-ingredient-tips-batch4-candidates.md`
+(8종 후보 선정 — 사용자가 힌트로 준 4종 cauliflower/zucchini/eggplant/cucumber(migration
+0036 CHOKING_HARD_RAW DIRECT override)를 재확인하고, 나머지 4자리를 직접 DB 재조회로
+tomato/spinach(둘 다 새로 찾은 재료 전용 texture evidence, E020/E022)와 rice/oatmeal
+(곡물 4종이 공유하는 E047이지만 재료별 텍스트는 self-derived — Tier B로 명시 채택)로
+채움) → `docs/claude-desktop-handoff/2026-09-03-ingredient-tips-batch4-draft-spec.md`
+(조사+명세, 사용자 승인 완료)를 따라, 8종(tomato/spinach/cauliflower/zucchini/eggplant/
+cucumber/rice/oatmeal) 각 2건씩 TIP 콘텐츠 삽입.
+
+**적용 내용**: `insert into ingredient_tips (...)` 16행, 전부 `status='NEEDS_REVIEW'`.
+6건은 재료 전용 TIER_1 evidence 재사용(tomato=E020, spinach=E022, cauliflower=E035,
+zucchini=E036, eggplant=E037, cucumber=E039) — 신규 evidence row 생성 없음. **나머지
+10건은 evidence_id 없이 `source_note`로 이 프로젝트 자체 데이터(`preparation_profiles`/
+`cooking_profiles`/`texture_profiles`, 전부 자기유래)를 인용** — `0046`(5건)/`0050`(1건)
+보다 source_note 비중이 뚜렷이 높은 배치다. 이유는 draft-spec §0에 명시: 4채소
+(cauliflower/zucchini/eggplant/cucumber)는 두 번째 tip에 쓸 재료 전용 evidence가
+CHOKING_HARD_RAW 하나뿐이라 나머지 한 축(peel_rule/seed_removal_rule/cutting_guidance)은
+자기유래로 채웠고, 곡물 2종(rice/oatmeal)은 candidates 문서 단계에서 이미 Tier B로
+합의됐다. spinach의 두 번째 evidence 후보였던 `E023`(9개월+, INFERRED)은 원 evidence
+자체가 "thin ribbons"를 shape vocabulary에 깔끔히 매핑하지 못해 낮춘 상태라, 이걸로 새
+tip을 만들지 않고 더 신뢰도 높은 `E022`(VERIFIED)만 사용했다.
+
+**영향 범위**: `ingredient_tips` 외 다른 14개 테이블은 전혀 건드리지 않음. 코드
+(`lib/`/`app/`/`components/`) 변경 없음 — `lib/supabase/queries.ts`의 tips 조회 로직은
+`0043`/`0046`/`0049`/`0050` 당시 이미 구현된 그대로 재사용.
+
+**검증**: pre-check — 대상 id(`tip_tomato_1` 등) 16개 전부 원격 DB 직접 조회로 충돌 없음
+확인, evidence 6건(E020/E022/E035/E036/E037/E039) 및 재료 8종 전부 원격 DB에 존재 확인.
+INSERT 실행(**순수 DML, Claude Code가 service-role client로 직접 실행** — `0044`~`0048`/
+`0050`과 동일 경로, Dashboard 경유 불필요) 후 post-snapshot: `ingredient_tips` 64행
+(48+16), 재료별 정확히 2건씩, `evidence_id`/`source_note` 둘 다 null인 행 0건
+(`ingredient_tips_basis_required` 제약 충족 확인), 나머지 14개 테이블 행 수 전량
+무변화(`evidence` 55/`safety_rules` 26/`ingredient_safety_rules` 50/`preparation_profiles`
+50/`cooking_profiles` 50/`texture_profiles` 200 등) 확인. API 실측
+(`POST /api/v1/recipes/generate`, 로컬 dev server + 실 원격 DB) — rice/oatmeal/tomato/
+spinach를 한 번에, cauliflower/zucchini/eggplant/cucumber를 한 번에 요청한 두 차례
+호출 모두에서 8종 16건 전부 `body_ko`/`category`가 draft와 완전히 일치함을 확인.
+`npm run typecheck`/`npm run lint`/`npm test`(175/175 PASS)/`npm run test:integration`
+(46/46 PASS) 전부 통과, 회귀 없음.
+
+**seed.sql 처리**: 기존 `0026`~`0050`과 동일한 append-only 패턴(원본 INSERT 문 무수정,
+`0051`의 INSERT 16건 블록을 파일 하단에 추가).
+
+---
