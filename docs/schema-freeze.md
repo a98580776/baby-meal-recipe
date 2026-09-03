@@ -1072,3 +1072,70 @@ E014) — E016/E014는 2~4종이 공유하는 evidence지만 원문(`evidence.ap
 `0052`의 INSERT 16건 블록을 파일 하단에 추가).
 
 ---
+
+## 26. Amendment — `0053_ingredient_tips_batch6`: ingredient_tips 6차 배치(9종 18건) + 신규 evidence 6건 + preparation_profiles 6종 UPDATE (구현 및 원격 적용 완료, 2026-09-04)
+
+**분류(§1-1 기준)**: 순수 DML(`evidence` 6행 INSERT + `preparation_profiles` 6행 UPDATE +
+`ingredient_tips` 18행 INSERT). DDL 없음, `§1-1` 목록 갱신 불필요. `ingredient_tips`는
+이번 배치 후 9×5+9=49종... 아님 — 정확히는 batch1~5(40종)+이번 9종(strawberry/
+blueberry/grape/kiwi/tangerine/mango/pear/banana/avocado) = **49종/50종** 커버(perilla
+1종만 미채움, 확정 제외 상태).
+
+**배경**: `docs/claude-desktop-handoff/2026-09-04-ingredient-tips-batch6-draft-spec.md`
+(조사+명세, 사용자 승인 완료, 원격 DB 재검증 §D 포함)를 따라 두 갈래로 진행:
+- **Part A**(strawberry/blueberry/grape): batch5 candidates 문서(§5)에서 이미 확인한
+  `E014`(USDA, TIER_1, VERIFIED — "grapes/cherries/berries cut in half lengthwise..."
+  원문이 grape/berry를 직접 지칭) 재사용, 신규 조사 없음.
+- **Part B**(kiwi/tangerine/mango/pear/banana/avocado): Solid Starts 재료별 페이지
+  6곳 신규 WebFetch 조사(C-2 9건 조사와 동일 방식). 6종 전부 boilerplate(`E010`,
+  "과일은 씨와 껍질을 제거하고 발달단계에 맞는 크기·질감으로 준비") 상태였으나 실질적인
+  재료 전용 손질·안전 정보가 확인돼, 신규 evidence `E056`~`E061` 등록 후
+  `preparation_profiles.cutting_guidance`를 재료별 실제 문구로 REPLACE(migration
+  0035/0047과 동일 패턴). pear의 `peel_rule`만 draft spec §B-3 지시대로 기존 값
+  유지(SET 대상에서 제외).
+- perilla는 batch5 candidates §9에서 이미 확정 제외된 상태 그대로 유지 — 이번 migration
+  재조사·재포함 없음.
+
+**적용 내용**: `insert into evidence (...)` 6행(전부 Solid Starts/TIER_1/VERIFIED) +
+`update preparation_profiles set ...` 6행(`peel_rule`/`seed_removal_rule`/
+`cutting_guidance`/`evidence_id`, pear는 `peel_rule` 제외) + `insert into
+ingredient_tips (...)` 18행(전부 `status='NEEDS_REVIEW'`). 18건 중 12건은 evidence_id
+직접 인용(grape/strawberry/blueberry 각 1건=E014, kiwi 2건=E056, tangerine 2건=E057,
+mango 2건=E058, pear 1건=E059, banana 2건=E060, avocado 2건=E061), 나머지 6건은
+evidence_id 없이 source_note로 `cooking_profiles.time_guidance` 등 자기유래 인용
+(grape/strawberry/blueberry 각 1건, pear 1건 — cook_pear는 기존 데이터 재사용, 신규
+조사 아님).
+
+**영향 범위**: `preparation_profiles`는 `WHERE id = '...'` 개별 조건으로 대상 6개 행 외
+나머지 44개 행에 구조적으로 영향 불가(post-diff로 실측 재확인, §검증 참고).
+`ingredients`/`cooking_profiles`/`texture_profiles`/`safety_rules`/`ingredient_safety_rules`
+등 나머지 12개 테이블은 전혀 건드리지 않음. 코드(`lib/`/`app/`/`components/`) 변경 없음.
+
+**검증**: pre-snapshot — 15개 테이블 전체 행 수 기록(`evidence` 55/`preparation_profiles`
+50/`ingredient_tips` 80 등), 신규 evidence id(`E056`~`E061`)·tips id(18개) 원격 DB
+직접 조회로 충돌 없음 확인, 대상 6개 `preparation_profiles` 행 전부 boilerplate/`E010`
+상태 재확인. INSERT+UPDATE+INSERT 실행(**순수 DML, Claude Code가 service-role client로
+직접 실행**, DDL이 아니므로 Dashboard 경유 불필요) 후 post-snapshot: `evidence` 61행
+(55+6), `preparation_profiles` 50행 그대로(행 수 무변화, diff로 변경된 행이 의도한
+6개(`prep_kiwi`/`prep_tangerine`/`prep_mango`/`prep_pear`/`prep_banana`/`prep_avocado`)
+와 정확히 일치함을 확인), `ingredient_tips` 98행(80+18), 나머지 12개 테이블 전량
+무변화(delta 0) 확인. API 실측(`GET /api/v1/ingredients/{kiwi,mango,avocado,banana}`로
+`preparationProfile` 필드가 draft와 완전히 일치, `POST /api/v1/recipes/generate`로
+9종 18건 전부 `body_ko`/`category`가 draft와 완전히 일치) 확인. `npm run
+typecheck`/`npm run lint`/`npm test`(175/175 PASS) 통과.
+
+**`npm run test:integration` 44/46 PASS — 2건 실패, 이번 migration과 무관한 기존 결함
+발견**: 실패한 두 케이스(`7b. food_form_id=topping`, `15b. 제외 재료 충돌 차단`)는 둘 다
+`POST /api/v1/recipes/validate`를 호출하는데, 이 엔드포인트가 로컬 dev server에서
+**일관되게 404**를 반환함(`app/api/v1/recipes/validate/route.ts` 파일 자체는 존재,
+`food_form_id`를 `puree`로 바꿔도 동일하게 404 — 라우팅 계층 문제로 보이며 요청 파라미터/
+데이터와 무관). 이 라우트는 2026-08-29 커밋(`24e6a3e`) 이후 코드 변경이 없고, 이번 세션은
+`app/`/`lib/`/`components/` 어떤 파일도 건드리지 않았다(migration/seed.sql/docs만 수정) —
+이번 DML과 인과관계가 없는 기존 결함으로 판단, 이번 migration 범위 밖이라 수정하지 않고
+그대로 기록만 남긴다. `tip_*`/`prep_*`/`evidence` 관련 나머지 44개 케이스는 전부 PASS.
+
+**seed.sql 처리**: 기존 `0026`~`0052`와 동일한 append-only 패턴(원본 INSERT/UPDATE 문
+무수정, `0053`의 evidence INSERT 6건 + preparation_profiles UPDATE 6건 + ingredient_tips
+INSERT 18건 블록을 파일 하단에 그대로 추가).
+
+---
