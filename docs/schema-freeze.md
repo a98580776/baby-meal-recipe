@@ -1024,3 +1024,51 @@ spinach를 한 번에, cauliflower/zucchini/eggplant/cucumber를 한 번에 요�
 `0051`의 INSERT 16건 블록을 파일 하단에 추가).
 
 ---
+
+## 25. Amendment — `0052_ingredient_tips_batch5`: ingredient_tips 5차 배치 데이터 16건 INSERT (구현 및 원격 적용 완료, 2026-09-03)
+
+**분류(§1-1 기준)**: 순수 DML(`ingredient_tips` 16행 INSERT). DDL 없음, `§1-1` 목록 갱신
+불필요. `0043`(§15)에서 스키마만 생성하고 `0046`(§18)/`0049`(§22)/`0050`(§23)/`0051`(§24)
+에서 32종을 채운 `ingredient_tips` 테이블에 다섯 번째로 데이터를 채우는 작업 — 이번 배치
+후 8×5=40종/50종 커버.
+
+**배경**: `docs/claude-desktop-handoff/2026-09-03-ingredient-tips-batch5-candidates.md`
+(남은 18종 전체를 필드 단위로 재조회해 8종 선정 — batch4 표의 "제외" 판정을 재검토해
+shrimp(FISH_SHELLFISH_TEMP_MFDS/SHRIMP_ALLERGEN)와 mushroom(migration 0035
+`core_tough_part_rule`)을 채택으로 뒤집었고, perilla는 §9 amendment에서 사용자 지적으로
+제외 후 corn으로 교체 — E015가 perilla를 원문에서 지칭하지 않는 카테고리 일반론이라는
+이유) → `docs/claude-desktop-handoff/2026-09-03-ingredient-tips-batch5-draft-spec.md`
+(조사+명세, 사용자 승인 완료)를 따라, 8종(shrimp/peach/mushroom/watermelon/korean_melon/
+brown_rice/barley/corn) 각 2건씩 TIP 콘텐츠 삽입.
+
+**적용 내용**: `insert into ingredient_tips (...)` 16행, 전부 `status='NEEDS_REVIEW'`.
+8건은 재료 전용 safety rule 근거를 `evidence_id`로 직접 인용(shrimp=
+FISH_SHELLFISH_TEMP_MFDS/E013+SHRIMP_ALLERGEN/E011, peach=PEACH_ALLERGEN/E011,
+watermelon/korean_melon=CHOKING_HARD_RAW override E016, corn=CHOKING_HARD_RAW override
+E014) — E016/E014는 2~4종이 공유하는 evidence지만 원문(`evidence.applicability`)이 해당
+재료를 직접 열거하는 카테고리 evidence라 재료별 인용이 유효하다고 판단했다. **나머지
+8건은 evidence_id 없이 `source_note`로 이 프로젝트 자체 데이터(`preparation_profiles`/
+`cooking_profiles`/`texture_profiles`, 전부 자기유래)를 인용** — brown_rice/barley는
+`0051`(rice/oatmeal)과 동일하게 `E047`(곡물 4종 공유 텍스처 원칙) 기반 텍스트를 자기유래로
+풀어썼다.
+
+**영향 범위**: `ingredient_tips` 외 다른 14개 테이블은 전혀 건드리지 않음. 코드
+(`lib/`/`app/`/`components/`) 변경 없음 — `lib/supabase/queries.ts`의 tips 조회 로직은
+`0043`/`0046`/`0049`/`0050`/`0051` 당시 이미 구현된 그대로 재사용.
+
+**검증**: pre-check — 대상 id(`tip_shrimp_1` 등) 16개 전부 원격 DB 직접 조회로 충돌 없음
+확인. INSERT 실행(**순수 DML, Claude Code가 service-role client로 직접 실행** — `0044`~
+`0051`과 동일 경로, Dashboard 경유 불필요) 후 post-snapshot: `ingredient_tips` 80행
+(64+16), 재료별 정확히 2건씩, `evidence_id`/`source_note` 둘 다 null인 행 0건
+(`ingredient_tips_basis_required` 제약 충족 확인). API 실측(`POST
+/api/v1/recipes/generate`, 로컬 dev server + 실 원격 DB) — shrimp/peach/mushroom/corn을
+한 번에, watermelon/korean_melon/brown_rice/barley를 한 번에 요청한 두 차례 호출 모두에서
+8종 16건 전부 `body_ko`/`category`가 draft와 완전히 일치함을 확인. `npm run typecheck`/
+`npm run lint` 재실행 통과. 코드 변경이 없고 API 종단 검증으로 실제 동작을 이미 확인했으므로
+`npm test`/`npm run test:integration`은 재실행하지 않음(`0051` 실행 보고서와 동일 판단
+기준).
+
+**seed.sql 처리**: 기존 `0026`~`0051`과 동일한 append-only 패턴(원본 INSERT 문 무수정,
+`0052`의 INSERT 16건 블록을 파일 하단에 추가).
+
+---
