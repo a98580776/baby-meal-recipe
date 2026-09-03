@@ -913,3 +913,62 @@ topping 경로로) `body_ko`/`category`가 draft와 완전히 일치함을 프�
 `0049`의 INSERT 16건 블록을 파일 하단에 추가).
 
 ---
+
+## 23. Amendment — `0050_ingredient_tips_batch3`: ingredient_tips 3차 배치 데이터 16건 INSERT (구현 및 원격 적용 완료, 2026-09-03)
+
+**분류(§1-1 기준)**: 순수 DML(`ingredient_tips` 16행 INSERT). DDL 없음, `§1-1` 목록 갱신
+불필요. `0043`(§15)에서 스키마만 생성하고 `0046`(§18)/`0049`(§22)에서 16종을 채운
+`ingredient_tips` 테이블에 세 번째로 데이터를 채우는 작업 — 이번 배치 후 8+8+8=24종/50종
+커버.
+
+**배경**: `docs/claude-desktop-handoff/2026-09-03-ingredient-tips-batch3-candidates.md`
+(8종 후보 선정 — 사용자가 제안한 beef/cod/tuna/shrimp/seaweed/corn/strawberry/blueberry를
+원격 DB 직접 조회로 검증한 결과, shrimp/corn/strawberry/blueberry는 재료 전용 evidence가
+없거나 5종 공유 evidence(E014)뿐이라 배제하고 sesame/radish/cabbage/napa_cabbage로 대체)
+→ `docs/claude-desktop-handoff/2026-09-03-ingredient-tips-batch3-draft-spec.md`(조사+명세,
+사용자 승인 완료)를 따라, 8종(cod/tuna/seaweed/sesame/radish/cabbage/napa_cabbage/beef)
+각 2건씩 TIP 콘텐츠 삽입.
+
+**적용 내용**: `insert into ingredient_tips (...)` 16행, 전부 `status='NEEDS_REVIEW'`
+(스키마 기본값과 동일). 15건은 기존 재료-특정 TIER_1 evidence 재사용(E041/E013/E042/E032/
+E054/E051/E038/E049/E048/E024/E011) — 신규 evidence row 생성 없음. 1건(`tip_seaweed_2`)만
+`evidence_id` 없이 `source_note`로 이 프로젝트 자체 데이터(`cook_seaweed.completion_checks`/
+`time_guidance`)를 인용(Tier B, `ingredient_tips_basis_required` 제약 충족).
+
+cod/tuna는 `ingredient_safety_rules.evidence_id`(migration 0037 override 컬럼, `0038`에서
+salmon과 동일하게 DIRECT 등급으로 backfill)를 인용(cod=E041, tuna=E042) — salmon(`0049`)과
+동일한 근거 구조. tuna는 원문(E042)의 "생물 참치는 가시 제거 필요, 통조림 참치는 가공으로
+가시가 연화돼 안전"이라는 생물/통조림 구분을 그대로 반영했다. cod/tuna의 조리 tip은
+`FISH_SHELLFISH_TEMP_MFDS`(E013, 85℃)를 수치로 직접 인용했는데, `0049`(§22 참고자료인
+batch2 draft)의 salmon과 달리 cod/tuna는 상충하는 `FISH_TEMP`(E004, 62.8℃) 규칙이
+연결되어 있지 않음을 원격 DB로 재확인한 뒤 반영했다(두 온도 기준이 동시에 걸린 재료에는
+여전히 수치를 넣지 않는 원칙 유지).
+
+beef는 `cook_beef.whole_cut_rest_seconds=180`(migration 0029)+`E024`를 인용 — `0049`에서
+pork가 "빌려 쓴" 이 값의 원 소유 재료다. `tip_beef_1`은 pork의 `tip_pork_2`와 동일한
+프레이밍(휴지시간은 안전 기준이 아니라 별도 품질 팁, §12-1 정책 그대로 유지 — MFDS 75℃
+기준과 섞지 않음)을 따른다. `tip_beef_2`는 `ingredient_allergens(beef, BEEF).scope`가
+`KR_MFDS_19`(다른 재료 상당수가 `BROADER_ALLERGEN_CONTEXT`인 것과 달리 소고기는 실제
+법정 19개 표시대상에 포함됨을 원격 DB로 확인)임을 반영해 `BEEF_ALLERGEN`(E011)과 조합했다.
+
+**영향 범위**: `ingredient_tips` 외 다른 14개 테이블은 전혀 건드리지 않음. 코드
+(`lib/`/`app/`/`components/`) 변경 없음 — `lib/supabase/queries.ts`의 tips 조회 로직은
+`0043`/`0046`/`0049` 당시 이미 구현된 그대로 재사용.
+
+**검증**: pre-check — 대상 id(`tip_cod_1` 등) 16개 전부 원격 DB 직접 조회로 충돌 없음 확인,
+평가 대상 evidence 11건(E041/E013/E042/E032/E054/E051/E038/E049/E048/E024/E011) 및 재료
+8종 전부 원격 DB에 존재 확인. INSERT 실행(**순수 DML, Claude Code가 service-role client로
+직접 실행** — `0044`~`0048`과 동일 경로, Dashboard 경유 불필요) 후 post-snapshot:
+`ingredient_tips` 48행(32+16), 재료별 정확히 2건씩, 나머지 14개 테이블 행 수 전량
+무변화(`evidence` 55/`safety_rules` 26/`ingredient_safety_rules` 50/`preparation_profiles`
+50/`cooking_profiles` 50/`texture_profiles` 200 등) 확인. API 실측
+(`POST /api/v1/recipes/generate`, 로컬 dev server + 실 원격 DB) — cod/beef를 `ingredient_ids`로,
+tuna/radish/cabbage/napa_cabbage를 `ingredient_ids`로, seaweed/sesame를
+`topping_ingredient_ids`로 요청한 두 차례 호출 모두에서 8종 16건 전부 `body_ko`/`category`가
+draft와 완전히 일치함을 확인. `npm run typecheck`/`npm run lint`/`npm test`(175/175
+PASS)/`npm run test:integration`(46/46 PASS) 전부 통과, 회귀 없음.
+
+**seed.sql 처리**: 기존 `0026`~`0049`와 동일한 append-only 패턴(원본 INSERT 문 무수정,
+`0050`의 INSERT 16건 블록을 파일 하단에 추가).
+
+---
