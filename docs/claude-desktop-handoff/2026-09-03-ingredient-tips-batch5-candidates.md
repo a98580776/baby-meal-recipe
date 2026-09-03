@@ -109,6 +109,28 @@ safety rule 없음, `cook_*.time_guidance`가 전부 "조리 불필요"로 재�
 pear — 위 5종과 동일하나 `cook_pear.time_guidance`만 유일하게 차별화(5~10분, 찜) — 2건
 채우기엔 근거 1건뿐이라 부족, 제외 유지.
 
+## 9. Amendment — perilla 제외, corn으로 교체 (사용자 승인, 2026-09-03)
+
+§6의 perilla 채택 판정을 재검토한다: E015("nuts and seeds: chop or flake")는 견과류·씨앗류
+**카테고리 전체**에 대한 일반 원칙 문장이고 perilla를 특정해서 조사된 내용이 아니다 —
+"sesame와 공유하다가 지금은 perilla만 남았다"는 것은 절차적 사실일 뿐, evidence 본문의
+성격(카테고리 수준 일반론 vs 재료 고유 사실) 자체를 재료 전용으로 바꾸지 않는다.
+`cook_perilla.time_guidance`("3~5분, 가열 후 갈기")도 `evidence_id='E010'`(범용
+boilerplate)이라 §1 표에서 이미 배제 판정을 받은 나머지 재료들과 같은 근거 등급이다.
+
+§5의 E014 그룹(corn/grape/blueberry/strawberry)과 비교하면 차이가 분명하다 — E014의
+applicability 원문은 "raw hard vegetables (**incl. corn**) listed as a hazard"처럼 개별
+식품을 원문에서 직접 열거한다. E015는 perilla를 원문에서 한 번도 지칭하지 않는다. 이
+차이(원문이 해당 재료를 직접 언급하는지 여부)를 판정 기준으로 다시 세운다.
+
+**교체 결과**: perilla 제외, **corn**을 8번째 자리에 채택(§5에서 이미 "다음 배치 이월
+권장"으로 분류했던 4종 중 하나 — batch4에서 언급한 대로 곡물군(rice/oatmeal/brown_rice/
+barley)과 카테고리가 겹치는 grain이라 이번 배치의 brown_rice/barley와도 자연스럽게
+묶인다). grape/blueberry/strawberry 3종은 여전히 batch6 이월 대상으로 남는다.
+
+**최종 8종(수정)**: shrimp, peach, mushroom, watermelon, korean_melon, brown_rice,
+barley, **corn**(perilla 대체).
+
 ## 최종 보고 (3줄 형식)
 
 1. **원격 DB/코드 실제 실행 여부**: 원격 Supabase에 read-only 조회만 수행(쓰기 없음,
