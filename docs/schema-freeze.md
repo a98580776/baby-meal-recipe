@@ -1213,3 +1213,80 @@ test:integration`(46/46 PASS, batch6 실행 보고서가 기록한 기존 `valid
 INSERT 1건 + ingredient_safety_rules INSERT 1건 블록을 파일 하단에 그대로 추가).
 
 ---
+
+## 28. Amendment — `0055_seaweed_sticky_choking`: seaweed(김) sticky/gummy choking 안전 정책 3건 (구현 및 원격 적용 완료, 2026-09-04)
+
+**분류(§1-1 기준)**: 순수 DML(`evidence` 1행 INSERT + `safety_rules` 1행 INSERT +
+`ingredient_safety_rules` 1행 INSERT). DDL 없음, `§1-1` 목록 갱신 불필요.
+
+**배경**: `docs/claude-desktop-handoff/2026-09-04-seaweed-choking-safety-rule-
+investigation.md`(조사) → `2026-09-04-seaweed-choking-safety-rule-draft-spec.md`
+(명세, 사용자 승인 완료)를 따라 진행. 조사에서 발견한 핵심: `CHOKING_HARD_RAW`
+(기존 17개 재료 링크)는 "단단함/생것" 기전 전용인데, seaweed의 실제 위험은 다른
+기전이다 — Solid Starts 원문: "건조 김 시트가 침에 닿으면 끈적하고 쫀득해지며,
+이는 질식 위험을 높이는 특성" + "입 옆면이나 입천장에 달라붙을 수 있음". 이 rule을
+`CHOKING_HARD_RAW`에 그대로 연결하면 코드가 하드코딩된 "충분히 익혀서 제공하세요"
+문구를 노출하는데, seaweed는 익힌다고 sticky 성질이 없어지지 않아 **사실과 다른
+안전 지침**이 나갈 위험이 있었다 — 이를 막기 위해 코드 선행 작업(commit `81308af`,
+`lib/rules/safety.ts`의 `case "BLOCK_FORM"`에 `condition_json.mechanism ===
+"sticky_gummy"` 전용 분기 추가, 기존 17개 링크 메시지는 바이트 단위로 무변화 확인
+완료)을 먼저 마친 뒤 이번 DB 반영을 진행했다.
+
+**적용 내용**:
+- `evidence` INSERT 1건(`E063`, Solid Starts, TIER_1, VERIFIED) — 기존 `E032`
+  (손질법 paraphrase 전용)와 별도로, choking 기전 원문("sticky and gummy upon
+  contact with saliva... increase the risk of choking", "stick to the sides
+  and roof of the mouth")과 연령별 서빙 원문(6/9/12개월)을 `applicability`에
+  직접 인용 기록.
+- `safety_rules` INSERT 1건(`SEAWEED_STICKY_CHOKING`): `rule_type='choking'`
+  (`CHOKING_HARD_RAW`와 카테고리 공유, DDL 불필요 — `cooking_temperature`를 5개
+  rule이 공유하는 것과 동일 패턴), `action='BLOCK_FORM'`(진짜 Postgres enum이지만
+  기존 값 재사용, DDL 불필요), `severity='CRITICAL'`(`CHOKING_HARD_RAW`와 동급,
+  승인된 값). `condition_json.mechanism='sticky_gummy'`가 이 프로젝트 최초
+  도입 필드값이라 `status='NEEDS_REVIEW'`(새 필드/기전 조합 최초 도입 시 보수적
+  처리, `EGG_DONENESS_REQUIRED`/`KIDNEY_BEAN_PHA_TOXIN`과 동일 원칙).
+- `ingredient_safety_rules` INSERT 1건(`seaweed` ↔ `SEAWEED_STICKY_CHOKING`,
+  `evidence_id=null` — `safety_rules.evidence_id`(E063)가 이미 seaweed 전용
+  근거라 override 불필요, `KIDNEY_BEAN_PHA_TOXIN`/`EGG_DONENESS_REQUIRED`와
+  동일 패턴).
+
+**영향 범위**: `ingredient_safety_rules`는 신규 INSERT만(기존 51행 무변화), 다른
+16개 `CHOKING_HARD_RAW` 링크(carrot/apple/broccoli/cauliflower/zucchini/eggplant/
+radish/cucumber/corn/grape/blueberry/strawberry/korean_melon/watermelon/perilla/
+sesame/chestnut)나 sesame/perilla의 다른 rule에 전혀 영향 없음. `cooking_profiles`/
+`preparation_profiles`/`ingredients`/`texture_profiles`/`ingredient_tips` 등
+나머지 11개 테이블은 전혀 건드리지 않음(`tip_seaweed_1`/`tip_seaweed_2`도 draft
+spec §6에서 중복/모순 없음 확인, 수정 대상 아님). 코드(`lib/`/`app/`/`components/`)
+변경 없음(코드는 이전 커밋 `81308af`에서 이미 별도로 완료).
+
+**errors/warnings 갈림 재확인(draft spec §4)**: `cook_seaweed`가 이미 존재하므로
+`BLOCK_FORM` 분기는 항상 `errors`가 아니라 `warnings`로 간다 — 이는 seaweed만의
+특이 동작이 아니라 `cookingProfile`이 있는 모든 `CHOKING_HARD_RAW`류 재료가
+이미 동일하게 동작하는 기존 설계(P0-5 fix 주석 참고)다. `severity='CRITICAL'`은
+생성을 막는다는 뜻이 아니라 경고의 중요도 라벨일 뿐이라는 점을 API 실측(§검증)으로
+재확인함.
+
+**검증**: pre-snapshot(evidence 62/safety_rules 27/ingredient_safety_rules 51,
+`E063`·`SEAWEED_STICKY_CHOKING` id 충돌 없음, seaweed 링크 0건 재확인) → INSERT
+×3 실행(**순수 DML, Claude Code가 service-role client로 직접 실행**, DDL 아니므로
+Dashboard 경유 불필요) → post-snapshot: `evidence` 63행(62+1), `safety_rules`
+28행(27+1), `ingredient_safety_rules` 52행(51+1), `cooking_profiles`/
+`preparation_profiles`/`ingredients`/`texture_profiles`/`ingredient_tips` 등
+나머지 5개 테이블 전량 무변화(delta 0) 확인. API 실측(`POST
+/api/v1/recipes/generate`, `stage_id=stage_3`+`food_form_id=topping`+
+`ingredient_ids=[rice]`+`topping_ingredient_ids=[seaweed]` — seaweed는
+TOPPING_ONLY라 base 재료와 함께 topping으로 호출) — `safety_notes`에
+`rule_id=SEAWEED_STICKY_CHOKING`/`severity=CRITICAL`/`action=BLOCK_FORM`/
+`rule_status=NEEDS_REVIEW`/`message="김은 질식 위험이 있는 재료입니다. 침에
+닿으면 끈적해져 입천장이나 목에 달라붙을 수 있으니, 잘게 부수거나 작게 잘라서
+제공하고 통째로 또는 큰 조각으로 제공하지 마세요."` 노출 확인 — draft spec §5의
+unit test 시뮬레이션 결과와 완전히 동일(바이트 단위 일치), `errors`는 응답에
+없음(빈 배열, 생성 차단되지 않음). `npm test`(182/182 PASS)/`npm run
+typecheck`(clean)/`npm run lint`(clean)/`npm run test:integration`(46/46 PASS)
+전부 통과.
+
+**seed.sql 처리**: 기존 `0026`~`0054`와 동일한 append-only 패턴(원본 INSERT 문
+무수정, `0055`의 evidence INSERT 1건 + safety_rules INSERT 1건 +
+ingredient_safety_rules INSERT 1건 블록을 파일 하단에 그대로 추가).
+
+---

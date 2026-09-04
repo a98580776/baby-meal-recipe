@@ -1734,3 +1734,30 @@ insert into safety_rules (id, rule_type, severity, condition_json, action, evide
 
 insert into ingredient_safety_rules (ingredient_id, safety_rule_id, evidence_id) values
 ('kidney_bean', 'KIDNEY_BEAN_PHA_TOXIN', null);
+
+-- =======================================================================
+-- Migration 0055 additions (append-only, mirrors that migration's data
+-- portion so a fresh bootstrap matches the migrated state -- see that
+-- file for full sourcing rationale). seaweed(김) sticky/gummy choking
+-- 안전 정책 3건: 신규 evidence(E063, Solid Starts) + 신규 safety_rule
+-- (SEAWEED_STICKY_CHOKING, rule_type='choking'/action='BLOCK_FORM' 재사용,
+-- condition_json.mechanism='sticky_gummy' 최초 도입) + 연결.
+-- Source: docs/claude-desktop-handoff/2026-09-04-seaweed-choking-safety-rule-draft-spec.md
+-- =======================================================================
+
+insert into evidence (id, organization, title, url, source_tier, checked_at, applicability, status) values
+('E063', 'Solid Starts', 'Nori (Seaweed) -- Choking risk mechanism and age-based serving guidance', 'https://solidstarts.com/foods/seaweed/', 'TIER_1', '2026-09-04', 'Choking 기전(직접 확인): "Dried and toasted seaweed sheets become sticky and gummy upon contact with saliva, qualities that can increase the risk of choking." + "Expect some harmless gagging, as pieces of dried seaweed can stick to the sides and roof of the mouth". 연령별 서빙(직접 확인): 6mo+: "Crush or finely chop dried sheets of nori into small flakes and stir into scoopable foods"; 9mo+: "nori can also be cut or torn into small, bite-sized pieces and offered on its own"; 12mo+: "If the child is consistently taking bites, chewing food thoroughly, and spitting out food when it is too challenging, you can try offering a whole sheet of dried nori on its own."', 'VERIFIED');
+
+insert into safety_rules (id, rule_type, severity, condition_json, action, evidence_id, status) values
+(
+  'SEAWEED_STICKY_CHOKING',
+  'choking',
+  'CRITICAL',
+  '{"category": "seaweed", "mechanism": "sticky_gummy", "description": "건조 김이 침에 닿으면 끈적해지며 입천장/목에 달라붙어 질식 위험을 높임 — CHOKING_HARD_RAW의 단단함(hard-raw) 기전과 다름"}'::jsonb,
+  'BLOCK_FORM',
+  'E063',
+  'NEEDS_REVIEW'
+);
+
+insert into ingredient_safety_rules (ingredient_id, safety_rule_id, evidence_id) values
+('seaweed', 'SEAWEED_STICKY_CHOKING', null);
