@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>워터마크 자동 크롭 도구 (16:9)</title>
+<style>
+  :root {
+    --border: #ddd;
+    --border-accent: #378ADD;
+    --text-secondary: #666;
+    --text-danger: #d33;
+    --surface-1: #f5f5f4;
+    --fill-accent: #378ADD;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Malgun Gothic", sans-serif;
+    max-width: 720px;
+    margin: 40px auto;
+    padding: 0 20px;
+    color: #222;
+  }
+  h1 {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  p.desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 0;
+    margin-bottom: 20px;
+    line-height: 1.6;
+  }
+  input[type="file"] {
+    margin-bottom: 16px;
+  }
+  #stage {
+    position: relative;
+    width: 100%;
+    max-width: 640px;
+    display: none;
+    background: var(--surface-1);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  #baseCanvas {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  #cropBox {
+    position: absolute;
+    border: 2px solid var(--border-accent);
+    box-sizing: border-box;
+    cursor: move;
+    background: rgba(55,138,221,0.08);
+  }
+  #handle {
+    position: absolute;
+    right: -7px;
+    bottom: -7px;
+    width: 14px;
+    height: 14px;
+    background: var(--fill-accent);
+    border-radius: 50%;
+    cursor: nwse-resize;
+  }
+  #statusMsg {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 10px;
+  }
+  button {
+    margin-top: 14px;
+    margin-right: 8px;
+    padding: 8px 16px;
+    font-size: 14px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    background: white;
+    cursor: pointer;
+  }
+  button:hover {
+    background: #f0f0f0;
+  }
+  #outCanvas {
+    display: none;
+  }
+</style>
+</head>
+<body>
+
+<h1>고정 비율 자동 크롭 도구 (16:9)</h1>
+<p class="desc">
+  이미지를 업로드하면 항상 같은 위치·같은 비율(좌 15.1% / 상 12.2% / 우 11.0% / 하 13.4% 여백 제거)로 자동 크롭됩니다.
+  모든 생성 이미지가 같은 구도(피사체 위치·크기)로 나온다는 전제이므로, 업로드 후 바로 다운로드하면 됩니다.
+  구도가 어긋난 이미지가 섞여 있으면 파란 박스를 직접 드래그(이동)하거나 우측 하단 손잡이로 크기 조절해서 보정할 수 있습니다.
+  결과는 항상 1280×720(16:9) PNG로 저장됩니다. Chrome/Edge에서는 저장 버튼을 누르면
+  파일 저장 위치를 고르는 창이 뜨는데, 처음 원본 이미지가 있던 폴더로 한 번 저장해두면
+  다음부터는 그 폴더가 기본으로 열립니다(브라우저가 마지막 저장 위치를 기억).
+  파일명은 위에서 입력한 재료명_이미지종류.png 로 자동 지정됩니다.
+</p>
+
+<div style="margin-bottom: 14px; display: flex; gap: 10px; flex-wrap: wrap;">
+  <div>
+    <label style="font-size: 12px; color: var(--text-secondary); display:block; margin-bottom:2px;">재료 slug (예: tofu)</label>
+    <input type="text" id="ingredientSlug" placeholder="broccoli" style="padding:6px 8px; font-size:13px; border:1px solid #ccc; border-radius:4px; width:140px;" />
+  </div>
+  <div>
+    <label style="font-size: 12px; color: var(--text-secondary); display:block; margin-bottom:2px;">이미지 종류</label>
+    <select id="imageType" style="padding:6px 8px; font-size:13px; border:1px solid #ccc; border-radius:4px;">
+      <option value="raw">raw</option>
+      <option value="doneness">doneness</option>
+      <option value="texture">texture</option>
+      <option value="safety">safety</option>
+    </select>
+  </div>
+</div>
+
+<input type="file" id="fileInput" accept="image/*" />
+
+<div id="stage">
+  <canvas id="baseCanvas"></canvas>
+  <div id="cropBox">
+    <div id="handle"></div>
+  </div>
+</div>
+
+<div id="statusMsg"></div>
+
+<div>
+  <button id="resetBtn" style="display:none;">↻ 고정 비율로 재설정</button>
+  <button id="downloadBtn" style="display:none;">⬇ 크롭해서 다운로드</button>
+</div>
+
+<canvas id="outCanvas"></canvas>
+
+<script>
+const fileInput = document.getElementById('fileInput');
+const stage = document.getElementById('stage');
+const baseCanvas = document.getElementById('baseCanvas');
+const baseCtx = baseCanvas.getContext('2d');
+const cropBox = document.getElementById('cropBox');
+const handle = document.getElementById('handle');
+const downloadBtn = document.getElementById('downloadBtn');
+const resetBtn = document.getElementById('resetBtn');
+const outCanvas = document.getElementById('outCanvas');
+const statusMsg = document.getElementById('statusMsg');
+
+// Fixed relative crop box, measured from a confirmed good broccoli raw
+// sample: crops off left 15.12% / top 12.24% / right 11.05% / bottom
+// 13.41% of the source image, then resizes to 1280x720. As long as new
+// generations keep the subject in the same relative position/size, this
+// same box applies with no manual adjustment.
+const FIXED_CROP = { left: 0.1512, top: 0.1224, width: 0.7384, height: 0.7435 };
+
+let img = null;
+let scale = 1;
+let box = { x: 0, y: 0, w: 200, h: 112.5 };
+let dragMode = null;
+let dragStart = { x: 0, y: 0 };
+let boxStart = { x: 0, y: 0, w: 0, h: 0 };
+
+fileInput.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    img = new Image();
+    img.onload = () => {
+      const maxW = 640;
+      scale = Math.min(1, maxW / img.width);
+      baseCanvas.width = img.width * scale;
+      baseCanvas.height = img.height * scale;
+      baseCtx.drawImage(img, 0, 0, baseCanvas.width, baseCanvas.height);
+      stage.style.display = 'block';
+      downloadBtn.style.display = 'inline-block';
+      resetBtn.style.display = 'inline-block';
+      applyFixedCrop();
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+});
+
+resetBtn.addEventListener('click', applyFixedCrop);
+
+function applyFixedCrop() {
+  const W = img.width, H = img.height;
+  const cropX = W * FIXED_CROP.left;
+  const cropY = H * FIXED_CROP.top;
+  const cropW = W * FIXED_CROP.width;
+  const cropH = H * FIXED_CROP.height;
+
+  box = { x: cropX * scale, y: cropY * scale, w: cropW * scale, h: cropH * scale };
+  statusMsg.textContent = '항상 같은 위치(좌 15.1% / 상 12.2% / 우 11.0% / 하 13.4% 여백 제거)로 자동 크롭했습니다. 구도가 다르면 파란 박스를 직접 조정하세요.';
+  renderBox();
+}
+
+function renderBox() {
+  cropBox.style.left = box.x + 'px';
+  cropBox.style.top = box.y + 'px';
+  cropBox.style.width = box.w + 'px';
+  cropBox.style.height = box.h + 'px';
+}
+
+cropBox.addEventListener('mousedown', (e) => {
+  if (e.target === handle) return;
+  dragMode = 'move';
+  dragStart = { x: e.clientX, y: e.clientY };
+  boxStart = { ...box };
+  e.preventDefault();
+});
+
+handle.addEventListener('mousedown', (e) => {
+  dragMode = 'resize';
+  dragStart = { x: e.clientX, y: e.clientY };
+  boxStart = { ...box };
+  e.preventDefault();
+  e.stopPropagation();
+});
+
+window.addEventListener('mousemove', (e) => {
+  if (!dragMode) return;
+  const dx = e.clientX - dragStart.x;
+  const dy = e.clientY - dragStart.y;
+
+  if (dragMode === 'move') {
+    let nx = boxStart.x + dx;
+    let ny = boxStart.y + dy;
+    nx = Math.max(0, Math.min(nx, baseCanvas.width - box.w));
+    ny = Math.max(0, Math.min(ny, baseCanvas.height - box.h));
+    box.x = nx;
+    box.y = ny;
+  } else if (dragMode === 'resize') {
+    let nw = Math.max(40, boxStart.w + dx);
+    nw = Math.min(nw, baseCanvas.width - box.x);
+    let nh = nw * 9 / 16;
+    if (box.y + nh > baseCanvas.height) {
+      nh = baseCanvas.height - box.y;
+      nw = nh * 16 / 9;
+    }
+    box.w = nw;
+    box.h = nh;
+  }
+  renderBox();
+});
+
+window.addEventListener('mouseup', () => { dragMode = null; });
+
+downloadBtn.addEventListener('click', async () => {
+  if (!img) return;
+  const sx = box.x / scale;
+  const sy = box.y / scale;
+  const sw = box.w / scale;
+  const sh = box.h / scale;
+
+  const outW = 1280, outH = 720;
+  outCanvas.width = outW;
+  outCanvas.height = outH;
+  const outCtx = outCanvas.getContext('2d');
+  outCtx.drawImage(img, sx, sy, sw, sh, 0, 0, outW, outH);
+
+  const slug = (document.getElementById('ingredientSlug').value || 'ingredient').trim() || 'ingredient';
+  const type = document.getElementById('imageType').value;
+  const filename = `${slug}_${type}.png`;
+
+  outCanvas.toBlob(async (blob) => {
+    // File System Access API: lets the browser remember the last folder
+    // the user picked, so repeated saves open in the same place without
+    // needing to browse there again each time. Chromium-based browsers only.
+    if (window.showSaveFilePicker) {
+      try {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: filename,
+          types: [{ description: 'PNG image', accept: { 'image/png': ['.png'] } }]
+        });
+        const writable = await handle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+        statusMsg.textContent = `${filename} 저장 완료. (같은 브라우저에서는 다음에도 이 폴더가 기본으로 열립니다.)`;
+        return;
+      } catch (err) {
+        if (err && err.name === 'AbortError') return; // user cancelled
+        // fall through to default download on any other error
+      }
+    }
+    // Fallback for browsers without File System Access API (e.g. Firefox, Safari)
+    const link = document.createElement('a');
+    link.download = filename;
+    link.href = URL.createObjectURL(blob);
+    link.click();
+    statusMsg.textContent = `${filename}로 기본 다운로드 폴더에 저장했습니다. (이 브라우저는 폴더 기억 기능 미지원 — Chrome/Edge 권장)`;
+  }, 'image/png');
+});
+</script>
+</body>
+</html>
