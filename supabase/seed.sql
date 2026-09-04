@@ -1700,3 +1700,37 @@ insert into ingredient_tips (id, ingredient_id, category, body_ko, status, evide
 ('tip_banana_2', 'banana', 'prep', '9개월 이후에는 바나나를 스틱에서 한입 크기로 잘라서 주면 쥐기 더 쉽고 덜 미끄러워요.', 'NEEDS_REVIEW', 'E060', null),
 ('tip_avocado_1', 'avocado', 'general', '아보카도는 잘 익어서 부드럽지만 미끄러워요. 시리얼 가루나 곱게 간 코코넛을 겉에 묻히면 아이가 잡기 쉬워져요.', 'NEEDS_REVIEW', 'E061', null),
 ('tip_avocado_2', 'avocado', 'prep', '아보카도 갈변은 자연스러운 현상이라 먹어도 안전해요. 색이 변해도 걱정하지 마세요.', 'NEEDS_REVIEW', 'E061', null);
+
+-- =======================================================================
+-- Migration 0054 additions (append-only, mirrors that migration's data
+-- portion so a fresh bootstrap matches the migrated state -- see that
+-- file for full sourcing rationale). kidney_bean phytohaemagglutinin
+-- (자연 독소) 안전 정책 3건: 신규 evidence(E062, FDA.gov) + cook_kidney_bean
+-- time_guidance UPDATE(10~15분 -> 최소 30분, 상한 없음) + 신규 safety_rule
+-- (KIDNEY_BEAN_PHA_TOXIN, rule_type='natural_toxin' 최초 도입) + 연결.
+-- Source: docs/claude-desktop-handoff/2026-09-04-kidney-bean-phytohaemagglutinin-draft-spec.md
+-- =======================================================================
+
+insert into evidence (id, organization, title, url, source_tier, checked_at, applicability, status) values
+('E062', 'FDA (U.S. Food and Drug Administration)', 'Natural Toxins in Food -- Phytohaemagglutinin (kidney bean lectin)', 'https://www.fda.gov/food/chemical-contaminants-pesticides/natural-toxins-food', 'TIER_1', '2026-09-04', 'FDA.gov 원문(직접 확인): "Phytohaemagglutinin (PHA) is a lectin found in raw or undercooked beans... at high levels in raw beans, PHA can lead to nausea, severe vomiting, and diarrhea." + "soaking beans for at least 5 hours followed by boiling in fresh water for 30 minutes removes and destroys this toxin." 슬로우쿠커 경고(FDA Bad Bug Book 원문 인용, PDF 직접 파싱 실패로 UC Cooperative Extension 재인용을 통해서만 확인): "Do not use a slow cooker to cook dried red beans... the device does not get hot enough to kill the toxin."', 'VERIFIED');
+
+update cooking_profiles set
+  time_min = 30,
+  time_max = null,
+  time_guidance = '최소 30분 이상 삶기 — phytohaemagglutinin(자연 독소) 파괴에 필요, 슬로우쿠커 사용 금지(저온 장시간 조리로는 독소가 파괴되지 않음)',
+  evidence_id = 'E062'
+where id = 'cook_kidney_bean';
+
+insert into safety_rules (id, rule_type, severity, condition_json, action, evidence_id, status) values
+(
+  'KIDNEY_BEAN_PHA_TOXIN',
+  'natural_toxin',
+  'HIGH',
+  '{"category": "kidney_bean", "toxin": "phytohaemagglutinin", "min_boil_minutes": 30, "boil_method": "rolling_boil_in_water", "prohibited_method": "slow_cooker", "prohibited_method_reason": "저온 장시간 조리로는 독소가 파괴되지 않음"}'::jsonb,
+  'CONTINUE_COOKING',
+  'E062',
+  'NEEDS_REVIEW'
+);
+
+insert into ingredient_safety_rules (ingredient_id, safety_rule_id, evidence_id) values
+('kidney_bean', 'KIDNEY_BEAN_PHA_TOXIN', null);

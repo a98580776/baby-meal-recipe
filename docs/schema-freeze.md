@@ -1139,3 +1139,77 @@ typecheck`/`npm run lint`/`npm test`(175/175 PASS) 통과.
 INSERT 18건 블록을 파일 하단에 그대로 추가).
 
 ---
+
+## 27. Amendment — `0054_kidney_bean_pha_toxin`: kidney_bean phytohaemagglutinin(자연 독소) 안전 정책 3건 (구현 및 원격 적용 완료, 2026-09-04)
+
+**분류(§1-1 기준)**: 순수 DML(`evidence` 1행 INSERT + `cooking_profiles` 1행 UPDATE +
+`safety_rules` 1행 INSERT + `ingredient_safety_rules` 1행 INSERT). DDL 없음, `§1-1`
+목록 갱신 불필요.
+
+**배경**: `docs/claude-desktop-handoff/2026-09-04-kidney-bean-phytohaemagglutinin-investigation.md`
+(조사) → `2026-09-04-kidney-bean-phytohaemagglutinin-draft-spec.md`(명세, 사용자 승인
+완료)를 따라 진행. 조사에서 발견한 데이터 불일치 — `cook_kidney_bean.time_guidance`가
+"10~15분"인데 반해 기존 `tip_kidney_bean_1`(E053)은 이미 "30분 이상"을 요구하고 있었고,
+FDA.gov 1차 출처가 "최소 30분 끓이기(soaking 5시간 이상 + boiling 30분)로 PHA 독소
+파괴"를 명시함 — 를 바탕으로 3건을 승인받아 그대로 SQL화.
+
+**적용 내용**:
+- `evidence` INSERT 1건(`E062`, FDA.gov, TIER_1, VERIFIED) — FDA 원문(30분 boiling)과
+  슬로우쿠커 경고(FDA Bad Bug Book 원문, UC Extension 재인용을 통해서만 확인) 둘 다
+  `applicability`에 출처 구분 명시해 기록.
+- `cooking_profiles` UPDATE 1건(`cook_kidney_bean`): `time_min=10→30`,
+  `time_max=15→null`(원문이 상한을 주지 않아 임의 숫자를 채우지 않음 — migration
+  `0041`의 "원문에 없는 값을 추가하지 않는다" 원칙과 동일, 이 프로젝트 `cooking_profiles`
+  50행 중 "min만 있고 max가 null"인 첫 사례), `time_guidance`를 "최소 30분 이상 삶기...
+  슬로우쿠커 사용 금지" 문구로 교체, `evidence_id=E010→E062`. `time_status`는 migration
+  `0041` 정책대로 `INFERRED` 유지(이 프로젝트에 `VERIFIED`로 승격된 행이 아직 없음).
+- `safety_rules` INSERT 1건(`KIDNEY_BEAN_PHA_TOXIN`): `rule_type='natural_toxin'`이
+  이 프로젝트 최초 도입 값 — `non_ige_reaction`(면역 매개, FPIES)과 기전이 다른 화학적
+  독성 반응이라는 점이 승인 근거. `action='CONTINUE_COOKING'`(기존 enum 재사용, DDL
+  불필요), `severity='HIGH'`(승인된 값), `status='NEEDS_REVIEW'`(새 rule_type 최초
+  도입이라 `EGG_DONENESS_REQUIRED` 선례와 동일하게 보수적으로 처리). `condition_json`에
+  `min_boil_minutes=30`/`prohibited_method='slow_cooker'` 등을 구조화 데이터로 기록.
+- `ingredient_safety_rules` INSERT 1건(`kidney_bean` ↔ `KIDNEY_BEAN_PHA_TOXIN`,
+  `evidence_id=null` — `safety_rules.evidence_id`(E062)가 이미 kidney_bean 전용 근거라
+  override 불필요, `EGG_DONENESS_REQUIRED`와 동일 패턴).
+
+**영향 범위**: `cooking_profiles`/`ingredient_safety_rules`는 `WHERE id/ingredient_id = '...'`
+개별 조건으로 대상 행 외 나머지 행에 구조적으로 영향 불가. `ingredients`/
+`preparation_profiles`/`texture_profiles`/`ingredient_tips` 등 나머지 11개 테이블은
+전혀 건드리지 않음(기존 `tip_kidney_bean_1`/`tip_kidney_bean_2`는 draft spec §5에서
+충돌 없음 확인, 수정 대상 아님). 코드(`lib/`/`app/`/`components/`) 변경 없음.
+
+**코드 레벨 한계(수정하지 않음, backlog로만 기록)**: `lib/rules/safety.ts`의
+`case "CONTINUE_COOKING"`은 `condition_json.min_internal_temp_c` 필드만 읽어 메시지를
+구성한다. 이번 `condition_json`은 시간 기준(`min_boil_minutes`)이라 그 필드가 없어,
+실제 `POST /api/v1/recipes/generate` 응답의 `safety_notes[].message`는 일반화된 폴백
+문구("강낭콩: 충분히 익혀야 합니다.")로만 노출됨을 API 실측으로 확인(§검증). "30분 이상"·
+"슬로우쿠커 금지" 텍스트는 `cook_kidney_bean.time_guidance`(Cooking Mode 화면에 직접
+노출)로만 사용자에게 전달되는 상태 — `EGG_DONENESS_REQUIRED`가 이미 동일한 폴백 경로로
+운영 중인 선례와 같은 패턴(draft spec §4, 이번이 처음 발견한 문제 아님). 향후 코드
+작업 필요 시를 위한 backlog: `CONTINUE_COOKING` 분기에 `min_boil_minutes`/
+`prohibited_method`를 읽는 조건 분기 추가.
+
+**검증**: pre-snapshot(evidence 61/safety_rules 26/ingredient_safety_rules 50/
+cooking_profiles 50, `E062`·`KIDNEY_BEAN_PHA_TOXIN` id 충돌 없음, `cook_kidney_bean`
+현재값 draft spec §0과 일치 재확인) → INSERT/UPDATE/INSERT/INSERT 실행(**순수 DML,
+Claude Code가 service-role client로 직접 실행**, DDL 아니므로 Dashboard 경유 불필요)
+→ post-snapshot: `evidence` 62행(61+1), `safety_rules` 27행(26+1),
+`ingredient_safety_rules` 51행(50+1), `cooking_profiles` 50행 그대로(UPDATE, 행 수
+무변화 — diff로 `cook_kidney_bean` 1건만 변경됐고 나머지 49행 무변화 확인), 나머지
+11개 테이블 전량 무변화(delta 0) 확인. API 실측(`POST /api/v1/recipes/generate`,
+`kidney_bean`+`stage_3`+`puree`) — `cooking.time_guidance`에 "최소 30분 이상...
+슬로우쿠커 사용 금지" 문구 노출, `safety_notes`에 `rule_id=KIDNEY_BEAN_PHA_TOXIN`/
+`severity=HIGH`/`action=CONTINUE_COOKING`/`rule_status=NEEDS_REVIEW` 노출 확인(단
+`message`는 위 backlog대로 폴백 문구). `npm run typecheck`(`.next/dev/types/*` 자동
+생성 파일의 기존 무관 오류 3건 외 이상 없음, next dev 재기동 시 재생성되는 파일이라
+이번 DML과 무관)/`npm run lint`(clean)/`npm test`(175/175 PASS)/`npm run
+test:integration`(46/46 PASS, batch6 실행 보고서가 기록한 기존 `validate` 404 결함도
+이번엔 재현되지 않음 — dev server 재기동에 따른 일시적 현상으로 보이며 이번 migration과
+무관) 전부 통과.
+
+**seed.sql 처리**: 기존 `0026`~`0053`과 동일한 append-only 패턴(원본 INSERT/UPDATE 문
+무수정, `0054`의 evidence INSERT 1건 + cooking_profiles UPDATE 1건 + safety_rules
+INSERT 1건 + ingredient_safety_rules INSERT 1건 블록을 파일 하단에 그대로 추가).
+
+---
