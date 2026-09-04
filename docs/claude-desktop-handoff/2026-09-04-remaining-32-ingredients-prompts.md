@@ -1,4 +1,54 @@
 
+## [기존 배치 보완, 재생성] cucumber_doneness
+
+> 기존 이미지가 피클처럼 보임(색감/윤기 문제) — 신선하게 찐 느낌으로 재생성
+
+**doneness (포크형)**
+```
+Photorealistic overhead food photography of steamed cucumber pieces, peeled and deseeded, resting on a small plain white ceramic plate. Pale fresh green color, matte surface with no glossy or pickled appearance, no vinegar-like sheen, no yellowish tint. A metal fork is inserted upright into it with its tines pushed in, standing propped in place on its own, showing it is soft enough for the fork to sink in easily. No hand or arm visible in frame. No visible oil sheen, no salt crystals, no seasoning, no garnish. Photorealistic overhead food photography, warm natural daylight from a window, plain out-of-focus neutral kitchen background with no extra props, no bowls, no jars, no cloth, no utensils other than what is specified, no text, no watermark, no logo, no icon, no sparkle, shallow depth of field, high detail, DSLR quality, warm natural color grading. The subject is moderately sized within the frame, occupying roughly the center 50% of the image, with generous empty plain background space on all four sides. Wide 16:9 landscape composition, subject centered with equal breathing room on all sides, no vertical framing, no square framing.
+```
+
+
+## [기존 배치 보완, 재생성] cabbage_doneness
+
+> 기존 이미지가 완성 상태만 보여줘서 "확인 방법"이 안 드러남 — raw vs cooked 대비 구도로 교체
+
+**doneness (숨죽음/부피감소 대비형)**
+```
+Photorealistic overhead food photography showing a clear side-by-side comparison on a plain flat light wood cutting board with no grooves or cutouts: left side has raw shredded cabbage, crisp, pale green, standing up with visible volume and rigid structure. Right side has the same cabbage after cooking, visibly wilted, translucent, collapsed into a much smaller pile, clearly softer and reduced in volume. The volume and texture difference between raw (left) and cooked (right) must be clearly visible at a glance. No added color overlays or warning icons. Photorealistic overhead food photography, warm natural daylight from a window, plain out-of-focus neutral kitchen background with no extra props, no bowls, no jars, no cloth, no utensils other than what is specified, no text, no watermark, no logo, no icon, no sparkle, shallow depth of field, high detail, DSLR quality, warm natural color grading. The subject is moderately sized within the frame, occupying roughly the center 50% of the image, with generous empty plain background space on all four sides. Wide 16:9 landscape composition, subject centered with equal breathing room on all sides, no vertical framing, no square framing.
+```
+
+
+## [기존 배치 보완, 재생성] spinach_doneness
+
+> 동일 사유 — raw vs cooked 대비 구도로 교체
+
+**doneness (숨죽음/부피감소 대비형)**
+```
+Photorealistic overhead food photography showing a clear side-by-side comparison on a plain flat light wood cutting board with no grooves or cutouts: left side has raw spinach leaves, crisp, bright green, standing up with visible volume. Right side has the same spinach after cooking, visibly wilted down to a small dark glossy clump, dramatically reduced in volume compared to the raw pile. The volume and texture difference between raw (left) and cooked (right) must be clearly visible at a glance. No added color overlays or warning icons. Photorealistic overhead food photography, warm natural daylight from a window, plain out-of-focus neutral kitchen background with no extra props, no bowls, no jars, no cloth, no utensils other than what is specified, no text, no watermark, no logo, no icon, no sparkle, shallow depth of field, high detail, DSLR quality, warm natural color grading. The subject is moderately sized within the frame, occupying roughly the center 50% of the image, with generous empty plain background space on all four sides. Wide 16:9 landscape composition, subject centered with equal breathing room on all sides, no vertical framing, no square framing.
+```
+
+
+## [기존 배치 보완, 재생성] onion_doneness
+
+> 동일 사유 — raw vs cooked 대비 구도로 교체
+
+**doneness (숨죽음/부피감소 대비형)**
+```
+Photorealistic overhead food photography showing a clear side-by-side comparison on a plain flat light wood cutting board with no grooves or cutouts: left side has raw diced onion, crisp, opaque white, firm and rigid-looking pieces. Right side has the same onion after cooking, visibly translucent, soft, and collapsed, clearly no longer firm or opaque. The texture and transparency difference between raw (left) and cooked (right) must be clearly visible at a glance. No added color overlays or warning icons. Photorealistic overhead food photography, warm natural daylight from a window, plain out-of-focus neutral kitchen background with no extra props, no bowls, no jars, no cloth, no utensils other than what is specified, no text, no watermark, no logo, no icon, no sparkle, shallow depth of field, high detail, DSLR quality, warm natural color grading. The subject is moderately sized within the frame, occupying roughly the center 50% of the image, with generous empty plain background space on all four sides. Wide 16:9 landscape composition, subject centered with equal breathing room on all sides, no vertical framing, no square framing.
+```
+
+
+## [기존 배치 보완, 재생성] mushroom_doneness
+
+> 동일 사유 — raw vs cooked 대비 구도로 교체
+
+**doneness (숨죽음/부피감소 대비형)**
+```
+Photorealistic overhead food photography showing a clear side-by-side comparison on a plain flat light wood cutting board with no grooves or cutouts: left side has raw finely diced mushroom, pale, firm, rigid-looking pieces. Right side has the same mushroom after cooking, visibly browned, glossy, shrunk in volume, and clearly softer than the raw pile. The color and volume difference between raw (left) and cooked (right) must be clearly visible at a glance. No added color overlays or warning icons. Photorealistic overhead food photography, warm natural daylight from a window, plain out-of-focus neutral kitchen background with no extra props, no bowls, no jars, no cloth, no utensils other than what is specified, no text, no watermark, no logo, no icon, no sparkle, shallow depth of field, high detail, DSLR quality, warm natural color grading. The subject is moderately sized within the frame, occupying roughly the center 50% of the image, with generous empty plain background space on all four sides. Wide 16:9 landscape composition, subject centered with equal breathing room on all sides, no vertical framing, no square framing.
+```
+
+
 ## [기존 배치 보완] cauliflower_safety
 
 **safety (CHOKING_HARD_RAW)**
