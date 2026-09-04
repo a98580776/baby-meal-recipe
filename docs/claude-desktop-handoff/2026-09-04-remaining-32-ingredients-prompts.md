@@ -1,31 +1,61 @@
 
-## corn (옥수수)
-
-> 옥수수는 category가 grain으로 분류돼 있고 choking_hard_raw 연결로 4장 필요. 껍질/수염 제거는 prep에 명시 없어 이미 알갱이만 남은 상태로.
-
-
-**raw**
-```
-A small pile of fresh corn kernels cut off the cob, no husk, no silk, no cob visible, resting on a plain light wood cutting board. Right next to it, a small paring knife with a wooden handle. The board sits on a plain smooth light gray countertop with no other objects, no plants anywhere in frame. The background beyond the board is a soft out-of-focus blur of a plain flat neutral wall, warm natural window daylight from the left side, soft shadows, shallow depth of field, high-detail DSLR food photography, warm natural color grading, no text, no watermark, no logo, no icon, no sparkle. The subject is moderately sized within the frame, occupying roughly the center 50% of the image, with generous empty plain background space on all four sides. Wide 16:9 landscape composition, subject centered with equal breathing room on all sides, no vertical framing, no square framing, strictly top-down overhead angle only.
-```
-
-
-**doneness (포크형)**
-```
-Photorealistic overhead food photography of steamed corn kernels resting on a small plain white ceramic plate. A metal fork is inserted upright into it with its tines pushed in, standing propped in place on its own, showing it is soft enough for the fork to sink in easily. No hand or arm visible in frame. No visible oil sheen, no salt crystals, no seasoning, no garnish. Photorealistic overhead food photography, warm natural daylight from a window, plain out-of-focus neutral kitchen background with no extra props, no bowls, no jars, no cloth, no utensils other than what is specified, no text, no watermark, no logo, no icon, no sparkle, shallow depth of field, high detail, DSLR quality, warm natural color grading. The subject is moderately sized within the frame, occupying roughly the center 50% of the image, with generous empty plain background space on all four sides. Wide 16:9 landscape composition, subject centered with equal breathing room on all sides, no vertical framing, no square framing.
-```
-
-
-**texture (shape=mashed)**
-```
-Photorealistic overhead food photography of four small plain white bowls arranged in a single horizontal row on a plain light wood surface, each containing corn prepared in a different baby-food texture from left to right: smooth thin puree, puree with soft small lumps, finely minced soft pieces, small soft cooked chunks. No labels on the bowls. Photorealistic overhead food photography, warm natural daylight from a window, plain out-of-focus neutral kitchen background with no extra props, no bowls, no jars, no cloth, no utensils other than what is specified, no text, no watermark, no logo, no icon, no sparkle, shallow depth of field, high detail, DSLR quality, warm natural color grading. The subject is moderately sized within the frame, occupying roughly the center 50% of the image, with generous empty plain background space on all four sides. Wide 16:9 landscape composition, subject centered with equal breathing room on all sides, no vertical framing, no square framing.
-```
-
+## [기존 배치 보완] cauliflower_safety
 
 **safety (CHOKING_HARD_RAW)**
 ```
-Photorealistic overhead food photography showing a clear side-by-side comparison on a plain flat light wood cutting board with no grooves or cutouts: left side has raw corn kernels with vivid bright yellow color and firm, plump, rigid-looking texture. Right side has the same corn kernels after cooking, visibly softer and duller yellow, slightly mashed to show they are no longer whole hard kernels. The color and texture difference between raw (left) and cooked (right) must be clearly visible at a glance. No added color overlays or warning icons. Photorealistic overhead food photography, warm natural daylight from a window, plain out-of-focus neutral kitchen background with no extra props, no bowls, no jars, no cloth, no utensils other than what is specified, no text, no watermark, no logo, no icon, no sparkle, shallow depth of field, high detail, DSLR quality, warm natural color grading. The subject is moderately sized within the frame, occupying roughly the center 50% of the image, with generous empty plain background space on all four sides. Wide 16:9 landscape composition, subject centered with equal breathing room on all sides, no vertical framing, no square framing.
+Photorealistic overhead food photography showing a clear side-by-side comparison on a plain flat light wood cutting board with no grooves or cutouts: left side has raw cauliflower florets with vivid white color and firm, rigid-looking texture. Right side has the same cauliflower florets after cooking, visibly softer and slightly translucent, easily broken apart to show they are no longer firm raw florets. The color and texture difference between raw (left) and cooked (right) must be clearly visible at a glance. No added color overlays or warning icons. Photorealistic overhead food photography, warm natural daylight from a window, plain out-of-focus neutral kitchen background with no extra props, no bowls, no jars, no cloth, no utensils other than what is specified, no text, no watermark, no logo, no icon, no sparkle, shallow depth of field, high detail, DSLR quality, warm natural color grading. The subject is moderately sized within the frame, occupying roughly the center 50% of the image, with generous empty plain background space on all four sides. Wide 16:9 landscape composition, subject centered with equal breathing room on all sides, no vertical framing, no square framing.
 ```
+
+
+## [기존 배치 보완] cucumber_safety
+
+**safety (CHOKING_HARD_RAW)**
+```
+Photorealistic overhead food photography showing a clear side-by-side comparison on a plain flat light wood cutting board with no grooves or cutouts: left side has a raw cucumber piece with skin and visible seeds, firm, crisp, glossy green. Right side has peeled and deseeded cucumber after steaming, visibly softer, duller, and easily pressed to show it is no longer hard raw cucumber. The color and texture difference between raw (left) and cooked (right) must be clearly visible at a glance. No added color overlays or warning icons. Photorealistic overhead food photography, warm natural daylight from a window, plain out-of-focus neutral kitchen background with no extra props, no bowls, no jars, no cloth, no utensils other than what is specified, no text, no watermark, no logo, no icon, no sparkle, shallow depth of field, high detail, DSLR quality, warm natural color grading. The subject is moderately sized within the frame, occupying roughly the center 50% of the image, with generous empty plain background space on all four sides. Wide 16:9 landscape composition, subject centered with equal breathing room on all sides, no vertical framing, no square framing.
+```
+
+
+## [기존 배치 보완] eggplant_safety
+
+**safety (CHOKING_HARD_RAW)**
+```
+Photorealistic overhead food photography showing a clear side-by-side comparison on a plain flat light wood cutting board with no grooves or cutouts: left side has raw eggplant slices with glossy deep purple skin and pale firm flesh. Right side has the same eggplant after cooking, visibly softer, collapsed, and duller in color to show it is no longer firm raw eggplant. The color and texture difference between raw (left) and cooked (right) must be clearly visible at a glance. No added color overlays or warning icons. Photorealistic overhead food photography, warm natural daylight from a window, plain out-of-focus neutral kitchen background with no extra props, no bowls, no jars, no cloth, no utensils other than what is specified, no text, no watermark, no logo, no icon, no sparkle, shallow depth of field, high detail, DSLR quality, warm natural color grading. The subject is moderately sized within the frame, occupying roughly the center 50% of the image, with generous empty plain background space on all four sides. Wide 16:9 landscape composition, subject centered with equal breathing room on all sides, no vertical framing, no square framing.
+```
+
+
+## [기존 배치 보완] radish_safety
+
+**safety (CHOKING_HARD_RAW)**
+```
+Photorealistic overhead food photography showing a clear side-by-side comparison on a plain flat light wood cutting board with no grooves or cutouts: left side has raw radish pieces with pale white color and firm, hard, crisp texture. Right side has the same radish pieces after cooking, visibly softer and slightly translucent, easily pressed to show they are no longer hard raw radish. The color and texture difference between raw (left) and cooked (right) must be clearly visible at a glance. No added color overlays or warning icons. Photorealistic overhead food photography, warm natural daylight from a window, plain out-of-focus neutral kitchen background with no extra props, no bowls, no jars, no cloth, no utensils other than what is specified, no text, no watermark, no logo, no icon, no sparkle, shallow depth of field, high detail, DSLR quality, warm natural color grading. The subject is moderately sized within the frame, occupying roughly the center 50% of the image, with generous empty plain background space on all four sides. Wide 16:9 landscape composition, subject centered with equal breathing room on all sides, no vertical framing, no square framing.
+```
+
+
+## [기존 배치 보완] zucchini_safety
+
+**safety (CHOKING_HARD_RAW)**
+```
+Photorealistic overhead food photography showing a clear side-by-side comparison on a plain flat light wood cutting board with no grooves or cutouts: left side has raw zucchini pieces with glossy green skin and pale firm flesh. Right side has the same zucchini pieces after cooking, visibly softer and easily pressed with a fork, duller in color, to show they are no longer firm raw zucchini. The color and texture difference between raw (left) and cooked (right) must be clearly visible at a glance. No added color overlays or warning icons. Photorealistic overhead food photography, warm natural daylight from a window, plain out-of-focus neutral kitchen background with no extra props, no bowls, no jars, no cloth, no utensils other than what is specified, no text, no watermark, no logo, no icon, no sparkle, shallow depth of field, high detail, DSLR quality, warm natural color grading. The subject is moderately sized within the frame, occupying roughly the center 50% of the image, with generous empty plain background space on all four sides. Wide 16:9 landscape composition, subject centered with equal breathing room on all sides, no vertical framing, no square framing.
+```
+
+
+## [기존 배치 보완, 0바이트 재생성] napa_cabbage_raw
+
+**raw**
+```
+A few whole napa cabbage leaves, resting on a plain light wood cutting board. Right next to it, a small paring knife with a wooden handle. The board sits on a plain smooth light gray countertop with no other objects, no plants anywhere in frame. The background beyond the board is a soft out-of-focus blur of a plain flat neutral wall, warm natural window daylight from the left side, soft shadows, shallow depth of field, high-detail DSLR food photography, warm natural color grading, no text, no watermark, no logo, no icon, no sparkle. The subject is moderately sized within the frame, occupying roughly the center 50% of the image, with generous empty plain background space on all four sides. Wide 16:9 landscape composition, subject centered with equal breathing room on all sides, no vertical framing, no square framing, strictly top-down overhead angle only.
+```
+
+
+## [기존 배치 보완, 0바이트 재생성] sweet_potato_texture
+
+**texture (shape=mashed)**
+```
+Photorealistic overhead food photography of four small plain white bowls arranged in a single horizontal row on a plain light wood surface, each containing sweet potato prepared in a different baby-food texture from left to right: smooth thin puree, puree with soft small lumps, finely minced soft pieces, small soft cooked chunks. No labels on the bowls. Photorealistic overhead food photography, warm natural daylight from a window, plain out-of-focus neutral kitchen background with no extra props, no bowls, no jars, no cloth, no utensils other than what is specified, no text, no watermark, no logo, no icon, no sparkle, shallow depth of field, high detail, DSLR quality, warm natural color grading. The subject is moderately sized within the frame, occupying roughly the center 50% of the image, with generous empty plain background space on all four sides. Wide 16:9 landscape composition, subject centered with equal breathing room on all sides, no vertical framing, no square framing.
+```
+
+
+> corn은 이미 완료된 18개 배치에 포함되어 있어 여기서 제외.
 
 
 ## rice (쌀)
@@ -672,7 +702,7 @@ Photorealistic overhead food photography of four small plain white bowls arrange
 
 ## seaweed (김)
 
-> safety rule 미연결(실제로는 질식 위험 잘 알려져 있으나 DB엔 없음 — 데이터 갭, 백로그 대상). doneness는 '잘게 부순 상태'가 핵심이라 별도 포크 이미지 없이 texture로 대체.
+> [2026-09-04 갱신] seaweed choking 안전정책(migration 0055, safety_rule SEAWEED_STICKY_CHOKING, mechanism='sticky_gummy') 반영 완료 — 더 이상 데이터 갭 아님. sesame/perilla와 동일하게 texture+safety 겸용으로 처리.
 
 
 **raw**
@@ -681,7 +711,7 @@ A single sheet of plain dried seaweed (gim), resting on a plain light wood cutti
 ```
 
 
-**texture (shape=shredded, 잘게 부순 정도 비교)**
+**texture+safety 겸용 (통 김 vs 잘게 부순 상태 대비)**
 ```
-Photorealistic overhead food photography of four small plain white bowls arranged in a single horizontal row on a plain light wood surface, each containing seaweed prepared in a different baby-food texture from left to right: smooth thin puree, puree with soft small lumps, finely minced soft pieces, small soft cooked shredded strands. No labels on the bowls. Photorealistic overhead food photography, warm natural daylight from a window, plain out-of-focus neutral kitchen background with no extra props, no bowls, no jars, no cloth, no utensils other than what is specified, no text, no watermark, no logo, no icon, no sparkle, shallow depth of field, high detail, DSLR quality, warm natural color grading. The subject is moderately sized within the frame, occupying roughly the center 50% of the image, with generous empty plain background space on all four sides. Wide 16:9 landscape composition, subject centered with equal breathing room on all sides, no vertical framing, no square framing.
+Photorealistic overhead food photography showing a clear side-by-side comparison on a plain flat light wood surface: left side has one whole intact sheet of dried seaweed, right side has the same seaweed torn and crumbled into small confetti-sized flakes. The difference between the whole sheet (left, choking risk — can stick to the roof of the mouth when wet) and the crumbled small flakes (right, safe form) must be clearly visible at a glance. Photorealistic overhead food photography, warm natural daylight from a window, plain out-of-focus neutral kitchen background with no extra props, no bowls, no jars, no cloth, no utensils other than what is specified, no text, no watermark, no logo, no icon, no sparkle, shallow depth of field, high detail, DSLR quality, warm natural color grading. The subject is moderately sized within the frame, occupying roughly the center 50% of the image, with generous empty plain background space on all four sides. Wide 16:9 landscape composition, subject centered with equal breathing room on all sides, no vertical framing, no square framing.
 ```
