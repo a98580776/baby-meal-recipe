@@ -90,9 +90,24 @@ export function evaluateIngredientSafety(
           // optional-softening framing the original message gives) or an
           // actual allowed_methods entry (chestnut={boil}).
           const cookingProfile = resolved.cookingProfile;
-          const message = isNoCookingNeededFromProfile(cookingProfile)
-            ? `${nameEunNeun} 질식 위험이 있는 재료입니다. 씨를 제거하고 잘게 잘라 부드럽게 으깨어 제공하고, 통조각이나 딱딱한 상태로 제공하지 마세요.`
-            : `${nameEunNeun} 질식 위험이 있는 재료입니다. 충분히 익혀 잘게 다지거나 으깨어 제공하고, 생으로 또는 딱딱한 통조각 형태로 제공하지 마세요.`;
+          // 2026-09-04 seaweed choking investigation
+          // (docs/claude-desktop-handoff/2026-09-04-seaweed-choking-safety-rule-investigation.md):
+          // the two messages above are both hardcoded to the "hard/raw" hazard
+          // CHOKING_HARD_RAW exists for (fix by cooking it soft, or by removing
+          // seeds/hard bits). A "sticky when wet" hazard (e.g. dried seaweed
+          // sheets) has a different fix entirely -- cooking longer doesn't
+          // remove stickiness, so applying either message above to that
+          // mechanism would tell a parent to do something that doesn't address
+          // the actual risk. condition_json.mechanism lets a rule opt into a
+          // mechanism-specific message; absent it, behavior is byte-identical
+          // to before for every existing CHOKING_HARD_RAW link.
+          const condition = rule.condition_json as { mechanism?: string };
+          const message =
+            condition.mechanism === "sticky_gummy"
+              ? `${nameEunNeun} 질식 위험이 있는 재료입니다. 침에 닿으면 끈적해져 입천장이나 목에 달라붙을 수 있으니, 잘게 부수거나 작게 잘라서 제공하고 통째로 또는 큰 조각으로 제공하지 마세요.`
+              : isNoCookingNeededFromProfile(cookingProfile)
+                ? `${nameEunNeun} 질식 위험이 있는 재료입니다. 씨를 제거하고 잘게 잘라 부드럽게 으깨어 제공하고, 통조각이나 딱딱한 상태로 제공하지 마세요.`
+                : `${nameEunNeun} 질식 위험이 있는 재료입니다. 충분히 익혀 잘게 다지거나 으깨어 제공하고, 생으로 또는 딱딱한 통조각 형태로 제공하지 마세요.`;
           warnings.push({
             code: "SAFETY_FORM_WARNING",
             message,

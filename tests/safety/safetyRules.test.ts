@@ -526,3 +526,111 @@ describe("21. KIDNEY_BEAN_PHA_TOXIN — 시간 기반 CONTINUE_COOKING 메시지
     expect(salmon?.message).toBe("연어: 내부 온도 62.8°C 이상까지 완전히 익혀야 합니다.");
   });
 });
+
+describe("22. BLOCK_FORM — condition_json.mechanism 기반 메시지 분기 (2026-09-04 seaweed 조사 후속, DB 미연결)", () => {
+  // seaweed(김) rule은 아직 DB에 연결되지 않았다(docs/claude-desktop-handoff/
+  // 2026-09-04-seaweed-choking-safety-rule-investigation.md — 조사만 완료). 이
+  // 테스트는 코드 분기 자체를 검증하기 위한 가상 fixture로, 실제 seed.sql에
+  // mechanism='sticky_gummy'인 CHOKING_HARD_RAW 계열 rule은 아직 없다.
+  const chokingHardRawRule = ingredients.carrot.safetyRules.find((r) => r.id === "CHOKING_HARD_RAW")!;
+
+  function stickyGummyIngredient(id: string, nameKo: string): ResolvedIngredient {
+    return {
+      ...ingredients.carrot,
+      ingredient: { ...ingredients.carrot.ingredient, id, name_ko: nameKo },
+      cookingProfile: {
+        id: `cook_${id}`,
+        allowed_methods: ["steam"],
+        temperature_rule_id: null,
+        completion_checks: ["질긴 큰 조각 없이 잘게 부순 상태"],
+        completion_check_type: "form",
+        time_guidance: "추천 1~2분 (시작 기준) — 필요 시 살짝 가열/구워 수분 제거",
+        time_status: "INFERRED",
+        evidence_id: "E010",
+        time_min: 1,
+        time_max: 2,
+        time_unit: "분",
+        whole_cut_temperature_rule_id: null,
+        whole_cut_rest_seconds: null,
+      },
+      safetyRules: [
+        {
+          ...chokingHardRawRule,
+          id: "SEAWEED_STICKY_CHOKING",
+          condition_json: { mechanism: "sticky_gummy", description: "sticky when wet, sticks to roof of mouth" },
+        },
+      ],
+    };
+  }
+
+  it("mechanism='sticky_gummy'면 기존 hard-raw 문구 대신 끈적임 전용 메시지가 노출된다", () => {
+    const seaweed = stickyGummyIngredient("seaweed", "김");
+    const evalResult = evaluateIngredientSafety(seaweed, []);
+    const warning = evalResult.warnings.find((w) => w.rule_id === "SEAWEED_STICKY_CHOKING");
+    expect(warning).toBeDefined();
+    expect(warning?.code).toBe("SAFETY_FORM_WARNING");
+    expect(warning?.message).toBe(
+      "김은 질식 위험이 있는 재료입니다. 침에 닿으면 끈적해져 입천장이나 목에 달라붙을 수 있으니, 잘게 부수거나 작게 잘라서 제공하고 통째로 또는 큰 조각으로 제공하지 마세요.",
+    );
+    // 기존 두 문구(hard-raw 계열) 중 어느 쪽으로도 회귀하지 않았는지 명시적으로 확인.
+    expect(warning?.message).not.toContain("충분히 익혀");
+    expect(warning?.message).not.toContain("씨를 제거");
+  });
+
+  it("mechanism='sticky_gummy'는 isNoCookingNeededFromProfile 값과 무관하게 항상 우선한다(time_min/max=0이어도 동일)", () => {
+    const seaweedNoCookNeeded = {
+      ...stickyGummyIngredient("seaweed", "김"),
+      cookingProfile: {
+        ...stickyGummyIngredient("seaweed", "김").cookingProfile!,
+        allowed_methods: [],
+        time_min: 0,
+        time_max: 0,
+      },
+    };
+    const evalResult = evaluateIngredientSafety(seaweedNoCookNeeded, []);
+    const warning = evalResult.warnings.find((w) => w.rule_id === "SEAWEED_STICKY_CHOKING");
+    expect(warning?.message).toBe(
+      "김은 질식 위험이 있는 재료입니다. 침에 닿으면 끈적해져 입천장이나 목에 달라붙을 수 있으니, 잘게 부수거나 작게 잘라서 제공하고 통째로 또는 큰 조각으로 제공하지 마세요.",
+    );
+  });
+
+  it("mechanism 필드가 없으면(기존 CHOKING_HARD_RAW 전부) 기존 2종 로직이 완전히 그대로 유지된다 — carrot/korean_melon 회귀 확인", () => {
+    // carrot: allowed_methods 있음 → hard-raw 계열 문구(기존 §3/§19와 동일 기대값).
+    const carrotWarning = evaluateIngredientSafety(ingredients.carrot, []).warnings.find(
+      (w) => w.rule_id === "CHOKING_HARD_RAW",
+    );
+    expect(carrotWarning?.message).toBe(
+      `${withEunNeun("당근")} 질식 위험이 있는 재료입니다. 충분히 익혀 잘게 다지거나 으깨어 제공하고, 생으로 또는 딱딱한 통조각 형태로 제공하지 마세요.`,
+    );
+
+    // korean_melon: isNoCookingNeededFromProfile=true 계열 → "씨를 제거..." 문구
+    // (기존 §19 fixture 재사용, mechanism 필드 자체가 없는 rule 그대로).
+    const koreanMelon = {
+      ...ingredients.carrot,
+      ingredient: { ...ingredients.carrot.ingredient, id: "korean_melon", name_ko: "참외" },
+      preparationProfile: null,
+      cookingProfile: {
+        id: "cook_korean_melon",
+        allowed_methods: [],
+        temperature_rule_id: null,
+        completion_checks: ["부드럽게 으깨짐"],
+        completion_check_type: "form" as const,
+        time_guidance: "조리 불필요(숙도와 제공 형태 확인) — 조리하지 않는 과육 기준",
+        time_status: "INFERRED" as const,
+        evidence_id: "E010",
+        time_min: 0,
+        time_max: 0,
+        time_unit: "분",
+        whole_cut_temperature_rule_id: null,
+        whole_cut_rest_seconds: null,
+      },
+      safetyRules: [chokingHardRawRule],
+    };
+    const melonWarning = evaluateIngredientSafety(koreanMelon, []).warnings.find(
+      (w) => w.rule_id === "CHOKING_HARD_RAW",
+    );
+    expect(melonWarning?.message).toBe(
+      `${withEunNeun("참외")} 질식 위험이 있는 재료입니다. 씨를 제거하고 잘게 잘라 부드럽게 으깨어 제공하고, 통조각이나 딱딱한 상태로 제공하지 마세요.`,
+    );
+  });
+});
