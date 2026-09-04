@@ -160,17 +160,40 @@ export function evaluateIngredientSafety(
         const condition = rule.condition_json as {
           min_internal_temp_c?: number;
           source_standard?: string;
+          min_boil_minutes?: number;
+          prohibited_method?: string;
+          prohibited_method_reason?: string;
         };
         if (hasMfdsTempRule && condition.source_standard !== "KR_MFDS") {
           break;
         }
         const threshold = condition.min_internal_temp_c;
+        const minBoilMinutes = condition.min_boil_minutes;
+        // migration 0054 (KIDNEY_BEAN_PHA_TOXIN): the first CONTINUE_COOKING
+        // rule defined by a minimum boil time instead of a temperature. Time
+        // takes priority only when temperature is absent -- no rule has ever
+        // carried both fields, and the existing temperature branch above must
+        // stay unchanged (EGG_DONENESS_REQUIRED and the 5 temperature rules
+        // have neither/only min_internal_temp_c and must keep producing byte-
+        // identical messages).
+        let message: string;
+        if (threshold != null) {
+          message = `${name}: 내부 온도 ${threshold}°C 이상까지 완전히 익혀야 합니다.`;
+        } else if (minBoilMinutes != null) {
+          message = `${name}: 최소 ${minBoilMinutes}분 이상 끓여야 합니다.`;
+          if (condition.prohibited_method) {
+            const methodLabel =
+              condition.prohibited_method === "slow_cooker" ? "슬로우쿠커" : condition.prohibited_method;
+            message += condition.prohibited_method_reason
+              ? ` ${methodLabel}는 사용하지 마세요(${condition.prohibited_method_reason}).`
+              : ` ${methodLabel}는 사용하지 마세요.`;
+          }
+        } else {
+          message = `${name}: 충분히 익혀야 합니다.`;
+        }
         warnings.push({
           code: "SAFETY_COOKING_REQUIRED",
-          message:
-            threshold != null
-              ? `${name}: 내부 온도 ${threshold}°C 이상까지 완전히 익혀야 합니다.`
-              : `${name}: 충분히 익혀야 합니다.`,
+          message,
           rule_id: rule.id,
           rule_status: rule.status,
           severity: rule.severity,

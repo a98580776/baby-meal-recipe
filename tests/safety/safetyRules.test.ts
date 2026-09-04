@@ -417,3 +417,112 @@ describe("20. tofu FPIES(SOY_FPIES) — 비-IgE 지연형 반응, IgE형 SOY_ALL
     // "다른 재료에 새로운 경고가 생기지 않았다"는 것).
   });
 });
+
+describe("21. KIDNEY_BEAN_PHA_TOXIN — 시간 기반 CONTINUE_COOKING 메시지 (migration 0054 후속)", () => {
+  // migration 0054의 실제 seed.sql condition_json을 그대로 미러링 (자연 독소,
+  // min_internal_temp_c 없음/min_boil_minutes만 있음 — 기존 온도 기반 rule들과
+  // 다른 최초의 CONTINUE_COOKING 케이스).
+  const kidneyBean: ResolvedIngredient = {
+    ...ingredients.carrot,
+    ingredient: { ...ingredients.carrot.ingredient, id: "kidney_bean", name_ko: "강낭콩" },
+    preparationProfile: null,
+    cookingProfile: null,
+    safetyRules: [
+      {
+        id: "KIDNEY_BEAN_PHA_TOXIN",
+        rule_type: "natural_toxin",
+        severity: "HIGH" as const,
+        condition_json: {
+          category: "kidney_bean",
+          toxin: "phytohaemagglutinin",
+          min_boil_minutes: 30,
+          boil_method: "rolling_boil_in_water",
+          prohibited_method: "slow_cooker",
+          prohibited_method_reason: "저온 장시간 조리로는 독소가 파괴되지 않음",
+        },
+        action: "CONTINUE_COOKING" as const,
+        evidence_id: "E062",
+        status: "NEEDS_REVIEW" as const,
+      },
+    ],
+  };
+
+  it("min_boil_minutes + prohibited_method/reason이 메시지에 그대로 노출된다 (더 이상 제네릭 폴백이 아님)", () => {
+    const evalResult = evaluateIngredientSafety(kidneyBean, []);
+    const warning = evalResult.warnings.find((w) => w.rule_id === "KIDNEY_BEAN_PHA_TOXIN");
+    expect(warning).toBeDefined();
+    expect(warning?.code).toBe("SAFETY_COOKING_REQUIRED");
+    expect(warning?.severity).toBe("HIGH");
+    expect(warning?.action).toBe("CONTINUE_COOKING");
+    expect(warning?.message).toBe(
+      "강낭콩: 최소 30분 이상 끓여야 합니다. 슬로우쿠커는 사용하지 마세요(저온 장시간 조리로는 독소가 파괴되지 않음).",
+    );
+    // 수정 전 동작(제네릭 폴백)으로 회귀하지 않았는지 명시적으로 확인.
+    expect(warning?.message).not.toBe("강낭콩: 충분히 익혀야 합니다.");
+  });
+
+  it("prohibited_method 없이 min_boil_minutes만 있으면 금지 조리법 문장 없이 시간만 노출된다", () => {
+    const noProhibited: ResolvedIngredient = {
+      ...kidneyBean,
+      safetyRules: [
+        {
+          ...kidneyBean.safetyRules[0],
+          condition_json: { category: "kidney_bean", min_boil_minutes: 30 },
+        },
+      ],
+    };
+    const evalResult = evaluateIngredientSafety(noProhibited, []);
+    const warning = evalResult.warnings.find((w) => w.rule_id === "KIDNEY_BEAN_PHA_TOXIN");
+    expect(warning?.message).toBe("강낭콩: 최소 30분 이상 끓여야 합니다.");
+  });
+
+  it("EGG_DONENESS_REQUIRED(migration 0048): min_internal_temp_c도 min_boil_minutes도 없어 기존 제네릭 폴백이 바이트 단위로 그대로 유지된다", () => {
+    // seed.sql 실제 값 그대로 미러링: condition_json={category:'egg', doneness:'완전히 응고'}.
+    const egg: ResolvedIngredient = {
+      ...ingredients.carrot,
+      ingredient: { ...ingredients.carrot.ingredient, id: "egg", name_ko: "달걀" },
+      preparationProfile: null,
+      cookingProfile: null,
+      safetyRules: [
+        {
+          id: "EGG_DONENESS_REQUIRED",
+          rule_type: "cooking_doneness",
+          severity: "CRITICAL" as const,
+          condition_json: { category: "egg", doneness: "완전히 응고" },
+          action: "CONTINUE_COOKING" as const,
+          evidence_id: "E018",
+          status: "NEEDS_REVIEW" as const,
+        },
+      ],
+    };
+    const evalResult = evaluateIngredientSafety(egg, []);
+    const warning = evalResult.warnings.find((w) => w.rule_id === "EGG_DONENESS_REQUIRED");
+    expect(warning?.message).toBe("달걀: 충분히 익혀야 합니다.");
+  });
+
+  it("기존 온도 기반 CONTINUE_COOKING 5개 rule의 메시지가 바이트 단위로 회귀 없이 그대로 유지된다 (chicken/beef/pork/salmon)", () => {
+    // chicken/beef/pork: MEAT_POULTRY_TEMP_MFDS(75°C)만 노출(legacy dedupe).
+    const chicken = evaluateIngredientSafety(ingredients.chicken, []).warnings.find(
+      (w) => w.rule_id === "MEAT_POULTRY_TEMP_MFDS",
+    );
+    expect(chicken?.message).toBe("닭고기: 내부 온도 75°C 이상까지 완전히 익혀야 합니다.");
+
+    const beef = evaluateIngredientSafety(ingredients.beef, []).warnings.find(
+      (w) => w.rule_id === "MEAT_POULTRY_TEMP_MFDS",
+    );
+    expect(beef?.message).toBe("소고기: 내부 온도 75°C 이상까지 완전히 익혀야 합니다.");
+
+    const pork = evaluateIngredientSafety(ingredients.pork, []).warnings.find(
+      (w) => w.rule_id === "MEAT_POULTRY_TEMP_MFDS",
+    );
+    expect(pork?.message).toBe("돼지고기: 내부 온도 75°C 이상까지 완전히 익혀야 합니다.");
+
+    // salmon fixture: FISH_TEMP(legacy, 62.8°C) — 이 fixture는 FISH_SHELLFISH_TEMP_MFDS를
+    // 갖고 있지 않으므로(실제 seed.sql과 무관하게 fixture 자체의 기존 상태), 온도 분기
+    // 코드 경로(threshold != null)가 이번 변경으로 회귀하지 않았는지 그대로 확인.
+    const salmon = evaluateIngredientSafety(ingredients.salmon, []).warnings.find(
+      (w) => w.rule_id === "FISH_TEMP",
+    );
+    expect(salmon?.message).toBe("연어: 내부 온도 62.8°C 이상까지 완전히 익혀야 합니다.");
+  });
+});
