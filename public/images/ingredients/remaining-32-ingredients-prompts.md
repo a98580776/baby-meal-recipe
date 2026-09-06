@@ -22,6 +22,17 @@
 
 
 
+## mushroom (버섯)
+
+> [2026-09-06 재작업] 기존 mushroom_doneness 이미지가 익힌 버섯 한 접시 사진뿐이라 raw/cooked 비교가 안 됨. cabbage/spinach/onion_doneness에서 이미 쓰고 있는 "raw 더미 vs 익힌 더미 side-by-side" 스타일로 통일.
+
+
+**doneness (raw vs cooked side-by-side)**
+```
+Photorealistic overhead food photography showing a clear side-by-side comparison on a plain flat light wood cutting board with no grooves or cutouts: left side has a pile of raw finely diced mushroom (pale, firm-looking), right side has the same mushroom sautéed and fully cooked until soft, finely diced. The color and texture difference between raw (left) and cooked (right) must be clearly visible at a glance. No added color overlays or warning icons. Photorealistic overhead food photography, warm natural daylight from a window, plain out-of-focus neutral kitchen background with no extra props, no bowls, no jars, no cloth, no utensils other than what is specified, no text, no watermark, no logo, no icon, no sparkle, shallow depth of field, high detail, DSLR quality, warm natural color grading. The subject is moderately sized within the frame, occupying roughly the center 50% of the image, with generous empty plain background space on all four sides. Wide 16:9 landscape composition, subject centered with equal breathing room on all sides, no vertical framing, no square framing.
+```
+
+
 ## seaweed (김)
 
 > [2026-09-04 갱신] seaweed choking 안전정책(migration 0055, safety_rule SEAWEED_STICKY_CHOKING, mechanism='sticky_gummy') 반영 완료 — 더 이상 데이터 갭 아님. sesame/perilla와 동일하게 texture+safety 겸용으로 처리.
