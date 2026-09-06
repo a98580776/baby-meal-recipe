@@ -1,4 +1,29 @@
-# Current Roadmap (2026-09-04)
+# Current Roadmap (2026-09-04, 2026-09-06 amendment 반영)
+
+> **2026-09-06 amendment**: 아래 §1~§5 본문은 2026-09-04 작성 당시 그대로 보존한다(append-only
+> 원칙). 이후 실제 코드/DB/git 상태 재확인으로 드러난 차이는 이 amendment 블록에만 기록한다.
+>
+> - **§2 NEXT "E-8 UI 렌더링 미착수"는 stale — 실제로는 이미 완료**: commit `6fedc18`
+>   (2026-09-02, `docs/current-roadmap.md` 작성일보다 이전)에서 `components/shared/IngredientTipList.tsx`
+>   신설 + `RecipeView.tsx`/`CookingModeView.tsx` 양쪽에 렌더링 연결까지 이미 끝나 있었다.
+>   2026-09-06 재확인: 두 컴포넌트 모두 여전히 정상 사용 중.
+> - **§4 이미지 트랙 "14/50(28%), 36개 미착수"는 stale — 실제로는 50/50 완료**: 2026-09-06
+>   재확인 결과 `public/images/ingredients/` 50개 재료 폴더 전부 존재, 재료 유형별 필요
+>   장수(과일 2장 / choking 12종 등 4장) 기준 충족, 0바이트 파일 없음, 커밋 완료
+>   (`e4526ce`, `7ad2550` — texture 33 + doneness 1 + raw 2 + safety 2 = 38개 shape-consistency
+>   재생성 + 후속 QA 4건 포함). **이미지 트랙은 CLOSED.**
+> - **tofu doneness 이미지 1건 미생성** — `cook_tofu.completion_checks`는 migration 0032로 이미
+>   채워져 있어(DATA_MODEL_GAP 아님) 생성 자체는 가능하나, `public/images/ingredients/tofu/`에
+>   `tofu_doneness.png`가 없음(raw/texture만 존재). 이미지 트랙 CLOSED 판정과 별개로 남은
+>   단일 파일 gap.
+> - **ingredient_tips batch-2(egg/salmon/pork/onion/kidney_bean/green_pea/chestnut/cheese
+>   8종×2건=16행)**: seed.sql 전수 재대조 완료, 불일치 없음. CLOSED 재확인.
+> - **CONTINUE_COOKING 슬로우쿠커 금지 경고**: `KIDNEY_BEAN_PHA_TOXIN`의 `condition_json`에
+>   `prohibited_method`/`prohibited_method_reason`이 이미 있고 `lib/rules/safety.ts:199-205`가
+>   이를 읽어 메시지에 반영 중. CLOSED 재확인.
+> - **결론**: §2 NEXT의 "현재 실행 가능한 항목 없음"은 여전히 대체로 유효하나, 유일한 실행
+>   가능 항목은 **tofu doneness 이미지 1건**. §3 LATER 목록(B-1/E-1, B-2/E-2, E-7, C-1,
+>   C-2 잔여, B-5 잔여)은 2026-09-06 기준 변경 없음 — 전부 정책 결정 대기 상태 유지.
 
 기존 로드맵(`AI_이유식_서비스_프로젝트_로드맵.xlsx`, `260820/..._최신.xlsx`)은 **삭제·수정하지 않고
 역사적 스냅샷으로 보존**한다. 이 문서는 실제 코드/DB/git 상태를 기준으로 한 별도 추적 체계다.
