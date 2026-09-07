@@ -7,6 +7,7 @@ import type { ApiErrorResponse, RecipeResponse } from "@/types/api";
 import { parseInputFromParams } from "@/lib/recipe/parseRequestParams";
 import { buildCookingSteps, type CookingStep } from "@/lib/recipe/buildCookingSteps";
 import { buildStepInfoRows, stepInfoRowKey, type StepInfoRow } from "@/lib/recipe/buildStepInfoRows";
+import { getStepImageCandidates } from "@/lib/recipe/stepImageCandidates";
 import { SafetyNoteItem } from "@/components/shared/SafetyNoteItem";
 import { IngredientTipList } from "@/components/shared/IngredientTipList";
 
@@ -40,6 +41,51 @@ function CookingPhotoPlaceholder() {
       </span>
       <span className="text-xs">조리 사진을 넣을 자리</span>
     </div>
+  );
+}
+
+/**
+ * Real ingredient photo for the current STEP, replacing
+ * CookingPhotoPlaceholder where an image exists. Tries each
+ * /images/ingredients/{id}/{id}_{kind}.png candidate from
+ * getStepImageCandidates in order via cascading onError (no filesystem
+ * check available client-side), falling back to the placeholder once every
+ * candidate has failed to load.
+ */
+function CookingPhoto({
+  ingredientId,
+  isFirstStepForIngredient,
+  isLastStepForIngredient,
+  actionLabel,
+  hasSafetyWarning,
+}: {
+  ingredientId: string;
+  isFirstStepForIngredient: boolean;
+  isLastStepForIngredient: boolean;
+  actionLabel: CookingStep["actionLabel"];
+  hasSafetyWarning: boolean;
+}) {
+  const candidates = getStepImageCandidates({
+    ingredientId,
+    isFirstStepForIngredient,
+    isLastStepForIngredient,
+    actionLabel,
+    hasSafetyWarning,
+  });
+  const [candidateIndex, setCandidateIndex] = useState(0);
+
+  if (candidateIndex >= candidates.length) {
+    return <CookingPhotoPlaceholder />;
+  }
+
+  return (
+    <img
+      key={candidates[candidateIndex]}
+      src={candidates[candidateIndex]}
+      alt=""
+      className="aspect-video w-full shrink-0 rounded-lg object-cover bg-gray-100"
+      onError={() => setCandidateIndex((i) => i + 1)}
+    />
   );
 }
 
@@ -228,6 +274,9 @@ export function CookingModeView() {
 
   const step = steps[stepIndex];
   const infoRows = buildStepInfoRows(step, recipe);
+  const isFirstStepForIngredient = stepIndex === 0 || steps[stepIndex - 1].ingredientId !== step.ingredientId;
+  const isLastStepForIngredient =
+    stepIndex === steps.length - 1 || steps[stepIndex + 1].ingredientId !== step.ingredientId;
 
   return (
     <div className="flex min-h-dvh flex-col px-6 py-8">
@@ -249,7 +298,13 @@ export function CookingModeView() {
       )}
       <div className="flex flex-1 flex-col items-center justify-center gap-4 overflow-y-auto py-2 text-center">
         <p className="text-xs font-semibold text-gray-400">{step.ingredientName}</p>
-        <CookingPhotoPlaceholder />
+        <CookingPhoto
+          ingredientId={step.ingredientId}
+          isFirstStepForIngredient={isFirstStepForIngredient}
+          isLastStepForIngredient={isLastStepForIngredient}
+          actionLabel={step.actionLabel}
+          hasSafetyWarning={step.safetyWarnings.length > 0}
+        />
         <p className="text-xl font-semibold leading-relaxed">{step.instruction}</p>
         <StepInfoTable rows={infoRows} />
         {step.tips.length > 0 && (
