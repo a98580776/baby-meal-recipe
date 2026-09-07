@@ -299,6 +299,7 @@ export function CookingModeView() {
       <div className="flex flex-1 flex-col items-center justify-center gap-4 overflow-y-auto py-2 text-center">
         <p className="text-xs font-semibold text-gray-400">{step.ingredientName}</p>
         <CookingPhoto
+          key={step.id}
           ingredientId={step.ingredientId}
           isFirstStepForIngredient={isFirstStepForIngredient}
           isLastStepForIngredient={isLastStepForIngredient}
