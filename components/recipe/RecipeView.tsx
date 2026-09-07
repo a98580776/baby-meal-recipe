@@ -14,6 +14,7 @@ import { cookingMethodLabels } from "@/lib/recipe/cookingMethodLabels";
 import { verificationStatusBadgeText } from "@/lib/ingredients/verificationStatusLabel";
 import { SafetyNoteItem } from "@/components/shared/SafetyNoteItem";
 import { IngredientTipList } from "@/components/shared/IngredientTipList";
+import { IngredientThumbnail } from "@/components/shared/IngredientThumbnail";
 
 const SCOPE_LABEL: Record<"KR_MFDS_19" | "BROADER_ALLERGEN_CONTEXT", string> = {
   KR_MFDS_19: "법정 표시대상",
@@ -154,8 +155,9 @@ export function RecipeView() {
           {recipe.ingredients.map((ing) => (
             <li
               key={ing.id}
-              className="rounded-full border border-gray-300 bg-white px-3 py-1 text-sm text-gray-700"
+              className="flex items-center gap-1.5 rounded-full border border-gray-300 bg-white py-1 pl-1 pr-3 text-sm text-gray-700"
             >
+              <IngredientThumbnail ingredientId={ing.id} />
               {ing.name_ko}
               <VerificationBadge status={ing.verification_status} />
             </li>
@@ -180,7 +182,8 @@ export function RecipeView() {
               const c = ing.cooking;
               return (
                 <div key={ing.id} className="rounded-lg border border-gray-200 p-3">
-                  <p className="mb-1 text-sm font-semibold">
+                  <p className="mb-1 flex items-center gap-1.5 text-sm font-semibold">
+                    <IngredientThumbnail ingredientId={ing.id} />
                     {ing.name_ko}
                     <VerificationBadge status={ing.verification_status} />
                   </p>
