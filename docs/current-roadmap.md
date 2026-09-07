@@ -24,6 +24,74 @@
 > - **결론**: §2 NEXT의 "현재 실행 가능한 항목 없음"은 여전히 대체로 유효하나, 유일한 실행
 >   가능 항목은 **tofu doneness 이미지 1건**. §3 LATER 목록(B-1/E-1, B-2/E-2, E-7, C-1,
 >   C-2 잔여, B-5 잔여)은 2026-09-06 기준 변경 없음 — 전부 정책 결정 대기 상태 유지.
+>
+> **2026-09-07 amendment**: 위 09-06 amendment가 남긴 유일한 실행 항목(tofu doneness)을
+> 처리하는 과정에서, **이미지가 생성만 되어 있고 앱 어디에도 렌더링되지 않는다는 훨씬 큰
+> 문제**를 발견해 처리했다. 이어서 09-06 LATER 목록 전체를 재검증한 결과 대부분 이미
+> CLOSED로 밝혀져, 로드맵 자체가 실제 상태를 계속 따라가지 못하고 있었음을 재확인했다.
+>
+> - **tofu doneness 이미지**: 생성·QA·배치 완료(`b13984c`). raw-vs-cooked 대비 스타일.
+> - **P0 신규 발견 및 수정 — Cooking Mode/RecipeView 이미지 미연결**: `CookingModeView.tsx`가
+>   실제 이미지 대신 하드코딩 placeholder("조리 사진을 넣을 자리")만 렌더링하고 있었다
+>   (`grep -rln "images/ingredients" app/ components/ lib/` → 0건, 09-07 발견 당시).
+>   50개 재료 이미지가 전부 생성되어 있었음에도 사용자에게 노출된 적이 없었다는 뜻이다.
+>   `0b7c22f`(CookingPhoto 컴포넌트 신설, raw/texture/doneness/safety 우선순위 폴백)로
+>   수정했으나, 1차 구현에 STEP 전환 시 컴포넌트가 리마운트되지 않아 이미지 후보 index가
+>   이전 스텝 값을 그대로 물려받는 버그가 있었다(예: tofu STEP1이 raw로 정착시킨 index가
+>   STEP3 익힘확인까지 유지되어 doneness 대신 texture가 뜸) — `df8f5d2`(`key={step.id}`
+>   추가)로 수정, 프로덕션에서 tofu 3 STEP 전부 재현 테스트로 검증 완료. `cb19c46`으로
+>   RecipeView 재료/후첨재료 pill에도 raw→texture 2단계 썸네일 연결. **이미지 트랙은 이제
+>   정말 CLOSED** — 09-06 amendment의 CLOSED 판정은 "파일이 존재한다"만 확인했을 뿐
+>   "실제로 화면에 뜬다"는 확인하지 않았던 것이 원인이었다.
+> - **cutting_guidance 잔여 6건+perilla**: 재확인 결과 이미 CLOSED. 08-31 문서의 REPLACE
+>   9건은 migration 0035로, 나머지 8건은 migration 0047로 전부 seed.sql에 반영되어 있었다
+>   (구조화 필드 peel_rule/seed_removal_rule/core_tough_part_rule 우선 배치 원칙 그대로
+>   지켜짐). perilla는 두 조사 문서 모두에서 Tier 1 근거 부재로 이번 migration 제외 —
+>   재조사 실익 없다고 판단해 **DO NOT DO로 확정**.
+> - **raw/cooked serving state (B-1/E-1)**: `choking-hard-raw-runtime-investigation.md`가
+>   이미 결론 냄 — DATA_MODEL_GAP은 실재하나 latent(현재 제품이 raw 제공을 옵션으로 노출
+>   안 해서 오늘 당장 안전 문제 아님). 스키마 확장은 **의도적으로 LATER 유지** — raw-serving이
+>   실제 로드맵에 오를 때 재검토. 단, 같은 문서가 제안한 낮은 우선순위 항목(korean_melon/
+>   watermelon의 WARN 문구를 "충분히 익혀"가 아니라 재료 특성에 맞게 정밀화)은 **이미
+>   `lib/rules/safety.ts`의 `isNoCookingNeededFromProfile` 분기로 구현되어 있음을 프로덕션
+>   API로 확인**(D-2 fix) — CLOSED.
+> - **레거시 `ingredient_role`(5값) 컬럼 제거 (E-7)**: 기존 조사가 제거 조건 4개 중 2개
+>   미충족 확인 + seed.sql fresh-clone 파손 리스크(append-only 관례와 충돌)를 신규 발견.
+>   09-07 재검토 결론: **실사용자 임팩트 0(아무도 안 읽음)인 순수 기술부채 vs 지금 건드리면
+>   생기는 리스크 3개(API 계약 변경/fresh-clone 파손/append-only 예외)가 명백히 비대칭** —
+>   우선순위 원칙(안전>실사용자>정확성>편의성>유지보수성) 최하위 항목으로 판단해 **의도적
+>   LATER 유지, 지금 실행 안 함**을 재확인.
+> - **tofu FPIES taxonomy 정식화 (B-5)**: 재확인 결과 이미 CLOSED. `SOY_FPIES` safety_rule
+>   (`ecb2824`)이 이미 존재하며, rule_type='non_ige_reaction'(자유 text, 스키마 제약 없음)로
+>   별도 enum 확장 없이 처리됨. 프로덕션 API에서 SOY_ALLERGEN(IgE형)과 SOY_FPIES(비-IgE
+>   지연형) 둘 다 정확히 노출되는 것을 확인.
+> - **핵심 교훈**: 이번 세션에서 재확인한 LATER 항목 6개 중 4개(cutting_guidance, WARN
+>   문구 정밀화, tofu FPIES, 그리고 애초의 이미지 렌더링 자체)가 실제로는 이미 끝나 있었다.
+>   로드맵 문서가 실행 완료를 계속 놓치는 패턴이 반복되고 있다 — 이 문서를 갱신하는 것
+>   자체보다 **"완료됐다고 적힌 것도 실제 코드/DB/화면으로 재확인하는 습관"이 더 중요**하다는
+>   것이 이번 세션의 결론이다.
+>
+> **앞으로 할 일 (2026-09-07 기준)**:
+>
+> | 우선순위 | 항목 | 내용 |
+> |---|---|---|
+> | NOW | 없음 | 실행 가능한 즉시 작업 없음 — 데이터/안전/이미지 트랙 전부 CLOSED |
+> | NEXT | 전체 사용자 플로우 수동 QA | 이번 세션에서 이미지 미연결(P0)과 state 리셋 버그를
+> |      | | 둘 다 "직접 화면을 눌러보다가" 발견했다. 정적 검사(build/typecheck)로는 안
+> |      | | 잡히는 종류의 버그였다 — 50개 재료 중 다양한 조합(다중 재료, 후첨 재료,
+> |      | | food_form별, choking 경고 있는 재료들)으로 Home→Plan→Recipe→Cooking Mode를
+> |      | | 실제로 끝까지 눌러보는 수동 QA 패스가 필요. 특히 avocado처럼 doneness/safety
+> |      | | 이미지가 없는 재료에서 폴백이 매끄러운지, 여러 재료 레시피에서 이미지 후보
+> |      | | 로직이 재료별로 올바르게 분리되는지 확인 |
+> | NEXT | 프로덕션 배포 동기화 확인 | 이번 세션 내내 매 커밋마다 실제 프로덕션에서
+> |      | | 즉시 반영을 확인했다(Vercel-git 연결 정상 작동 재확인됨) — 별도 조치 불필요,
+> |      | | 다만 이후에도 "커밋했다"를 "배포됐다"로 착각하지 않고 계속 프로덕션에서
+> |      | | 직접 확인하는 습관 유지 |
+> | LATER | raw/cooked serving state (B-1/E-1) | 실제 제품에 raw 제공 옵션이 생길 때 재검토 |
+> | LATER | 레거시 ingredient_role 컬럼 제거 (E-7) | 리스크 대비 이득 없음, 의도적 보류 |
+> | LATER | UI/UX 네이티브 앱 경험 | 화면 전환 애니메이션, PWA, safe-area 처리 — 안전·데이터
+> |       | | 항목이 이제 전부 끝났으므로 위 NEXT(수동 QA)가 끝나면 우선순위 재검토 대상 |
+> | DO NOT DO | perilla cutting_guidance | Tier 1 근거 부재, 재조사 실익 없음, 확정 |
 
 기존 로드맵(`AI_이유식_서비스_프로젝트_로드맵.xlsx`, `260820/..._최신.xlsx`)은 **삭제·수정하지 않고
 역사적 스냅샷으로 보존**한다. 이 문서는 실제 코드/DB/git 상태를 기준으로 한 별도 추적 체계다.
