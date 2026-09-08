@@ -296,6 +296,31 @@ describe("buildRecipeResponse", () => {
     });
   });
 
+  describe("has_curated_evidence (재료 전용 조사 근거 판정)", () => {
+    it("true — preparation_profiles.evidence_id가 E010이 아닌 재료별 근거(carrot: E003)", () => {
+      const recipe = buildRecipeResponse(input, data, storageRule, null, []);
+      expect(recipe.ingredients.find((i) => i.id === "carrot")?.has_curated_evidence).toBe(true);
+    });
+
+    it("false — preparation/cooking 모두 범용 근거(E010)만 있는 재료(rice)", () => {
+      const riceData = { ...data, ingredients: new Map([["rice", ingredients.rice]]) };
+      const recipe = buildRecipeResponse({ ...input, ingredient_ids: ["rice"] }, riceData, storageRule, null, []);
+      expect(recipe.ingredients.find((i) => i.id === "rice")?.has_curated_evidence).toBe(false);
+    });
+
+    it("true — cooking_profiles.evidence_id만 재료별 근거여도 true (broccoli: prep E010 / cook E016)", () => {
+      const broccoliData = { ...data, ingredients: new Map([["broccoli", ingredients.broccoli]]) };
+      const recipe = buildRecipeResponse(
+        { ...input, ingredient_ids: ["broccoli"] },
+        broccoliData,
+        storageRule,
+        null,
+        [],
+      );
+      expect(recipe.ingredients.find((i) => i.id === "broccoli")?.has_curated_evidence).toBe(true);
+    });
+  });
+
   describe("meat_form 도메인 모델 (docs/meat-form-domain-model-design.md)", () => {
     it("beef + whole_cut: rest_guidance가 whole_cut_rest_seconds(180초→3분)로 채워진다", () => {
       const recipe = buildRecipeResponse(

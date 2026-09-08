@@ -13,7 +13,6 @@ export default async function PlanPage() {
 
   return (
     <div className="mx-auto max-w-lg px-4 py-6">
-      <h1 className="mb-6 text-xl font-bold">오늘의 이유식</h1>
       <PlanView stages={stages} foodForms={foodForms} ingredients={ingredients} allergens={allergens} />
     </div>
   );

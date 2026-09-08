@@ -26,7 +26,7 @@ export function IngredientTipList({ tips }: { tips: RecipeIngredientView["tips"]
             className={`flex items-start gap-1.5 rounded-lg border p-2 text-xs ${
               isSafetyAdjacent
                 ? "border-orange-200 bg-orange-50 text-orange-800"
-                : "border-blue-100 bg-blue-50 text-blue-700"
+                : "border-[var(--olive-600)]/30 bg-[var(--olive-tint-bg)] text-[var(--olive-tint-text)]"
             }`}
           >
             <span aria-hidden="true">{isSafetyAdjacent ? "🔔" : "💡"}</span>

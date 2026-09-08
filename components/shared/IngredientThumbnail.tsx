@@ -20,7 +20,7 @@ export function IngredientThumbnail({ ingredientId }: { ingredientId: string }) 
       key={CANDIDATE_KINDS[index]}
       src={`/images/ingredients/${ingredientId}/${ingredientId}_${CANDIDATE_KINDS[index]}.png`}
       alt=""
-      className="h-6 w-6 shrink-0 rounded-full object-cover"
+      className="h-6 w-6 shrink-0 rounded-full border border-[var(--border-warm)] object-cover"
       onError={() => setIndex((i) => i + 1)}
     />
   );

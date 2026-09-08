@@ -61,6 +61,10 @@ function toIngredientViews(
         scope: link.scope,
       })),
       tips: resolved.tips.map((t) => ({ category: t.category, body_ko: t.body_ko })),
+      has_curated_evidence: [
+        resolved.preparationProfile?.evidence_id,
+        resolved.cookingProfile?.evidence_id,
+      ].some((id) => id != null && id !== "E010"),
     }));
 }
 

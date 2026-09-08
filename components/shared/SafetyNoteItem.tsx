@@ -21,7 +21,7 @@ export function safetyNoteStyle(severity: SafetySeverity | undefined): string {
       return "border-amber-400 bg-amber-100 text-amber-900";
     case "MEDIUM":
     case "INFO":
-      return "border-gray-200 bg-gray-50 text-gray-600";
+      return "border-[var(--border-warm)] bg-[var(--bg-page)] text-[var(--ink-600)]";
     default:
       return "border-amber-300 bg-amber-50 text-amber-800";
   }

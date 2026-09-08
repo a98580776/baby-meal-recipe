@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
+import { Search, X } from "lucide-react";
 import type { ApiErrorDetail, RecipeRequestInput, RecipeValidationResponse } from "@/types/api";
 import type { Allergen, FoodForm, Ingredient, Stage } from "@/types/domain";
 import { IngredientSearchOverlay } from "@/components/input/IngredientSearchOverlay";
@@ -206,7 +207,7 @@ export function RecipeInputForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-6 pb-8">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-8 pb-8">
       <section>
         <h2 className="text-base font-semibold">이유식 단계</h2>
         {/* pt-2 reserves room for the ⭐ badge's -top-2 offset: overflow-x-auto
@@ -221,8 +222,8 @@ export function RecipeInputForm({
               onClick={() => setStageId(stage.id)}
               className={`relative shrink-0 rounded-full border px-4 py-2 text-sm ${
                 stageId === stage.id
-                  ? "border-blue-600 bg-blue-600 text-white"
-                  : "border-gray-300 bg-white text-gray-700"
+                  ? "border-[var(--olive-600)] bg-[var(--olive-tint-bg)] text-[var(--olive-tint-text)]"
+                  : "border-[var(--border-warm)] bg-[var(--surface-white)] text-[var(--ink-600)]"
               }`}
             >
               {stage.name_ko}
@@ -235,7 +236,7 @@ export function RecipeInputForm({
           ))}
         </div>
         {selectedStage?.readiness_required && (
-          <label className="mt-3 flex items-center gap-2 text-sm text-gray-700">
+          <label className="mt-3 flex items-center gap-2 text-sm text-[var(--ink-600)]">
             <input
               type="checkbox"
               checked={readiness}
@@ -252,23 +253,25 @@ export function RecipeInputForm({
         <button
           type="button"
           onClick={() => setSearchOpen(true)}
-          className="mb-3 w-full rounded-lg border border-gray-300 bg-white px-3 py-3 text-left text-sm text-gray-400"
+          className="mb-3 flex w-full items-center gap-2 rounded-xl border border-[var(--border-warm)] bg-[var(--surface-white)] px-4 py-3.5 text-left text-sm text-[var(--ink-400)] shadow-sm"
         >
-          🔍 재료를 검색해보세요
+          <Search size={16} />
+          재료를 검색해보세요
         </button>
 
         {selectedIngredients.length > 0 && (
           <div className="mb-3">
-            <p className="mb-1 text-xs font-semibold text-gray-500">선택한 재료</p>
+            <p className="mb-1.5 text-xs font-semibold text-[var(--ink-600)]">선택한 재료</p>
             <div className="flex flex-wrap gap-2">
               {selectedIngredients.map((ing) => (
                 <button
                   key={ing.id}
                   type="button"
                   onClick={() => toggleIngredient(ing.id)}
-                  className="rounded-full border border-blue-600 bg-blue-50 px-3 py-1.5 text-sm text-blue-700"
+                  className="flex items-center gap-1 rounded-full border border-[var(--olive-600)] bg-[var(--olive-tint-bg)] py-1.5 pl-3 pr-2 text-sm text-[var(--olive-tint-text)]"
                 >
-                  {ing.name_ko} ×
+                  {ing.name_ko}
+                  <X size={14} />
                 </button>
               ))}
             </div>
@@ -277,7 +280,7 @@ export function RecipeInputForm({
 
         {recentIngredients.length > 0 && (
           <div>
-            <p className="mb-1 text-xs font-semibold text-gray-500">최근 선택</p>
+            <p className="mb-1 text-xs font-semibold text-[var(--ink-600)]">최근 선택</p>
             <div className="flex gap-2 overflow-x-auto whitespace-nowrap pb-1">
               {recentIngredients.map((ing) => {
                 const selected = selectedIngredientIds.includes(ing.id);
@@ -290,10 +293,10 @@ export function RecipeInputForm({
                     onClick={() => toggleIngredient(ing.id)}
                     className={`shrink-0 rounded-full border px-3 py-1.5 text-sm ${
                       unsupported
-                        ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
+                        ? "cursor-not-allowed border-[var(--border-warm)] bg-[var(--bg-page)] text-[var(--ink-400)]"
                         : selected
-                          ? "border-blue-600 bg-blue-50 text-blue-700"
-                          : "border-gray-300 bg-white text-gray-700"
+                          ? "border-[var(--olive-600)] bg-[var(--olive-tint-bg)] text-[var(--olive-tint-text)]"
+                          : "border-[var(--border-warm)] bg-[var(--surface-white)] text-[var(--ink-600)]"
                     }`}
                   >
                     {ing.name_ko}
@@ -323,8 +326,8 @@ export function RecipeInputForm({
                   onClick={() => setMeatForms((m) => ({ ...m, [ing.id]: opt.value }))}
                   className={`shrink-0 rounded-full border px-4 py-2 text-sm ${
                     meatForms[ing.id] === opt.value
-                      ? "border-blue-600 bg-blue-600 text-white"
-                      : "border-gray-300 bg-white text-gray-700"
+                      ? "border-[var(--olive-600)] bg-[var(--olive-tint-bg)] text-[var(--olive-tint-text)]"
+                      : "border-[var(--border-warm)] bg-[var(--surface-white)] text-[var(--ink-600)]"
                   }`}
                 >
                   {opt.label}
@@ -335,48 +338,63 @@ export function RecipeInputForm({
         ))}
 
       <section>
-        <h2 className="mb-2 text-base font-semibold">이유식 형태</h2>
-        <div className="flex gap-2 overflow-x-auto whitespace-nowrap pb-1">
-          {foodForms.map((form) => (
-            <button
-              key={form.id}
-              type="button"
-              onClick={() => setFoodFormId(form.id)}
-              className={`shrink-0 rounded-full border px-4 py-2 text-sm ${
-                foodFormId === form.id
-                  ? "border-blue-600 bg-blue-600 text-white"
-                  : "border-gray-300 bg-white text-gray-700"
-              }`}
-            >
-              {form.name_ko}
-            </button>
-          ))}
+        <h2 className="mb-3 text-base font-semibold">이유식 형태</h2>
+        <div className="flex flex-col gap-3">
+          {foodForms.map((form) => {
+            const selected = foodFormId === form.id;
+            return (
+              <button
+                key={form.id}
+                type="button"
+                onClick={() => setFoodFormId(form.id)}
+                className={`flex items-center justify-between gap-3 rounded-2xl border px-5 py-4 text-left shadow-sm ${
+                  selected
+                    ? "border-[var(--olive-600)] bg-[var(--olive-tint-bg)]"
+                    : "border-[var(--border-warm)] bg-[var(--surface-white)]"
+                }`}
+              >
+                <span>
+                  <span className="block text-sm font-semibold text-[var(--ink-900)]">{form.name_ko}</span>
+                  {form.description && (
+                    <span className="mt-1 block text-xs leading-relaxed text-[var(--ink-600)]">{form.description}</span>
+                  )}
+                </span>
+                <span
+                  className={`h-5 w-5 shrink-0 rounded-full border-2 ${
+                    selected ? "border-[var(--olive-600)] bg-[var(--olive-600)]" : "border-[var(--border-warm)]"
+                  }`}
+                />
+              </button>
+            );
+          })}
         </div>
       </section>
 
       <section>
-        <h2 className="mb-2 text-base font-semibold">후첨 재료 추가 (선택)</h2>
+        <h2 className="mb-3 text-base font-semibold">후첨 재료 추가 (선택)</h2>
 
         <button
           type="button"
           onClick={() => setToppingSearchOpen(true)}
-          className="mb-3 w-full rounded-lg border border-gray-300 bg-white px-3 py-3 text-left text-sm text-gray-400"
+          className="mb-3 flex w-full items-center gap-2 rounded-xl border border-[var(--border-warm)] bg-[var(--surface-white)] px-4 py-3.5 text-left text-sm text-[var(--ink-400)] shadow-sm"
         >
-          🔍 후첨 재료를 검색해보세요
+          <Search size={16} />
+          후첨 재료를 검색해보세요
         </button>
 
         {toppingIngredients.length > 0 && (
           <div>
-            <p className="mb-1 text-xs font-semibold text-gray-500">선택한 후첨 재료</p>
+            <p className="mb-1.5 text-xs font-semibold text-[var(--ink-600)]">선택한 후첨 재료</p>
             <div className="flex flex-wrap gap-2">
               {toppingIngredients.map((ing) => (
                 <button
                   key={ing.id}
                   type="button"
                   onClick={() => toggleTopping(ing.id)}
-                  className="rounded-full border border-blue-600 bg-blue-50 px-3 py-1.5 text-sm text-blue-700"
+                  className="flex items-center gap-1 rounded-full border border-[var(--olive-600)] bg-[var(--olive-tint-bg)] py-1.5 pl-3 pr-2 text-sm text-[var(--olive-tint-text)]"
                 >
-                  {ing.name_ko} ×
+                  {ing.name_ko}
+                  <X size={14} />
                 </button>
               ))}
             </div>
@@ -401,12 +419,12 @@ export function RecipeInputForm({
             })}
           </div>
         ) : (
-          <p className="mb-2 text-sm text-gray-500">등록된 알레르기가 없습니다.</p>
+          <p className="mb-2 text-sm text-[var(--ink-600)]">등록된 알레르기가 없습니다.</p>
         )}
         <button
           type="button"
           onClick={() => router.push("/?edit=1")}
-          className="text-sm font-medium text-blue-600 underline"
+          className="text-sm font-medium text-[var(--olive-600)] underline"
         >
           알레르기 정보 수정
         </button>
@@ -415,9 +433,9 @@ export function RecipeInputForm({
       <button
         type="submit"
         disabled={submitting}
-        className="w-full rounded-xl bg-blue-600 py-4 text-base font-semibold text-white disabled:opacity-50"
+        className="w-full rounded-2xl bg-[var(--olive-600)] py-4 text-base font-semibold text-white shadow-sm disabled:opacity-50"
       >
-        {submitting ? "🥕 재료를 확인하고 있어요" : "🍚 레시피 만들기"}
+        {submitting ? "재료를 확인하고 있어요" : "레시피 만들기"}
       </button>
 
       {formError && <p className="text-sm text-red-600">{formError}</p>}

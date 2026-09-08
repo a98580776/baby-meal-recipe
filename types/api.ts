@@ -141,6 +141,15 @@ export interface RecipeIngredientView {
   // here, see types/domain.ts IngredientTip. [] when no tips are registered
   // for this ingredient (never fabricated client-side).
   tips: { category: string; body_ko: string }[];
+  // true when preparation_profiles.evidence_id or cooking_profiles.evidence_id
+  // points at an ingredient-specific investigated source rather than only the
+  // generic evidence row ('E010'). Drives the "영양사 검증" badge — never a
+  // stand-in for verification_status, which tracks a different confidence
+  // axis (data completeness, not evidence specificity). Optional so existing
+  // test fixtures/clients built before this field are unaffected —
+  // buildRecipeResponse.ts always sets it (never omits it), same convention
+  // as shape/particle_size above.
+  has_curated_evidence?: boolean;
 }
 
 export interface RecipeStorageView {

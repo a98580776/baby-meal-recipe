@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 import type { ApiErrorResponse, RecipeResponse } from "@/types/api";
 import { parseInputFromParams } from "@/lib/recipe/parseRequestParams";
 import { buildCookingSteps, type CookingStep } from "@/lib/recipe/buildCookingSteps";
@@ -14,14 +15,14 @@ import { IngredientTipList } from "@/components/shared/IngredientTipList";
 function StepInfoTable({ rows }: { rows: StepInfoRow[] }) {
   if (rows.length === 0) return null;
   return (
-    <div className="w-full rounded-lg border border-gray-200 text-sm">
+    <div className="w-full rounded-2xl border border-[var(--border-warm)] bg-[var(--surface-white)] text-sm shadow-sm">
       {rows.map((row, i) => (
         <div
           key={stepInfoRowKey(row, i)}
-          className={`flex items-center justify-between px-3 py-2 ${i > 0 ? "border-t border-gray-100" : ""}`}
+          className={`flex items-center justify-between px-3 py-2 ${i > 0 ? "border-t border-[var(--border-warm)]" : ""}`}
         >
-          <span className="text-gray-500">{row.label}</span>
-          <span className="text-right font-medium text-gray-800">{row.value}</span>
+          <span className="text-[var(--ink-600)]">{row.label}</span>
+          <span className="text-right font-medium text-[var(--ink-900)]">{row.value}</span>
         </div>
       ))}
     </div>
@@ -35,7 +36,7 @@ function StepInfoTable({ rows }: { rows: StepInfoRow[] }) {
  */
 function CookingPhotoPlaceholder() {
   return (
-    <div className="flex aspect-video w-full shrink-0 flex-col items-center justify-center gap-1 rounded-lg bg-gray-100 text-gray-400">
+    <div className="flex aspect-video w-full shrink-0 flex-col items-center justify-center gap-1 rounded-2xl bg-[var(--accent-photo-bg)] text-[var(--ink-600)]">
       <span className="text-2xl" aria-hidden="true">
         📷
       </span>
@@ -83,7 +84,7 @@ function CookingPhoto({
       key={candidates[candidateIndex]}
       src={candidates[candidateIndex]}
       alt=""
-      className="aspect-video w-full shrink-0 rounded-lg object-cover bg-gray-100"
+      className="aspect-video w-full shrink-0 rounded-2xl object-cover bg-[var(--accent-photo-bg)]"
       onError={() => setCandidateIndex((i) => i + 1)}
     />
   );
@@ -136,14 +137,14 @@ function StepTimer({
 
   return (
     <div className="flex flex-col items-center gap-2">
-      {timeGuidance && <p className="text-xs text-gray-500">{timeGuidance}</p>}
-      <p className="text-2xl font-mono font-semibold text-gray-700">⏱ {formatElapsed(elapsedMs)}</p>
+      {timeGuidance && <p className="text-xs text-white/60">{timeGuidance}</p>}
+      <p className="text-2xl font-mono font-semibold text-white">⏱ {formatElapsed(elapsedMs)}</p>
       <div className="flex gap-2">
         <button
           type="button"
           onClick={() => setRunning(true)}
           disabled={running}
-          className="rounded-lg border border-blue-600 px-4 py-2 text-sm font-semibold text-blue-600 disabled:opacity-40"
+          className="rounded-xl border border-white px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
         >
           ▶ 시작
         </button>
@@ -151,7 +152,7 @@ function StepTimer({
           type="button"
           onClick={() => setRunning(false)}
           disabled={!running}
-          className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-600 disabled:opacity-40"
+          className="rounded-xl border border-white/40 px-4 py-2 text-sm font-semibold text-white/70 disabled:opacity-40"
         >
           ■ 중지
         </button>
@@ -219,7 +220,7 @@ export function CookingModeView() {
         <p className="mb-4 text-sm text-red-600">
           조리할 레시피 정보가 올바르지 않습니다. 처음부터 다시 선택해주세요.
         </p>
-        <Link href="/" className="text-sm font-medium text-blue-600 underline">
+        <Link href="/" className="text-sm font-medium text-[var(--olive-600)] underline">
           처음으로 돌아가기
         </Link>
       </div>
@@ -227,14 +228,14 @@ export function CookingModeView() {
   }
 
   if (state.status === "loading") {
-    return <p className="p-4 text-sm text-gray-500">레시피를 확인하는 중입니다...</p>;
+    return <p className="p-4 text-sm text-[var(--ink-600)]">레시피를 확인하는 중입니다...</p>;
   }
 
   if (state.status === "error") {
     return (
       <div className="p-4">
         <p className="mb-4 text-sm text-red-600">{state.message}</p>
-        <Link href="/" className="text-sm font-medium text-blue-600 underline">
+        <Link href="/" className="text-sm font-medium text-[var(--olive-600)] underline">
           처음으로 돌아가기
         </Link>
       </div>
@@ -246,8 +247,8 @@ export function CookingModeView() {
   if (steps.length === 0) {
     return (
       <div className="p-4">
-        <p className="mb-4 text-sm text-gray-600">표시할 조리 단계가 아직 등록되지 않았습니다.</p>
-        <Link href="/" className="text-sm font-medium text-blue-600 underline">
+        <p className="mb-4 text-sm text-[var(--ink-600)]">표시할 조리 단계가 아직 등록되지 않았습니다.</p>
+        <Link href="/" className="text-sm font-medium text-[var(--olive-600)] underline">
           처음으로 돌아가기
         </Link>
       </div>
@@ -259,12 +260,12 @@ export function CookingModeView() {
   if (done) {
     const ingredientNames = [...new Set(steps.map((s) => s.ingredientName))];
     return (
-      <div className="flex min-h-dvh flex-col items-center justify-center px-6 text-center">
-        <p className="mb-2 text-2xl font-bold">오늘의 이유식 완성!</p>
-        <p className="mb-6 text-sm text-gray-600">{ingredientNames.join(", ")} 조리를 모두 마쳤습니다.</p>
+      <div className="flex min-h-dvh flex-col items-center justify-center bg-[var(--ink-900)] px-6 text-center">
+        <p className="mb-2 text-2xl font-bold text-white">오늘의 이유식 완성!</p>
+        <p className="mb-6 text-sm text-white/70">{ingredientNames.join(", ")} 조리를 모두 마쳤습니다.</p>
         <Link
           href="/"
-          className="rounded-lg bg-blue-600 px-6 py-3 text-base font-semibold text-white"
+          className="rounded-2xl bg-white px-6 py-3 text-base font-semibold text-[var(--ink-900)] shadow-sm"
         >
           처음으로
         </Link>
@@ -278,11 +279,27 @@ export function CookingModeView() {
   const isLastStepForIngredient =
     stepIndex === steps.length - 1 || steps[stepIndex + 1].ingredientId !== step.ingredientId;
 
+  const recipeTitle = [...new Set(steps.map((s) => s.ingredientName))].join(" ");
+
   return (
-    <div className="flex min-h-dvh flex-col px-6 py-8">
-      <p className="mb-4 shrink-0 text-sm font-medium text-gray-500">
-        STEP {stepIndex + 1} / {steps.length}
-      </p>
+    <div className="flex min-h-dvh flex-col bg-[var(--ink-900)] px-6 py-8 text-white">
+      <div className="mb-4 flex shrink-0 items-center gap-3">
+        <Link href="/" aria-label="처음으로 돌아가기" className="flex h-8 w-8 items-center justify-center rounded-full text-white/80">
+          <ArrowLeft size={20} />
+        </Link>
+        <p className="flex-1 truncate text-sm font-semibold">{recipeTitle}</p>
+        <p className="shrink-0 text-sm font-medium text-white/60">
+          {stepIndex + 1} / {steps.length}
+        </p>
+      </div>
+      <div className="mb-6 flex shrink-0 gap-1.5">
+        {steps.map((s, i) => (
+          <div
+            key={s.id}
+            className={`h-1.5 flex-1 rounded-full ${i <= stepIndex ? "bg-[var(--olive-600)]" : "bg-white/20"}`}
+          />
+        ))}
+      </div>
       {step.safetyWarnings.length > 0 && (
         // C1 (docs/phase11-ux-product-review.md): 이 재료가 처음 등장하는
         // STEP에서만 채워지므로(lib/recipe/buildCookingSteps.ts) 같은
@@ -297,7 +314,7 @@ export function CookingModeView() {
         </ul>
       )}
       <div className="flex flex-1 flex-col items-center justify-center gap-4 overflow-y-auto py-2 text-center">
-        <p className="text-xs font-semibold text-gray-400">{step.ingredientName}</p>
+        <p className="text-xs font-semibold text-white/50">{step.ingredientName}</p>
         <CookingPhoto
           key={step.id}
           ingredientId={step.ingredientId}
@@ -306,7 +323,7 @@ export function CookingModeView() {
           actionLabel={step.actionLabel}
           hasSafetyWarning={step.safetyWarnings.length > 0}
         />
-        <p className="text-xl font-semibold leading-relaxed">{step.instruction}</p>
+        <p className="text-xl font-semibold leading-relaxed text-white">{step.instruction}</p>
         <StepInfoTable rows={infoRows} />
         {step.tips.length > 0 && (
           // Deliberately below StepInfoTable, inside the scrollable content
@@ -324,14 +341,14 @@ export function CookingModeView() {
           type="button"
           onClick={() => setStepIndex((i) => Math.max(0, i - 1))}
           disabled={stepIndex === 0}
-          className="flex-1 rounded-lg border border-gray-300 py-4 text-base font-semibold text-gray-700 disabled:opacity-40"
+          className="flex-1 rounded-2xl border border-white/30 py-4 text-base font-semibold text-white disabled:opacity-40"
         >
           이전
         </button>
         <button
           type="button"
           onClick={() => setStepIndex((i) => i + 1)}
-          className="flex-1 rounded-lg bg-blue-600 py-4 text-base font-semibold text-white"
+          className="flex-1 rounded-2xl bg-white py-4 text-base font-semibold text-[var(--ink-900)] shadow-sm"
         >
           {step.actionLabel}
         </button>
