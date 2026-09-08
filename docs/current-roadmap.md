@@ -1,4 +1,4 @@
-# Current Roadmap (2026-09-04, 2026-09-08 amendment 반영, 3건)
+# Current Roadmap (2026-09-04, 2026-09-08 amendment 반영, 4건)
 
 > **2026-09-06 amendment**: 아래 §1~§5 본문은 2026-09-04 작성 당시 그대로 보존한다(append-only
 > 원칙). 이후 실제 코드/DB/git 상태 재확인으로 드러난 차이는 이 amendment 블록에만 기록한다.
@@ -289,6 +289,50 @@ CHOKING_HARD_RAW 연결(→ 5개는 이미 개별 evidence로 연결 완료, §1
 > - 이 amendment로 위 "현재 프로젝트 수준(2026-09-08 기준) 요약" 목록의 **2번 항목(production
 >   seed 50개뿐, migration 미실행)은 stale** — 원 문장은 append-only 원칙에 따라 고치지 않고
 >   여기 정정만 기록한다: **실제로는 70개, migration 0056 실행 완료.**
+
+> **2026-09-08 amendment (4번째)**: migration `0057_dietitian_verified.sql` 원격 DB 적용
+> 완료(`ingredients.dietitian_verified_at` 컬럼, 8개 재료 — 당근/단호박/감자/고구마/사과/
+> 소고기/닭고기/연어 — 에 가족 영양사 실제 spot-check 완료 반영, 2026-09-08). 코드 배선
+> commit `7cb8cf0`.
+>
+> - 배지 3단 우선순위 확정: `dietitian_verified_at` 있음 → "영양사 검증"(진짜 8개만) /
+>   `has_curated_evidence`(E010 아닌 근거)만 있음 → "출처 확인" / 둘 다 없음 → 기존
+>   verification_status 기반 fallback("확인 중"/"추정 정보") 유지.
+> - 이전까지 "영양사 검증"이 `has_curated_evidence`(단순 근거 존재 여부)로 오배선돼 있던 것을
+>   바로잡음 — 실제 사람 검증과 무관한 데이터에 "검증"이라는 문구를 쓰던 정직성 문제 해소.
+> - 위 "현재 프로젝트 수준 요약" 3번 항목(`VERIFIED` 0개, spot-check 미시작)은 이 amendment로
+>   부분 해소: `has_curated_evidence` 대상 8개 전원 spot-check 완료. 확장 배치(70개 중 원래
+>   50개 외 20개)는 아직 근거 매핑 재계산 전 — 후속 라운드에서 추가 spot-check 대상 파악 필요.
+>
+> **새로 발견한 안전 갭 (`abalone` 전복) — 다음 우선순위로 처리 필요**: migration 0056으로
+> 이미 프로덕션에 노출된 `abalone`이 `preparation_profile_id = null`(손질 안내 없음),
+> `ingredient_role_status = 'REVIEW'`(Batch I 4종 중 유일하게 미완료), 그리고 다른 조개류
+> (mussel엔 `MUSSEL_TEXTURE_CHOKING` 연결)와 달리 **질식 관련 safety_rule 연결이 전혀 없음**
+> (현재 `SHELLFISH_ALLERGEN`, `FISH_SHELLFISH_TEMP_MFDS`만 연결) 상태로 확인됨.
+> `lib/rules/ingredientRole.ts`의 기존 설계 원칙(`ingredient_role_status`는 MVP에서 노출
+> 게이트가 아님, product-rules.md §6/§12)에 따라 REVIEW 상태여도 CONFIRMED와 동일하게 사용자
+> 검색/추천에 그대로 노출됨 — 즉 **지금 이 순간 사용자가 전복 레시피를 손질 안내 없이,
+> 질식 위험 규칙 없이 생성할 수 있는 상태**. 이미지도 없음(20개 신규 재료 전체 공통, §아래
+> 참고). 다음 세션 최우선 작업으로 처리: (a) 즉시 조치로 abalone만 `isBaseSelectable`/추천
+> 후보에서 임시 제외할지, 아니면 (b) Batch I 마지막 재료 evidence audit을 바로 마무리해
+> prep/choking rule을 채울지 결정 필요 — 안전 우선 원칙상 조사 완료 전까지는 (a) 임시 제외를
+> 권장.
+>
+> **신규 20개 재료 이미지 전체 미존재**: `public/images/ingredients/`에 peanut/wheat/lentil/
+> chickpea/wakame/bell_pepper/kohlrabi/yogurt/milk/halibut/flounder/burdock/lotus_root/
+> persimmon/plum/quinoa/octopus/squid/mussel/abalone 20개 전부 디렉터리 없음. UI는 안전하게
+> degrade(깨진 이미지 아이콘 대신 빈 패널/썸네일 미표시)하므로 **크래시나 안전 문제는
+> 아니지만 런칭 전 채워야 할 콘텐츠 갭**.
+>
+> **런칭 체크리스트 갱신 (2026-09-08 기준, 우선순위순)**:
+> 1. **[안전, 최우선]** abalone 임시 제외 또는 Batch I 완료 (위 참고)
+> 2. **[콘텐츠, 런칭 전]** 신규 20개 재료 이미지 4종(raw/texture/doneness/safety) 생성
+> 3. **[신뢰도, 런칭 전]** 신규 20개 재료의 `has_curated_evidence`/영양사 검증 대상 재계산 +
+>    필요시 추가 spot-check
+> 4. **[절차, 런칭 시점]** production URL(Vercel)이 최신 상태 반영하는지 실제 재배포·확인
+> 5. **[백로그, 런칭 후 가능]** 재료-월령 적합성 필터(`DATA_MODEL_GAP`) — 안전 영향 낮음
+> 6. **[백로그, 런칭 후 가능]** 향신채소(파/마늘/생강) 조미료 정책, 콩나물 HOLD 재검토
+> 7. **[백로그]** tofu completion_check 공백, CONTINUE_COOKING slow-cooker 경고 문구
 
 ---
 
