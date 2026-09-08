@@ -28,18 +28,35 @@ const SCOPE_BADGE_STYLE: Record<"KR_MFDS_19" | "BROADER_ALLERGEN_CONTEXT", strin
   BROADER_ALLERGEN_CONTEXT: "bg-[var(--bg-page)] text-[var(--ink-600)]",
 };
 
-// "영양사 검증" is driven by has_curated_evidence (Part A: preparation/cooking
-// evidence_id points at an ingredient-specific investigated source, not just
-// the generic E010 row) — a different axis from verification_status, which
-// tracks data completeness, not evidence specificity. The two badges are
-// mutually exclusive: curated evidence always wins the display slot since
-// it's the stronger, more specific claim.
-function VerificationBadge({ status, hasCuratedEvidence }: { status: string; hasCuratedEvidence?: boolean }) {
-  if (hasCuratedEvidence) {
+// migration 0057: "영양사 검증" is now reserved for ingredients a family
+// dietitian actually reviewed (dietitian_verified). has_curated_evidence
+// (preparation/cooking evidence_id points at an ingredient-specific
+// investigated source, not just the generic E010 row) only earns the weaker
+// "출처 확인" label — a different axis from verification_status, which
+// tracks data completeness, not evidence specificity or review status.
+// Priority: dietitian_verified > has_curated_evidence > status-text fallback.
+function VerificationBadge({
+  status,
+  hasCuratedEvidence,
+  dietitianVerified,
+}: {
+  status: string;
+  hasCuratedEvidence?: boolean;
+  dietitianVerified?: boolean;
+}) {
+  if (dietitianVerified) {
     return (
       <span className="ml-1 inline-flex items-center gap-1 rounded-full bg-[var(--olive-tint-bg)] px-2 py-0.5 text-[10px] font-semibold text-[var(--olive-tint-text)]">
         <Check size={10} strokeWidth={3} />
         영양사 검증
+      </span>
+    );
+  }
+  if (hasCuratedEvidence) {
+    return (
+      <span className="ml-1 inline-flex items-center gap-1 rounded-full bg-[var(--bg-page)] px-2 py-0.5 text-[10px] font-semibold text-[var(--ink-600)]">
+        <Check size={10} strokeWidth={3} />
+        출처 확인
       </span>
     );
   }
@@ -182,7 +199,8 @@ export function RecipeView() {
   const cookingModeHref = `/cooking?${searchParams.toString()}`;
   const recipeName = `${recipe.ingredients.map((ing) => ing.name_ko).join(" ")} ${foodForm?.name_ko ?? ""}`.trim();
   const heroIngredientId = recipe.ingredients[0]?.id ?? null;
-  const heroVerified = recipe.ingredients[0]?.has_curated_evidence === true;
+  const heroDietitianVerified = recipe.ingredients[0]?.dietitian_verified === true;
+  const heroCuratedEvidence = recipe.ingredients[0]?.has_curated_evidence === true;
   const cookingStepCount = buildCookingSteps(recipe).length;
   const summaryChips = [
     stage?.name_ko ? { label: "단계", value: stage.name_ko } : null,
@@ -205,10 +223,10 @@ export function RecipeView() {
         >
           <ArrowLeft size={20} />
         </Link>
-        {heroVerified && (
+        {(heroDietitianVerified || heroCuratedEvidence) && (
           <span className="absolute bottom-4 left-4 inline-flex items-center gap-1 rounded-full bg-[var(--surface-white)] px-3 py-1.5 text-xs font-semibold text-[var(--olive-tint-text)] shadow-md">
             <Check size={12} strokeWidth={3} />
-            영양사 검증
+            {heroDietitianVerified ? "영양사 검증" : "출처 확인"}
           </span>
         )}
       </div>
@@ -237,7 +255,7 @@ export function RecipeView() {
               >
                 <IngredientThumbnail ingredientId={ing.id} />
                 {ing.name_ko}
-                <VerificationBadge status={ing.verification_status} hasCuratedEvidence={ing.has_curated_evidence} />
+                <VerificationBadge status={ing.verification_status} hasCuratedEvidence={ing.has_curated_evidence} dietitianVerified={ing.dietitian_verified} />
               </li>
             ))}
           </ul>
@@ -263,7 +281,7 @@ export function RecipeView() {
                   <p className="mb-1 flex items-center gap-1.5 text-sm font-semibold">
                     <IngredientThumbnail ingredientId={ing.id} />
                     {ing.name_ko}
-                    <VerificationBadge status={ing.verification_status} hasCuratedEvidence={ing.has_curated_evidence} />
+                    <VerificationBadge status={ing.verification_status} hasCuratedEvidence={ing.has_curated_evidence} dietitianVerified={ing.dietitian_verified} />
                   </p>
                   {prepItems.length > 0 && (
                     <ul className="list-disc pl-5 text-sm text-[var(--ink-900)]">

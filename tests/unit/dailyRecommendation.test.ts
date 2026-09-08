@@ -18,6 +18,7 @@ function makeIngredient(overrides: Partial<Ingredient> & { id: string }): Ingred
     preparation_profile_id: null,
     cooking_profile_id: null,
     texture_profile_id: null,
+    dietitian_verified_at: null,
     created_at: "2026-01-01T00:00:00Z",
     updated_at: "2026-01-01T00:00:00Z",
     ...overrides,

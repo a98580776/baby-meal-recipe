@@ -234,6 +234,7 @@ function RecommendationCard({
 
   const { ingredient, foodForm, recipe } = state;
   const stepCount = buildCookingSteps(recipe).length;
+  const dietitianVerified = recipe.ingredients[0]?.dietitian_verified === true;
   const hasCuratedEvidence = recipe.ingredients[0]?.has_curated_evidence === true;
   const params = new URLSearchParams({
     stage_id: recipe.stage_id,
@@ -253,11 +254,18 @@ function RecommendationCard({
           <p className="text-sm font-semibold text-[var(--ink-900)]">
             {ingredient.name_ko} {foodForm.name_ko}
           </p>
-          {hasCuratedEvidence && (
+          {dietitianVerified ? (
             <span className="inline-flex items-center gap-0.5 rounded-full bg-[var(--olive-tint-bg)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--olive-tint-text)]">
               <Check size={9} strokeWidth={3} />
               영양사 검증
             </span>
+          ) : (
+            hasCuratedEvidence && (
+              <span className="inline-flex items-center gap-0.5 rounded-full bg-[var(--bg-page)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--ink-600)]">
+                <Check size={9} strokeWidth={3} />
+                출처 확인
+              </span>
+            )
           )}
         </div>
         <p className="text-xs text-[var(--ink-600)]">

@@ -321,6 +321,35 @@ describe("buildRecipeResponse", () => {
     });
   });
 
+  describe("dietitian_verified (migration 0057 — 가족 영양사 실검토 판정)", () => {
+    it("true — ingredients.dietitian_verified_at이 채워진 재료(has_curated_evidence도 true인 carrot)", () => {
+      const verifiedCarrot = {
+        ...ingredients.carrot,
+        ingredient: { ...ingredients.carrot.ingredient, dietitian_verified_at: "2026-09-08" },
+      };
+      const verifiedData = { ...data, ingredients: new Map([["carrot", verifiedCarrot]]) };
+      const recipe = buildRecipeResponse({ ...input, ingredient_ids: ["carrot"] }, verifiedData, storageRule, null, []);
+      const carrot = recipe.ingredients.find((i) => i.id === "carrot");
+      expect(carrot?.dietitian_verified).toBe(true);
+      expect(carrot?.has_curated_evidence).toBe(true);
+    });
+
+    it("false — has_curated_evidence는 true이지만 dietitian_verified_at은 아직 null인 재료(carrot 기본 fixture)", () => {
+      const recipe = buildRecipeResponse({ ...input, ingredient_ids: ["carrot"] }, data, storageRule, null, []);
+      const carrot = recipe.ingredients.find((i) => i.id === "carrot");
+      expect(carrot?.dietitian_verified).toBe(false);
+      expect(carrot?.has_curated_evidence).toBe(true);
+    });
+
+    it("false — has_curated_evidence도 dietitian_verified도 둘 다 없는 재료(rice)", () => {
+      const riceData = { ...data, ingredients: new Map([["rice", ingredients.rice]]) };
+      const recipe = buildRecipeResponse({ ...input, ingredient_ids: ["rice"] }, riceData, storageRule, null, []);
+      const rice = recipe.ingredients.find((i) => i.id === "rice");
+      expect(rice?.dietitian_verified).toBe(false);
+      expect(rice?.has_curated_evidence).toBe(false);
+    });
+  });
+
   describe("meat_form 도메인 모델 (docs/meat-form-domain-model-design.md)", () => {
     it("beef + whole_cut: rest_guidance가 whole_cut_rest_seconds(180초→3분)로 채워진다", () => {
       const recipe = buildRecipeResponse(

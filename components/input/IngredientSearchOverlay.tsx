@@ -88,6 +88,12 @@ export function IngredientSearchOverlay({
                       >
                         {ing.name_ko}
                       </span>
+                      {ing.dietitian_verified_at != null && (
+                        <span className="ml-1.5 inline-flex items-center gap-0.5 rounded-full bg-[var(--olive-tint-bg)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--olive-tint-text)]">
+                          <Check size={9} strokeWidth={3} />
+                          영양사 검증
+                        </span>
+                      )}
                       <span className="ml-2 text-xs text-[var(--ink-400)]">
                         {ing.category} · {text}
                       </span>

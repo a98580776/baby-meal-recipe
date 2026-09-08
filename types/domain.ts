@@ -80,6 +80,11 @@ export interface Ingredient {
   preparation_profile_id: string | null;
   cooking_profile_id: string | null;
   texture_profile_id: string | null;
+  // migration 0057 — set only when a family dietitian has actually reviewed
+  // this ingredient's data (not the same claim as has_curated_evidence on
+  // RecipeIngredientView, which only means an ingredient-specific source was
+  // cited). Null for every ingredient that hasn't had a human spot-check yet.
+  dietitian_verified_at: string | null;
   created_at: string;
   updated_at: string;
 }

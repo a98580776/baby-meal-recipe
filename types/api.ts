@@ -143,13 +143,20 @@ export interface RecipeIngredientView {
   tips: { category: string; body_ko: string }[];
   // true when preparation_profiles.evidence_id or cooking_profiles.evidence_id
   // points at an ingredient-specific investigated source rather than only the
-  // generic evidence row ('E010'). Drives the "영양사 검증" badge — never a
+  // generic evidence row ('E010'). Drives the "출처 확인" badge — never a
   // stand-in for verification_status, which tracks a different confidence
   // axis (data completeness, not evidence specificity). Optional so existing
   // test fixtures/clients built before this field are unaffected —
   // buildRecipeResponse.ts always sets it (never omits it), same convention
   // as shape/particle_size above.
   has_curated_evidence?: boolean;
+  // true when ingredients.dietitian_verified_at (migration 0057) is set — a
+  // family dietitian has actually reviewed this ingredient's data, not just
+  // "an ingredient-specific source exists" (that's has_curated_evidence).
+  // Takes priority over has_curated_evidence in badge display: dietitian_verified
+  // → "영양사 검증", else has_curated_evidence → "출처 확인", else no badge.
+  // Optional/always-set, same convention as has_curated_evidence above.
+  dietitian_verified?: boolean;
 }
 
 export interface RecipeStorageView {

@@ -220,6 +220,9 @@ function resolved(
       preparation_profile_id: prep?.id ?? null,
       cooking_profile_id: cook?.id ?? null,
       texture_profile_id: null,
+      // migration 0057 — stage-agnostic like textureProfile/tips below; tests
+      // that need dietitian_verified_at build their own ResolvedIngredient.
+      dietitian_verified_at: null,
       created_at: "2026-01-01T00:00:00Z",
       updated_at: "2026-01-01T00:00:00Z",
     },

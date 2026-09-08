@@ -65,6 +65,7 @@ function toIngredientViews(
         resolved.preparationProfile?.evidence_id,
         resolved.cookingProfile?.evidence_id,
       ].some((id) => id != null && id !== "E010"),
+      dietitian_verified: resolved.ingredient.dietitian_verified_at != null,
     }));
 }
 

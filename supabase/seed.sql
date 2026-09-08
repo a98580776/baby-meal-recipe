@@ -2030,3 +2030,10 @@ insert into ingredient_safety_rules (ingredient_id, safety_rule_id, evidence_id)
   ('mussel', 'MUSSEL_TEXTURE_CHOKING', null),
   ('abalone', 'SHELLFISH_ALLERGEN', null),
   ('abalone', 'FISH_SHELLFISH_TEMP_MFDS', null);
+
+-- Migration 0057 addition (append-only, mirrors that migration's schema+data
+-- portion) -- 가족 영양사 실검토 반영 8개 재료.
+alter table ingredients add column dietitian_verified_at date;
+
+update ingredients set dietitian_verified_at = '2026-09-08'
+where id in ('carrot', 'kabocha', 'potato', 'sweet_potato', 'beef', 'chicken', 'salmon', 'apple');
