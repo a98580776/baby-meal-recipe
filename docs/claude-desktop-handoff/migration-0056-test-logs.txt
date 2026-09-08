@@ -1,0 +1,135 @@
+migration 0056 실행 후 검증 — npm test / typecheck / lint / test:integration 원문 로그
+재실행 시각: 2026-09-08 (migration 0056 원격 DB 적용 이후, seed.sql append 이후 재실행)
+실행 위치: 로컬 working tree (커밋 전, supabase/seed.sql만 uncommitted 상태)
+
+=======================================================================
+1. npm test (vitest)
+=======================================================================
+
+> recipe-project@0.1.0 test
+> vitest run
+
+
+ RUN  v4.1.11 C:/Users/MJ/OneDrive/Claude업무/.claude/Baby_meal_Project/recipe_Project
+
+
+ Test Files  12 passed (12)
+      Tests  197 passed (197)
+   Start at  22:11:13
+   Duration  12.71s (transform 2.54s, setup 0ms, import 4.93s, tests 1.20s, environment 7ms)
+
+exit=0
+
+=======================================================================
+2. npm run typecheck (tsc --noEmit)
+=======================================================================
+
+> recipe-project@0.1.0 typecheck
+> tsc --noEmit
+
+exit=0
+
+=======================================================================
+3. npm run lint (eslint)
+=======================================================================
+
+> recipe-project@0.1.0 lint
+> eslint
+
+
+C:\Users\MJ\OneDrive\Claude업무\.claude\Baby_meal_Project\recipe_Project\components\cooking\CookingModeView.tsx
+  84:5  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\MJ\OneDrive\Claude업무\.claude\Baby_meal_Project\recipe_Project\components\profile\BabyHome.tsx
+  90:7  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\MJ\OneDrive\Claude업무\.claude\Baby_meal_Project\recipe_Project\components\profile\BabyHome.tsx:90:7
+  88 |   useEffect(() => {
+  89 |     if (!candidateIngredient) {
+> 90 |       setState({ status: "none" });
+     |       ^^^^^^^^ Avoid calling setState() directly within an effect
+  91 |       return;
+  92 |     }
+  93 |     if (confirmedStage?.readiness_required) {  react-hooks/set-state-in-effect
+
+C:\Users\MJ\OneDrive\Claude업무\.claude\Baby_meal_Project\recipe_Project\components\shared\IngredientThumbnail.tsx
+  28:5  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+✖ 3 problems (1 error, 2 warnings)
+
+exit=1
+
+NOTE: 이 error/warning 3건 전부 migration 0056과 무관한 파일(components/cooking/CookingModeView.tsx,
+components/profile/BabyHome.tsx, components/shared/IngredientThumbnail.tsx) -- 전부 이번 세션이
+migration 작업을 시작하기 전부터 working tree에 이미 있던 uncommitted 코드 변경(다른 병렬 세션의
+작업, git status 최초 상태 참고)이며, 이번 migration 0056/seed.sql 작업은 .ts/.tsx 파일을 전혀
+건드리지 않았다(작업 지시 §5 "code(.ts/.tsx) 변경 NONE" 그대로 준수). exit=1은 이 3건 때문이며
+migration 관련 회귀는 아님.
+
+=======================================================================
+4. npm run test:integration (tests/integration/runApiSafetyRegression.mjs)
+=======================================================================
+(스크립트가 자체적으로 로컬 dev server를 띄우고 46개 케이스를 HTTP로 실제 호출 -- 전체 출력이
+길어 마지막 40여 줄만 발췌. 46/46 전부 PASS, exit=0.)
+
+PASS — 25. grape — completion_checks에서 shape 문구('안전한 형태로 제공') 제거 + doneness 유지 확인
+   expected: shape='wedge' + completion_checks='껍질과 과육이 쉽게 눌림' + CHOKING_HARD_RAW 경고 유지
+   actual:   status=200 shape=wedge completion_checks=["껍질과 과육이 쉽게 눌림"] safety_notes=[{"code":"SAFETY_FORM_WARNING","message":"포도는 질식 위험이 있는 재료입니다. 충분히 익혀 잘게 다지거나 으깨어 제공하고, 생으로 또는 딱딱한 통조각 형태로 제공하지 마세요.","rule_id":"CHOKING_HARD_RAW","rule_status":"VERIFIED","severity":"CRITICAL","action":"BLOCK_FORM","ingredient_id":"grape"},{"code":"COOKING_METHOD_INFO_MISSING","message":"포도의 구체적인 조리 방법이 아직 등록되지 않았습니다."}]
+PASS — 26. watermelon — stage_1 shape='grated', stage_3 shape='wedge' (NHS E016 기반 stage 구분)
+   expected: stage_1: grated, stage_3: wedge
+   actual:   stage_1_status=200 stage_1_shape=grated stage_3_status=200 stage_3_shape=wedge
+PASS — 27. cheese — generate API 응답(toppings)에 shape='grated' 노출
+   expected: toppings[0].shape='grated'
+   actual:   status=200 toppings=[{"id":"cheese","name_ko":"치즈","verification_status":"INFERRED","preparation":{"wash_rule":null,"peel_rule":null,"seed_removal_rule":null,"core_tough_part_rule":null,"bone_removal_rule":null,"fishbone_removal_rule":null,"cutting_guidance":"강판에 갈거나 가늘고 짧은 막대 모양으로 잘라서 제공"},"cooking":{"allowed_methods":["microwave"],"completion_checks":["연령에 맞는 제품을 부드럽게 제공"],"completion_check_type":"form","time_guidance":"추천 0~2분 (시작 기준) — 가열 필요 시 녹이기","recommended_time":{"min":0,"max":2,"unit":"분"},"rest_guidance":null},"texture":"부드러운 질감","shape":"grated","particle_size":null,"allergens":[{"code":"MILK","name_ko":"우유","scope":"KR_MFDS_19"}],"tips":[{"category":"prep","body_ko":"치즈는 강판에 갈거나 가늘고 짧은 막대 모양으로 잘라서 제공하세요."},{"category":"general","body_ko":"치즈는 우유 알레르기를 유발할 수 있는 식품이므로 처음에는 소량만 급여하고 반응을 관찰하세요."}],"has_curated_evidence":true}]
+PASS — 28. korean_melon — stage_1 shape='grated', stage_3 shape='wedge' (evidence E016 재사용)
+   expected: stage_1: grated, stage_3: wedge
+   actual:   stage_1_status=200 stage_1_shape=grated stage_3_status=200 stage_3_shape=wedge
+PASS — 29. pear — generate API 응답에 shape='mashed' 노출
+   expected: shape='mashed'
+   actual:   status=200 shape=mashed
+PASS — 30. beef — generate API 응답에 shape='stick' 노출
+   expected: shape='stick'
+   actual:   status=200 shape=stick
+PASS — 31. pork — generate API 응답에 shape='stick' 노출
+   expected: shape='stick'
+   actual:   status=200 shape=stick
+PASS — 32. cod — generate API 응답에 shape='stick' 노출
+   expected: shape='stick'
+   actual:   status=200 shape=stick
+PASS — 33. tuna — generate API 응답에 shape='stick' 노출
+   expected: shape='stick'
+   actual:   status=200 shape=stick
+PASS — 34. zucchini — stage_1 shape='mashed', stage_3 shape='stick'
+   expected: stage_1: mashed, stage_3: stick
+   actual:   stage_1_status=200 stage_1_shape=mashed stage_3_status=200 stage_3_shape=stick
+PASS — 35. radish — stage_1 shape='mashed', stage_3 shape='stick'
+   expected: stage_1: mashed, stage_3: stick
+   actual:   stage_1_status=200 stage_1_shape=mashed stage_3_status=200 stage_3_shape=stick
+PASS — 36. eggplant — stage_1 shape='mashed', stage_3 shape='stick'
+   expected: stage_1: mashed, stage_3: stick
+   actual:   stage_1_status=200 stage_1_shape=mashed stage_3_status=200 stage_3_shape=stick
+PASS — 37. cucumber — generate API 응답에 shape='stick' 노출
+   expected: shape='stick'
+   actual:   status=200 shape=stick
+PASS — 38. cauliflower — generate API 응답에 shape='floret' 노출
+   expected: shape='floret'
+   actual:   status=200 shape=floret
+PASS — 39. perilla — generate API 응답(toppings)에 shape='minced' 노출
+   expected: toppings[0].shape='minced'
+   actual:   status=200 toppings=[{"id":"perilla","name_ko":"들깨","verification_status":"INFERRED","preparation":{"wash_rule":null,"peel_rule":null,"seed_removal_rule":null,"core_tough_part_rule":null,"bone_removal_rule":null,"fishbone_removal_rule":null,"cutting_guidance":"재료의 질긴 부분·씨·껍질 등은 제공 형태와 재료 상태에 따라 확인"},"cooking":{"allowed_methods":["steam"],"completion_checks":["큰 알갱이 없이 곱게 분쇄"],"completion_check_type":"form","time_guidance":"추천 3~5분 (시작 기준) — 가열 후 곱게 갈기/분쇄","recommended_time":{"min":3,"max":5,"unit":"분"},"rest_guidance":null},"texture":"입안에 큰 알갱이가 남지 않는 고운 질감","shape":"minced","particle_size":null,"allergens":[{"code":"PERILLA","name_ko":"들깨(국내 19개 표시대상에는 해당 없음)","scope":"BROADER_ALLERGEN_CONTEXT"}],"tips":[],"has_curated_evidence":false}]
+PASS — 40. green_pea — generate API 응답에 shape='mashed' 노출
+   expected: shape='mashed'
+   actual:   status=200 shape=mashed
+PASS — 41. kidney_bean — generate API 응답에 shape='mashed' 노출
+   expected: shape='mashed'
+   actual:   status=200 shape=mashed
+Stopping dev server started by this script...
+
+46/46 cases passed
+exit=0
