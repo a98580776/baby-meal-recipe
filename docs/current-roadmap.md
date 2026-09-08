@@ -1,4 +1,4 @@
-# Current Roadmap (2026-09-04, 2026-09-06 amendment 반영)
+# Current Roadmap (2026-09-04, 2026-09-08 amendment 반영, 2건)
 
 > **2026-09-06 amendment**: 아래 §1~§5 본문은 2026-09-04 작성 당시 그대로 보존한다(append-only
 > 원칙). 이후 실제 코드/DB/git 상태 재확인으로 드러난 차이는 이 amendment 블록에만 기록한다.
@@ -220,6 +220,55 @@ CHOKING_HARD_RAW 연결(→ 5개는 이미 개별 evidence로 연결 완료, §1
 - 이미지 프롬프트 자체는 이 저장소에 파일로 존재하지 않는다(별도 위치에서 관리되는 것으로
   추정 — 확인 불가, 필요 시 사용자/Desktop 확인 필요).
 - 총 50개 목표 대비 14/50 진행(28%), 36개 재료는 이미지 작업 자체가 아직 시작되지 않았다.
+
+---
+
+> **2026-09-08 amendment (1번째)**: `has_curated_evidence` 배지 로직(Part A)과 폰트/아이콘/여백/
+> Cooking Mode 헤더 비주얼 재작업(Part B)을 완료·커밋했다(`81f09c7`).
+>
+> - **Part A — has_curated_evidence**: `types/api.ts`에 `RecipeIngredientView.has_curated_evidence?: boolean`
+>   추가, `buildRecipeResponse.ts`가 `[preparationProfile?.evidence_id, cookingProfile?.evidence_id]`
+>   중 `E010`(범용 근거) 아닌 값이 하나라도 있으면 true로 계산 — DB/seed 변경 없음, 기존
+>   evidence_id를 읽기만 함. `RecipeView.tsx`의 "✓ 영양사 검증" 배지가 기존
+>   `verification_status === "VERIFIED"` 임시 배선(의미가 다른 필드 오용)에서 이 정식 필드로
+>   교체됨. vitest 신규 3건 포함 185/185 통과. `IngredientSearchOverlay.tsx`(Plan 재료 검색)
+>   쪽 동일 배지는 카탈로그 API 확장이 필요해 스코프 밖으로 남기되, 잘못 배선돼 있던 기존
+>   배지는 제거함.
+> - **Part B — 비주얼 재작업**: `@fontsource/pretendard` 도입, `lucide-react` 아이콘 도입,
+>   카드 rounded-2xl/3xl + shadow-sm, 여백 확대, Cooking Mode 상단 헤더(뒤로가기+재료명+
+>   "N/M" 카운터, 기존 "STEP X/Y" 대체) 신규.
+> - **검수**: Desktop이 스크린샷 4장과 `git show 81f09c7 --stat`을 리포트와 대조, 로직
+>   (`buildRecipeResponse.ts` diff) 직접 확인. 19개 파일 stat 일치, 승인 완료.
+
+> **2026-09-08 amendment (2번째)**: `has_curated_evidence` 배지 + 비주얼 재작업(81f09c7) 이후,
+> "먹어본 재료 기록 + 홈 추천" 기능(commit `8cc8b01`)을 백로그(§16 향후 확장)에서 앞당겨 구현
+> 완료했다. 이 과정에서 다음 구조적 데이터 공백을 발견했다 — 이번엔 수정하지 않고 기록만 한다.
+>
+> - **`DATA_MODEL_GAP` — 재료-월령(단계) 적합성 필터 부재**: `Ingredient`에 stage 연관 필드가
+>   없고 `food_forms`에도 stage 매핑이 없다. 유일한 게이트는 `safety_rules`인데, 이는 "제공
+>   형태"(생 vs 익혀서 으깬 것)를 게이트할 뿐 "이 월령에 처음 도입해도 되는가"는 게이트하지
+>   않는다. 홈 추천 카드뿐 아니라 **`/plan`의 기존 재료 검색도 동일**하게 월령 필터가 없다 —
+>   이번에 새로 생긴 회귀가 아니라 기존 전체 구조의 공백. 상세 조사 근거:
+>   `docs/claude-desktop-handoff/2026-09-08-recommendation-label-fix.md` §1.
+>   - 해결하려면: `Ingredient`에 `min_stage_id` 같은 필드 또는 별도 매핑 테이블 신설(schema
+>     변경, 이번 스코프 밖) + **50개(이후 확장분 포함) 재료 각각의 최소 도입 월령을 Tier 1/2
+>     근거로 채우는 조사** 필요 — 사실상 재료별 재조사 규모라 §12 "50개 재료 무차별 재조사
+>     금지" 원칙과 충돌. 우선순위 결정 전까지 착수하지 않는다.
+>   - 안전 영향은 낮음(위험한 조합 자체는 기존 safety_rules가 차단) — 있는 건 "나이에 이른
+>     재료가 추천/검색에 노출"되는 신뢰도/UX 문제.
+>
+> **현재 프로젝트 수준(2026-09-08 기준) 요약**: 코어 플로우(Home→Plan→Recipe→Cooking Mode)는
+> §4 MVP 정의 기준으로 기능적으로 완성. 다만 다음은 미해결로 남아있어 "배포 준비 완료"로 보기는
+> 이르다.
+> 1. 위 재료-월령 적합성 필터 부재(`DATA_MODEL_GAP`)
+> 2. production seed 50개뿐 — 확장 배치(17~20개 + 조개/두족류 4개)는 evidence matrix draft
+>    단계까지만 진행, migration 미실행
+> 3. `verification_status`가 여전히 `VERIFIED` 0개 — "영양사 검증" 배지는 evidence_id 존재
+>    여부 기준일 뿐, 실제 사람에 의한 spot-check는 아직 시작 전
+> 4. production URL(`https://baby-meal-recipe.vercel.app`)이 최신 local 상태를 반영하는지
+>    미검증 — Vercel-git 연결 이력 문제가 §9에 이미 기록돼 있음, 이후 재확인 안 됨
+> 5. "먹어본 재료 기록"(§16 향후 확장 항목)이 계획보다 먼저 구현됨 — MVP 범위가 문서상 정의보다
+>    실제로는 한 항목 더 넓어진 상태
 
 ---
 
