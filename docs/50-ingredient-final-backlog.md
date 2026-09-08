@@ -699,3 +699,20 @@ seed 변경: NONE
 code 변경: NONE
 test 변경: NONE
 commit: NONE(요청서 지시대로 승인 대기)
+
+---
+
+## 9. 2026-09-08 amendment — 재료 확장 배치1(50→70, migration 0056) 신규 backlog 항목
+
+이 섹션 이전 본문(§1~§8, 최종 보고 포함)은 원 50개 재료 기준 작성 시점 그대로 append-only
+보존한다 — "전체 ingredient: 50" 등 기존 수치는 고치지 않는다(migration 0056으로 70개가 된
+현재 상태는 `docs/current-roadmap.md` 2026-09-08 amendment(3번째)에 기록). 이번 확장 배치
+조사(`ingredient-expansion-evidence-matrix.md`/`-followup.md`)에서 새로 식별된 backlog
+3건만 여기 추가한다. 기존 §1~§8에 "재료 커버리지 확장" 자체를 다루는 항목은 없어 CLOSED
+처리할 대상이 없었다(확인 완료, 없음).
+
+| 항목 | 상태 | 사유 |
+|---|---|---|
+| 콩나물(soybean sprouts) 조리법/질식 안전기준 | **HOLD** | 알레르기(대두) 근거는 확보됐으나, 국내외 정부기관 어디에서도 콩나물 전용 조리법/질식 위험 1차 문서를 찾지 못함(서구권 부재는 1차 조사, 국내 부재는 2차 조사에서 각각 확정) — `ingredient-expansion-evidence-matrix.md` Batch F, `-followup.md` 항목 2. 신규 정부기관 문서가 나오면 재검토 |
+| 두족류/패류 category 세분화(문어/오징어/홍합/전복) | **BACKLOG** | migration 0056에서 4개 재료 전부 `category='fish'`로 임시 분류함 — `lib/rules/storageMapping.ts`의 `PRODUCE_CATEGORIES`/`PROTEIN_CATEGORIES` 화이트리스트에 없는 새 category 문자열을 쓰면 저장 규칙(storage_rules) 매핑이 조용히 깨지기 때문(코드 변경 없이는 불가능한 선택, `migration-batch1-review-packet.md` §1-2). 두족류/패류 전용 category(예: `cephalopod`/`shellfish`) 도입은 `storageMapping.ts` 코드 변경이 필요해 재료 데이터 작업과는 별도 트랙 |
+| 향신채소(파/마늘/생강) 재료 확장 | **BACKLOG** | 완료기 조미료로서의 도입 시기/형태 정책이 아직 없어 이번 재료 확장 배치(50→70) 스코프에서 처음부터 제외했다(작업 지시서 자체가 대상에서 뺌) — 재료 확장과 분리된 별도 정책 논의 트랙 |

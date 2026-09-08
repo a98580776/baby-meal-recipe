@@ -1,4 +1,4 @@
-# Current Roadmap (2026-09-04, 2026-09-08 amendment 반영, 2건)
+# Current Roadmap (2026-09-04, 2026-09-08 amendment 반영, 3건)
 
 > **2026-09-06 amendment**: 아래 §1~§5 본문은 2026-09-04 작성 당시 그대로 보존한다(append-only
 > 원칙). 이후 실제 코드/DB/git 상태 재확인으로 드러난 차이는 이 amendment 블록에만 기록한다.
@@ -269,6 +269,26 @@ CHOKING_HARD_RAW 연결(→ 5개는 이미 개별 evidence로 연결 완료, §1
 >    미검증 — Vercel-git 연결 이력 문제가 §9에 이미 기록돼 있음, 이후 재확인 안 됨
 > 5. "먹어본 재료 기록"(§16 향후 확장 항목)이 계획보다 먼저 구현됨 — MVP 범위가 문서상 정의보다
 >    실제로는 한 항목 더 넓어진 상태
+
+> **2026-09-08 amendment (3번째)**: 재료 확장 배치1 완료 (50 -> 70개). migration
+> `0056_ingredient_expansion_batch1.sql`을 원격 DB에 실제 적용 완료하고 `supabase/seed.sql`도
+> append-only로 mirror했다(commit `9d1f01a`, 이후 다른 세션과의 공유 working tree에서 생긴
+> 혼입 7줄을 `01fb07e`로 즉시 제거— 두 커밋 모두 순수 DML/문서 반영, 재료 데이터 자체는
+> 무수정).
+>
+> - **신규 20개 재료**(전부 `verification_status='NEEDS_REVIEW'`): 땅콩, 밀, 렌틸콩,
+>   병아리콩, 미역, 파프리카, 콜라비, 요거트, 우유(조리용), 광어, 가자미, 우엉, 연근, 감,
+>   자두, 퀴노아, 문어, 오징어, 홍합, 전복.
+> - **의도적 제외 (이번 배치 스코프 아님)**: 콩나물 — 국내외 정부기관의 조리법/질식 안전
+>   기준이 부재함을 1차+2차 조사에서 재확인해 HOLD 확정(`ingredient-expansion-evidence-matrix.md`
+>   / `-followup.md`). 향신채소(파/마늘/생강) — 완료기 조미료 정책이 재료 확장과는 별도로
+>   논의돼야 해 이번 스코프에 포함하지 않음.
+> - **검증 방법**: Claude Desktop이 재현 가능한 검증자료(`migration-0056-seed-diff-preview.txt`
+>   / `-db-verification-queries.md`(raw row-count) / `-test-logs.txt`)를 직접 대조 완료한
+>   뒤 사용자 최종 승인, seed.sql commit까지 진행했다.
+> - 이 amendment로 위 "현재 프로젝트 수준(2026-09-08 기준) 요약" 목록의 **2번 항목(production
+>   seed 50개뿐, migration 미실행)은 stale** — 원 문장은 append-only 원칙에 따라 고치지 않고
+>   여기 정정만 기록한다: **실제로는 70개, migration 0056 실행 완료.**
 
 ---
 
