@@ -21,6 +21,9 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-mono: var(--font-geist-mono);
+  /* 제목류 전용 (font-serif-kr 유틸) — 화면 타이틀/레시피명 등에만 명시적으로
+     적용한다. 본문/버튼/숫자는 body의 기본 Pretendard 그대로 유지. */
+  --font-serif-kr: "Noto Serif KR", serif;
 }
 
 body {

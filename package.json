@@ -15,6 +15,7 @@
     "test:integration": "node tests/integration/runApiSafetyRegression.mjs"
   },
   "dependencies": {
+    "@fontsource/noto-serif-kr": "^5.3.0",
     "@fontsource/pretendard": "^5.3.0",
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.112.3",

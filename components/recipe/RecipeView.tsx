@@ -214,7 +214,7 @@ export function RecipeView() {
       </div>
 
       <div className="px-5 pt-6">
-        <h1 className="mb-4 text-2xl font-bold tracking-tight text-[var(--ink-900)]">{recipeName}</h1>
+        <h1 className="mb-4 font-serif-kr text-2xl font-bold tracking-tight text-[var(--ink-900)]">{recipeName}</h1>
 
         {summaryChips.length > 0 && (
           <div className="mb-7 grid grid-cols-3 gap-2 rounded-2xl border border-[var(--border-warm)] bg-[var(--surface-white)] p-4 text-center shadow-sm">

@@ -4,6 +4,10 @@ import "@fontsource/pretendard/400.css";
 import "@fontsource/pretendard/500.css";
 import "@fontsource/pretendard/600.css";
 import "@fontsource/pretendard/700.css";
+// 제목류 전용 (font-serif-kr Tailwind 유틸, globals.css) — 본문/버튼/숫자는
+// 계속 Pretendard.
+import "@fontsource/noto-serif-kr/500.css";
+import "@fontsource/noto-serif-kr/700.css";
 import "./globals.css";
 
 // font-mono utility (Cooking Mode's timer digits) still needs a monospace

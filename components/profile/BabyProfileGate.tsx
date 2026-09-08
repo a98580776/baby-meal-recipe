@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useSyncExternalStore } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import type { Allergen, Stage } from "@/types/domain";
+import type { Allergen, FoodForm, Ingredient, Stage } from "@/types/domain";
 import { BabyHome } from "@/components/profile/BabyHome";
 import { BabyProfileForm } from "@/components/profile/BabyProfileForm";
 import {
@@ -17,6 +17,8 @@ import { calculateAgeDays, recommendStageId } from "@/lib/profile/stageRecommend
 interface BabyProfileGateProps {
   stages: Stage[];
   allergens: Allergen[];
+  ingredients: Ingredient[];
+  foodForms: FoodForm[];
 }
 
 /**
@@ -36,7 +38,7 @@ interface BabyProfileGateProps {
  * 상태가 폼→BabyHome으로 바뀔 방법이 onComplete 제출뿐이라 값이 새지 않음),
  * onEdit 경로로 들어온 다음 저장에는 영향을 주지 않는다.
  */
-export function BabyProfileGate({ stages, allergens }: BabyProfileGateProps) {
+export function BabyProfileGate({ stages, allergens, ingredients, foodForms }: BabyProfileGateProps) {
   const profile = useSyncExternalStore(
     subscribeBabyProfile,
     getBabyProfileSnapshot,
@@ -78,6 +80,8 @@ export function BabyProfileGate({ stages, allergens }: BabyProfileGateProps) {
           ageDays={ageDays ?? 0}
           stages={stages}
           recommendedStageId={recommendedStageId}
+          ingredients={ingredients}
+          foodForms={foodForms}
           onEdit={() => setEditing(true)}
         />
       )}

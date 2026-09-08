@@ -9,6 +9,7 @@ import { parseInputFromParams } from "@/lib/recipe/parseRequestParams";
 import { buildCookingSteps, type CookingStep } from "@/lib/recipe/buildCookingSteps";
 import { buildStepInfoRows, stepInfoRowKey, type StepInfoRow } from "@/lib/recipe/buildStepInfoRows";
 import { getStepImageCandidates } from "@/lib/recipe/stepImageCandidates";
+import { addTriedIngredients } from "@/lib/profile/triedIngredients";
 import { SafetyNoteItem } from "@/components/shared/SafetyNoteItem";
 import { IngredientTipList } from "@/components/shared/IngredientTipList";
 
@@ -214,6 +215,16 @@ export function CookingModeView() {
     };
   }, [input]);
 
+  // 먹어본 재료 기록 (Home "오늘 만들어볼까요" 추천 카드의 제외 대상) — 완료
+  // 화면(모든 STEP을 지난 시점)에 진입했을 때만 1회 기록한다. addTriedIngredients
+  // 자체가 이미 기록된 id는 건너뛰므로(스토리지 쓰기/notify 생략), 완료 화면이
+  // 계속 렌더링되며 이 effect가 다시 실행돼도 중복 기록되지 않는다.
+  useEffect(() => {
+    if (state.status !== "ready") return;
+    if (stepIndex < state.steps.length) return;
+    addTriedIngredients(state.steps.map((s) => s.ingredientId));
+  }, [state, stepIndex]);
+
   if (!input) {
     return (
       <div className="p-4">
@@ -261,7 +272,7 @@ export function CookingModeView() {
     const ingredientNames = [...new Set(steps.map((s) => s.ingredientName))];
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center bg-[var(--ink-900)] px-6 text-center">
-        <p className="mb-2 text-2xl font-bold text-white">오늘의 이유식 완성!</p>
+        <p className="mb-2 font-serif-kr text-2xl font-bold text-white">오늘의 이유식 완성!</p>
         <p className="mb-6 text-sm text-white/70">{ingredientNames.join(", ")} 조리를 모두 마쳤습니다.</p>
         <Link
           href="/"
@@ -287,7 +298,7 @@ export function CookingModeView() {
         <Link href="/" aria-label="처음으로 돌아가기" className="flex h-8 w-8 items-center justify-center rounded-full text-white/80">
           <ArrowLeft size={20} />
         </Link>
-        <p className="flex-1 truncate text-sm font-semibold">{recipeTitle}</p>
+        <p className="flex-1 truncate font-serif-kr text-sm font-semibold">{recipeTitle}</p>
         <p className="shrink-0 text-sm font-medium text-white/60">
           {stepIndex + 1} / {steps.length}
         </p>
