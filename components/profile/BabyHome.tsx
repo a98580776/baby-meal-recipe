@@ -345,6 +345,13 @@ export function BabyHome({
                 >
                   아기 정보 수정
                 </button>
+                <Link
+                  href="/privacy"
+                  onClick={() => setMenuOpen(false)}
+                  className="block w-full px-4 py-2 text-left text-sm text-[var(--ink-600)] hover:bg-[var(--bg-page)]"
+                >
+                  개인정보처리방침
+                </Link>
               </div>
             )}
           </div>
