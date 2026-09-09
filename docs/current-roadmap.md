@@ -1,4 +1,4 @@
-# Current Roadmap (2026-09-04, 2026-09-08 amendment 반영, 4건)
+# Current Roadmap (2026-09-04, 2026-09-08 amendment 반영, 5건 + §21 구글플레이 트랙 신설)
 
 > **2026-09-06 amendment**: 아래 §1~§5 본문은 2026-09-04 작성 당시 그대로 보존한다(append-only
 > 원칙). 이후 실제 코드/DB/git 상태 재확인으로 드러난 차이는 이 amendment 블록에만 기록한다.
@@ -371,3 +371,77 @@ CHOKING_HARD_RAW 연결(→ 5개는 이미 개별 evidence로 연결 완료, §1
 >
 > **런칭 체크리스트 갱신**: 위 §의 "2. [콘텐츠, 런칭 전] 신규 20개 재료 이미지 생성"
 > 항목 완료로 표시. 다음 최우선은 여전히 "1. [안전, 최우선] abalone 임시 제외 또는 Batch I 완료".
+
+> **2026-09-09 amendment (6번째)**: 런칭 체크리스트(안전 데이터 기준) 전 항목 완료.
+>
+> - **NEEDS_REVIEW 재료 29개 전원 영양사 실검토 완료**: migration 0057(Tier1, 8개:
+>   apple/beef/carrot/chicken/kabocha/potato/salmon/sweet_potato) → 0059(개별근거 보강,
+>   pork/tomato/peach) → 0060(새우 개별근거, E087/SHRIMP_CYLINDRICAL_CHOKING) →
+>   0061(Tier2, 11개: egg/milk/tofu/wheat/peanut/shrimp/squid/mussel/abalone/cheese/yogurt)
+>   → 0062(Tier3, 13개: bell_pepper/burdock/chickpea/flounder/halibut/kohlrabi/lentil/
+>   lotus_root/octopus/persimmon/plum/quinoa/wakame) 순서로 진행, 최종 8+11+13=32건
+>   spot-check(원 NEEDS_REVIEW 29종 전원 + 개별근거 보강 2종 pork/peach 겹침 조정).
+> - **abalone(전복) Batch I 완료**: migration 0058, 종 특정 Tier1 근거 부재 확인 후
+>   FSA/USDA 일반원칙 mechanism-derived로 정책 처리(E085), 새우도 동일 원리(문어
+>   원통형 단면 기전 재사용, E087)로 완료.
+> - **배지-문구 모순 버그 발견 및 수정**: `dietitian_verified_at` 존재 + `verification_status
+>   ='NEEDS_REVIEW'` 조합에서 "영양사 검증" 배지와 "검증이 진행 중입니다" 경고가 동시
+>   노출되어 모순으로 읽히는 문제 발견(tofu에서 최초 발견, 8종 동일 영향 확인) →
+>   `validateRecipeInput.ts`에 문구 분기 추가(dietitian_verified_at 있으면 "영양사가
+>   근거 자료를 확인했으나, 일부 조리 세부사항은 계속 보완 중입니다"로 대체). 처리 중
+>   조사 발견 은/는 조사 오류("당근는")도 `withEunNeun()` 재사용으로 함께 수정.
+> - **신규 20개 재료 이미지 생성 완료**(5번째 amendment 참고).
+> - **production URL 배포 상태 확인 완료**: Vercel-git 연결 정상, 매 커밋 자동배포,
+>   최신 커밋까지 반영 확인(과거 연결 끊김 우려 해소).
+>
+> **결론**: 안전 데이터/콘텐츠 신뢰도 기준 런칭 체크리스트 전 항목 완료. 남은 것은
+> 안전 영향 낮은 백로그(재료-월령 적합성 필터 `DATA_MODEL_GAP`, 시즈닝/콩나물 정책,
+> tofu completion_check 공백, CONTINUE_COOKING slow-cooker 경고)뿐이며 전부 런칭 후
+> 처리 가능. 이 amendment 이후 "구글 플레이스토어 출시" 신규 트랙(§21) 착수.
+
+---
+
+## 21. 구글 플레이스토어 출시 트랙 (2026-09-09 신설)
+
+> 이 섹션은 §1~§20(2026-09-04 작성, 이후 amendment)과 별개의 신규 트랙이다. 기존
+> "런칭 체크리스트"(위 amendment 참고)는 이 트랙의 **전제조건**이며 완료 상태다 —
+> 이 트랙이 다루는 것은 "웹앱을 실제 이유식 정보원으로 써도 되는가"가 아니라
+> "구글 플레이스토어에 앱으로 제출 가능한가"이다. 두 개념은 별개이며, 후자가
+> 전자를 대체하지 않는다.
+
+### 21.1 현재 상태 (2026-09-09 기준)
+- 앱 형태: Next.js 웹앱, `https://baby-meal-recipe.vercel.app`. 네이티브 래핑/PWA 없음.
+- 계정/로그인: 없음. `babyProfile`, `triedIngredients` 전부 localStorage(디바이스 로컬),
+  서버(Supabase)에 사용자 개인정보 저장 없음(코드 조사로 확인: `app/api/v1/recipes/generate`
+  요청 바디는 `stage_id`/`food_form_id`/`ingredient_ids`만 포함, 아기 이름/생년월일/
+  사진/알레르기 정보는 전송되지 않음).
+- 분석/추적: Google Analytics 등 어떤 분석 스크립트도 없음(코드 조사로 확인).
+- 개인정보처리방침: 초안 작성 완료(내용은 위 코드 조사 결과 기반, 문의처
+  `a98580776@gmail.com`). **아직 실제 공개 URL로 배포되지 않음** — 구글플레이는
+  파일이 아닌 실제 페이지 URL을 요구하므로 `/privacy` 같은 라우트로 구현 필요.
+
+### 21.2 필요 작업 (스코핑, 미착수)
+1. **웹앱 → 스토어 제출 형태 전환**: TWA(Trusted Web Activity) 또는 네이티브 래퍼.
+   현재 코드 구조를 크게 바꿀 필요는 없으나 별도 빌드 파이프라인 필요.
+2. **개인정보처리방침 실제 페이지화**: 위 초안을 `/privacy` 라우트로 구현, 앱 내
+   접근 경로(설정 등)도 필요.
+3. **아동 정책(Families Policy) 해당 여부 확인**: 부모/보호자가 사용하는 도구이며
+   아동이 직접 사용하는 앱이 아님 — 해당 안 될 가능성이 높으나 구글 정책 문서
+   기준으로 별도 확인 필요.
+4. **건강/의료 정보 앱 카테고리 심사 대응**: 이유식 안전 정보를 다루는 앱 특성상
+   일반 앱보다 심사가 까다로울 수 있음 — 면책 문구, 출처 표기(evidence 체계는 이미
+   있음) 등 정리 필요.
+5. **스토어 등록 정보**: 스크린샷, 설명문, 카테고리 분류 등 통상적인 제출 자산.
+
+### 21.3 무계정 구조 관련 결정 (2026-09-09)
+- **지금은 무계정 유지**. 장점(개인정보 이슈 최소화, 개발비용 낮음, 진입장벽 낮음)이
+  단점(기기 변경 시 데이터 소실, 부모 두 명 동기화 불가, §16 향후 확장 기능 대부분이
+  막힘)보다 현재 MVP 단계에 더 부합한다고 판단.
+- **향후 방향**: 실사용자 반응 확인 후, 필요 시 Supabase Auth 기반 **선택적** 로그인
+  (동기화 목적)을 얹는 방향으로 합의. 강제 전환이 아니라 점진적 추가 — 로그인 안 하는
+  기존 사용자는 영향 없음, 로그인 시 localStorage 데이터를 서버로 1회 마이그레이션하는
+  방식. Supabase를 이미 사용 중이라 신규 인프라는 불필요, RLS 정책/로그인 UI/데이터
+  병합 로직 정도가 실제 작업량. **지금 착수하지 않음** — 백로그.
+
+### 21.4 다음 액션
+21.2의 5개 항목 중 우선순위 결정 및 착수 순서 확정 필요(다음 세션).
