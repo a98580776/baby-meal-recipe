@@ -116,6 +116,24 @@ describe("validateRecipeInput — NEEDS_REVIEW 노출", () => {
       ),
     ).toBe(true);
   });
+
+  // 2026-09-09 tofu 배지 모순 리포트: dietitian_verified_at이 있으면 상단 "영양사
+  // 검증" 배지와 이 경고가 동시에 노출돼 모순처럼 보였다. dietitian_verified_at이
+  // 없는 케이스는 위 테스트가 이미 덮는다.
+  it("NEEDS_REVIEW + dietitian_verified_at 있음 → 모순 없는 문구로 대체된다", () => {
+    const dietitianVerifiedCarrot = {
+      ...ingredients.carrot,
+      ingredient: { ...ingredients.carrot.ingredient, dietitian_verified_at: "2026-09-09" },
+    };
+    const result = validateRecipeInput(
+      baseInput(),
+      lookup({ ingredients: new Map([["carrot", dietitianVerifiedCarrot]]) }, ["carrot"]),
+    );
+    expect(result.valid).toBe(true);
+    const note = result.warnings.find((w) => w.code === "VERIFICATION_IN_PROGRESS");
+    expect(note?.message).toContain("당근은 영양사가 근거 자료를 확인했으나");
+    expect(note?.message).not.toContain("검증이 진행 중입니다");
+  });
 });
 
 describe("validateRecipeInput — Recipe Engine Step 4 (조리 방법 등록 여부)", () => {

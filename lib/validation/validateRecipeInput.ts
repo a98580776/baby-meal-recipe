@@ -148,9 +148,16 @@ export function validateRecipeInput(
         message: `${withEunNeun(resolved.ingredient.name_ko)} 아직 검증되지 않아 사용할 수 없습니다.`,
       });
     } else if (resolved.ingredient.verification_status === "NEEDS_REVIEW") {
+      // dietitian_verified_at이 있는데도 이 문구를 그대로 쓰면 상단 "영양사 검증" 배지와
+      // 모순돼 보였다(2026-09-09 tofu 버그 리포트). verification_status는 데이터 완결성
+      // 축, dietitian_verified_at은 영양사 실검토 축이라 서로 독립이지만, 사용자에게는
+      // 문구로 그 구분을 알려줘야 모순처럼 읽히지 않는다.
+      const message = resolved.ingredient.dietitian_verified_at
+        ? `${withEunNeun(resolved.ingredient.name_ko)} 영양사가 근거 자료를 확인했으나, 일부 조리 세부사항은 계속 보완 중입니다.`
+        : `${resolved.ingredient.name_ko} 정보는 검증이 진행 중입니다.`;
       warnings.push({
         code: "VERIFICATION_IN_PROGRESS",
-        message: `${resolved.ingredient.name_ko} 정보는 검증이 진행 중입니다.`,
+        message,
       });
     }
   }

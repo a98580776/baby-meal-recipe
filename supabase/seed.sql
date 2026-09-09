@@ -2141,3 +2141,10 @@ insert into ingredient_safety_rules (ingredient_id, safety_rule_id) values
 
 update ingredients set dietitian_verified_at = '2026-09-09'
 where id in ('egg', 'milk', 'tofu', 'wheat', 'peanut', 'shrimp', 'squid', 'mussel', 'abalone', 'cheese', 'yogurt');
+
+-- Migration 0062 addition (append-only, mirrors that migration's already-applied
+-- remote DB state) -- 가족 영양사 실검토 반영: Tier3 13개 재료, 2026-09-09 실제 검토 완료.
+
+update ingredients set dietitian_verified_at = '2026-09-09'
+where id in ('bell_pepper', 'burdock', 'chickpea', 'flounder', 'halibut', 'kohlrabi',
+             'lentil', 'lotus_root', 'octopus', 'persimmon', 'plum', 'quinoa', 'wakame');
