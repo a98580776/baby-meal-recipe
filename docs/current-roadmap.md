@@ -343,3 +343,31 @@ CHOKING_HARD_RAW 연결(→ 5개는 이미 개별 evidence로 연결 완료, §1
 | `docs/current-roadmap.md`(이 문서) | 전체 진행 상황 요약 + "다음에 뭘 하나" — 재료별 상세 근거는 담지 않는다 |
 | `docs/50-ingredient-final-backlog.md` | 재료 레벨 상세 근거 / evidence matrix / 카테고리별(A~F) 이슈 분석 — 이번 재작성에서 **내용 수정 없음**(§1-2에서 발견한 stale 4건도 그 문서 자체는 고치지 않았다) |
 | `docs/schema-freeze.md` | DB migration amendment 로그(스키마 변경 이력) — 0009~0048 전체 커버(§8~§21), 이번 재작성에서 **내용 수정 없음** |
+
+---
+
+> **2026-09-09 amendment (5번째)**: 신규 20개 재료 이미지(raw/texture/doneness/safety, abalone 제외)
+> 생성 완료 및 QA 재검수 완료. 총 66장 생성 → Claude Desktop 전수 검수 → 8건 콘텐츠 결함 발견
+> → 7건 재생성 후 해결 확인, 1건(mussel_texture stage4 개별 조각이 통짜 홍합처럼 보일 여지)은
+> 판단 보류(mechanism이 형태보다 질감(firm/rubbery/slippery) 중심이라 안전 영향 낮음으로 평가,
+> 추가 조치는 선택 사항).
+>
+> 발견된 결함 유형(재발 방지 참고):
+> - doneness/safety 이미지가 형태 정보를 동시에 담아 사실상 동일한 그림이 되는 패턴
+>   (lentil/chickpea/mussel/squid/octopus/bell_pepper/kohlrabi/lotus_root에서 반복 발견,
+>   전부 "doneness=색/질감 변화만, safety=형태 차이만"으로 분리해 해결)
+> - stage 진행 방향이 반대로 나오는 경우(burdock 1차 생성분, 재검수로 발견 후 실제로는 이미
+>   정상이었음을 재확인)
+> - 안전상 위험 형태(원형 단면 등)가 "권장 형태" 이미지에 그대로 노출되는 경우(octopus,
+>   최우선으로 수정)
+> - 물성 오류: 매쉬/다짐이어야 할 것이 매끈한 액체 퓨레+장식적 소용돌이로 나오는 패턴
+>   (peanut/lentil/kohlrabi/mussel에서 반복, "no swirl" 부정문이 오히려 유발하는 것으로 추정되어
+>   긍정 서술로 전환)
+> - "porridge" 단어가 오트밀 연상을 유발(milk, peanut) → 한국식 쌀죽 명시로 해결/우회
+> - abalone은 Batch I 안전 갭 미해결로 raw+doneness 2장만 생성, texture/safety는 보류 유지
+> - milk는 texture 생략(완성 사진만으로 우유 포함 여부 구분 불가로 정보 전달력 0 판단), safety도
+>   구조적으로 이미지화 실익 낮음(fishbone 케이스와 동일 논리)이나 이미지 자체는 최종적으로
+>   성공 — 실제 사용 여부는 제품 판단에 맡김
+>
+> **런칭 체크리스트 갱신**: 위 §의 "2. [콘텐츠, 런칭 전] 신규 20개 재료 이미지 생성"
+> 항목 완료로 표시. 다음 최우선은 여전히 "1. [안전, 최우선] abalone 임시 제외 또는 Batch I 완료".
