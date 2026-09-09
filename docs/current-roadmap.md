@@ -478,3 +478,20 @@ CHOKING_HARD_RAW 연결(→ 5개는 이미 개별 evidence로 연결 완료, §1
 >
 > 남은 §21.2 항목: 1(TWA 래핑, privacy 완료 후 SEQUENTIAL), 2(진행 중), 5(스토어 등록
 > 자산 — 다음 착수 후보).
+
+> **2026-09-10 amendment (8번째)**: §21.2 진행 상황 갱신.
+>
+> **1. TWA 래핑 — 부분 진행**
+> - `public/manifest.json` 생성 + `app/layout.tsx`에 manifest link/theme-color 연결 완료(`58e46ec`).
+> - manifest가 참조하는 `public/icons/icon-{48,72,96,144,192,512,512-maskable}.png` 7개는
+>   아직 생성 전. Gemini 프롬프트로 아이콘 생성 후 검수 진행 중 — 완료 시 별도 갱신.
+> - TWA 실제 빌드(Bubblewrap 등)는 아이콘 확정 후 착수.
+>
+> **5. 스토어 등록 정보 — 스크린샷 완료, 설명문 남음**
+> - 스크린샷 4장(`docs/store-assets/screenshots/`) 캡처 완료(`56f6c7d`), Desktop 검수 완료
+>   (실제 이미지 내용 확인 — 홈/레시피/Cooking Mode/안전경고 4종 모두 실제 콘텐츠 확인,
+>   기존 Suspense fallback 오류 재캡처로 수정됨).
+> - 앱 제목/짧은 설명/전체 설명/검색 키워드는 미착수.
+>
+> 남은 §21.2 항목: 1(아이콘 생성 진행 중, 이후 TWA 빌드 SEQUENTIAL), 5(설명문 남음).
+> 2(privacy)·3(아동정책)·4(건강앱 심사)는 기존대로 CLOSED.
