@@ -30,6 +30,16 @@ export function BabyProfileForm({ initialProfile, stages, allergens, onComplete 
     setAllergyCodes((list) => (list.includes(code) ? list.filter((x) => x !== code) : [...list, code]));
   }
 
+  // 화면 표시 전용 축약 — allergens.name_ko에는 "국내 19개 표시대상" 법정
+  // 여부를 설명하는 괄호 문구가 데이터로 그대로 박혀 있다(예: 밤/견과류,
+  // 생선, 참깨, 들깨). 그 판정 데이터/로직 자체(ingredient_allergens.scope 등)는
+  // 변경하지 않고, 여기서는 라벨만 줄인다. "조개류(굴·전복·홍합 등)"처럼
+  // 표시대상과 무관한 예시 괄호는 건드리지 않도록 "표시대상"이 포함된
+  // 괄호만 제거한다.
+  function displayAllergenName(nameKo: string): string {
+    return nameKo.replace(/\([^)]*표시대상[^)]*\)/g, "").trim();
+  }
+
   const today = new Date().toISOString().slice(0, 10);
 
   const ageDays = birthDate && birthDate <= today ? calculateAgeDays(birthDate) : null;
@@ -181,7 +191,7 @@ export function BabyProfileForm({ initialProfile, stages, allergens, onComplete 
                     : "border-gray-300 bg-white text-gray-700"
                 }`}
               >
-                {a.name_ko}
+                {displayAllergenName(a.name_ko)}
               </button>
             );
           })}

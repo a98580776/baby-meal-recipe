@@ -69,18 +69,18 @@ function VerificationBadge({
 const HERO_PHOTO_CANDIDATE_KINDS = ["raw", "texture"] as const;
 
 /**
- * Recipe screen hero photo — same static /images/ingredients/{id}/{id}_{kind}.png
- * convention as IngredientThumbnail/CookingPhoto, just at banner size. Shown
- * for the recipe's primary (first) ingredient; falls back to a plain warm
+ * One hero photo tile — same static /images/ingredients/{id}/{id}_{kind}.png
+ * convention as IngredientThumbnail/CookingPhoto. Falls back to a plain warm
  * panel (no broken-image icon) once every candidate has failed to load, same
- * silent-degrade behavior as IngredientThumbnail.
+ * silent-degrade behavior as IngredientThumbnail. `overlayCount`, when set,
+ * darkens the tile and prints "+N" over it (5개 이상 선택 시 남은 재료 수).
  */
-function RecipeHeroPhoto({ ingredientId }: { ingredientId: string }) {
+function RecipeHeroPhotoTile({ ingredientId, overlayCount }: { ingredientId: string; overlayCount?: number }) {
   const [index, setIndex] = useState(0);
   const loaded = index < HERO_PHOTO_CANDIDATE_KINDS.length;
 
   return (
-    <div className="aspect-[4/3] w-full overflow-hidden rounded-b-2xl bg-[var(--accent-photo-bg)]">
+    <div className="relative h-full w-full overflow-hidden bg-[var(--accent-photo-bg)]">
       {loaded && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -91,6 +91,42 @@ function RecipeHeroPhoto({ ingredientId }: { ingredientId: string }) {
           onError={() => setIndex((i) => i + 1)}
         />
       )}
+      {overlayCount ? (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/50 text-lg font-semibold text-white">
+          +{overlayCount}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * Recipe screen hero photo area. 1개: 기존과 동일한 단일 이미지. 2~4개: 2x2
+ * 그리드(모자란 칸은 채우지 않고 배경색만 노출 — 로딩 전 단일 이미지 배경과
+ * 동일한 방식). 5개 이상: 대표 4개 + 마지막 칸에 "+N" 오버레이. 재료별로 이미
+ * 존재하는 이미지를 그대로 재사용할 뿐, 신규 이미지 조합/생성은 하지 않는다.
+ */
+function RecipeHeroPhoto({ ingredientIds }: { ingredientIds: string[] }) {
+  if (ingredientIds.length <= 1) {
+    return (
+      <div className="aspect-[4/3] w-full overflow-hidden rounded-b-2xl bg-[var(--accent-photo-bg)]">
+        {ingredientIds[0] && <RecipeHeroPhotoTile ingredientId={ingredientIds[0]} />}
+      </div>
+    );
+  }
+
+  const visible = ingredientIds.slice(0, 4);
+  const remaining = ingredientIds.length - visible.length;
+
+  return (
+    <div className="grid aspect-[4/3] w-full grid-cols-2 grid-rows-2 gap-0.5 overflow-hidden rounded-b-2xl bg-[var(--accent-photo-bg)]">
+      {visible.map((id, i) => (
+        <RecipeHeroPhotoTile
+          key={id}
+          ingredientId={id}
+          overlayCount={i === visible.length - 1 && remaining > 0 ? remaining : undefined}
+        />
+      ))}
     </div>
   );
 }
@@ -198,7 +234,7 @@ export function RecipeView() {
   const { recipe, stage, foodForm } = state;
   const cookingModeHref = `/cooking?${searchParams.toString()}`;
   const recipeName = `${recipe.ingredients.map((ing) => ing.name_ko).join(" ")} ${foodForm?.name_ko ?? ""}`.trim();
-  const heroIngredientId = recipe.ingredients[0]?.id ?? null;
+  const heroIngredientIds = recipe.ingredients.map((ing) => ing.id);
   const heroDietitianVerified = recipe.ingredients[0]?.dietitian_verified === true;
   const heroCuratedEvidence = recipe.ingredients[0]?.has_curated_evidence === true;
   const cookingStepCount = buildCookingSteps(recipe).length;
@@ -211,8 +247,8 @@ export function RecipeView() {
   return (
     <div className="mx-auto max-w-lg pb-28">
       <div className="relative">
-        {heroIngredientId ? (
-          <RecipeHeroPhoto ingredientId={heroIngredientId} />
+        {heroIngredientIds.length > 0 ? (
+          <RecipeHeroPhoto ingredientIds={heroIngredientIds} />
         ) : (
           <div className="aspect-[4/3] w-full rounded-b-2xl bg-[var(--accent-photo-bg)]" />
         )}
@@ -223,7 +259,7 @@ export function RecipeView() {
         >
           <ArrowLeft size={20} />
         </Link>
-        {(heroDietitianVerified || heroCuratedEvidence) && (
+        {recipe.ingredients.length === 1 && (heroDietitianVerified || heroCuratedEvidence) && (
           <span className="absolute bottom-4 left-4 inline-flex items-center gap-1 rounded-full bg-[var(--surface-white)] px-3 py-1.5 text-xs font-semibold text-[var(--olive-tint-text)] shadow-md">
             <Check size={12} strokeWidth={3} />
             {heroDietitianVerified ? "영양사 검증" : "출처 확인"}

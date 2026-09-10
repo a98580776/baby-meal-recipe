@@ -326,14 +326,21 @@ export function CookingModeView() {
       )}
       <div className="flex flex-1 flex-col items-center justify-center gap-4 overflow-y-auto py-2 text-center">
         <p className="text-xs font-semibold text-white/50">{step.ingredientName}</p>
-        <CookingPhoto
-          key={step.id}
-          ingredientId={step.ingredientId}
-          isFirstStepForIngredient={isFirstStepForIngredient}
-          isLastStepForIngredient={isLastStepForIngredient}
-          actionLabel={step.actionLabel}
-          hasSafetyWarning={step.safetyWarnings.length > 0}
-        />
+        {(isFirstStepForIngredient || step.actionLabel === "익힘 확인") && (
+          // 재료 소개(첫 STEP)에서만 이미지를 보여주고, 이후 반복되는 손질
+          // 세부 단계(세척/껍질제거/씨제거/절단 등)는 텍스트만 노출한다 —
+          // 매 단계 원재료 사진이 반복 노출되던 문제 수정. 익힘 확인
+          // 단계(completion_check)의 이미지 표시 방식은 이번 수정 범위가
+          // 아니므로 첫 STEP 여부와 무관하게 그대로 유지한다.
+          <CookingPhoto
+            key={step.id}
+            ingredientId={step.ingredientId}
+            isFirstStepForIngredient={isFirstStepForIngredient}
+            isLastStepForIngredient={isLastStepForIngredient}
+            actionLabel={step.actionLabel}
+            hasSafetyWarning={step.safetyWarnings.length > 0}
+          />
+        )}
         <p className="text-xl font-semibold leading-relaxed text-white">{step.instruction}</p>
         <StepInfoTable rows={infoRows} />
         {step.tips.length > 0 && (
