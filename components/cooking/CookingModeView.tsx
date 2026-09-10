@@ -345,7 +345,7 @@ export function CookingModeView() {
             <IngredientTipList tips={step.tips} />
           </div>
         )}
-        {step.timerEnabled && <StepTimer key={step.id} timeGuidance={step.timeGuidance} />}
+        {step.timerEnabled && <StepTimer key={`timer-${step.id}`} timeGuidance={step.timeGuidance} />}
       </div>
       <div className="flex shrink-0 gap-3">
         <button
