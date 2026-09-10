@@ -46,3 +46,7 @@ next-env.d.ts
 # supabase CLI local state (not project schema/data -- see supabase/migrations
 # and supabase/seed.sql for those)
 supabase/.temp/
+
+# TWA signing keys (never commit — dev or release, both are secrets)
+twa-build/*.keystore
+twa-build/*.jks
