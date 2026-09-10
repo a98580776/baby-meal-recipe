@@ -453,7 +453,7 @@ export function RecipeView() {
 
       {recipe.ingredients.some((ing) => ing.allergens.length > 0) && (
         <section className="mb-7">
-          <h2 className="mb-3 text-base font-semibold">알레르겐</h2>
+          <h2 className="mb-3 text-base font-semibold">알레르기 정보</h2>
           <div className="flex flex-col gap-3">
             {recipe.ingredients
               .filter((ing) => ing.allergens.length > 0)

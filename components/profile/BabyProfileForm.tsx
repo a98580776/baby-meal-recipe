@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { BabyProfile } from "@/lib/profile/babyProfile";
 import { calculateAgeDays, formatAgeSummary, recommendStageId } from "@/lib/profile/stageRecommendation";
+import { compressPhotoToDataUrl, RAW_UPLOAD_MAX_BYTES } from "@/lib/profile/photoCompression";
 import type { Allergen, Stage } from "@/types/domain";
 
 interface BabyProfileFormProps {
@@ -11,8 +12,6 @@ interface BabyProfileFormProps {
   allergens: Allergen[];
   onComplete: (profile: BabyProfile) => void;
 }
-
-const MAX_PHOTO_BYTES = 2 * 1024 * 1024; // 2MB, stored as a data URL in localStorage
 
 export function BabyProfileForm({ initialProfile, stages, allergens, onComplete }: BabyProfileFormProps) {
   const [name, setName] = useState(initialProfile?.name ?? "");
@@ -25,6 +24,7 @@ export function BabyProfileForm({ initialProfile, stages, allergens, onComplete 
   // 그대로 기대하므로 별도 변환 없이 재사용한다.
   const [allergyCodes, setAllergyCodes] = useState<string[]>(initialProfile?.allergyCodes ?? []);
   const [error, setError] = useState<string | null>(null);
+  const [photoProcessing, setPhotoProcessing] = useState(false);
 
   function toggleAllergy(code: string) {
     setAllergyCodes((list) => (list.includes(code) ? list.filter((x) => x !== code) : [...list, code]));
@@ -39,20 +39,28 @@ export function BabyProfileForm({ initialProfile, stages, allergens, onComplete 
   // 인수인계 §9 "추천값과 사용자가 최종 선택한 단계값을 분리".
   const selectedStageId = confirmedStageId || recommendedStageId || "";
 
-  function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) {
       setPhotoDataUrl(null);
       return;
     }
-    if (file.size > MAX_PHOTO_BYTES) {
-      setError("사진 용량이 너무 큽니다 (최대 2MB).");
+    if (file.size > RAW_UPLOAD_MAX_BYTES) {
+      setError("사진 용량이 너무 큽니다 (최대 15MB).");
       e.target.value = "";
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => setPhotoDataUrl(reader.result as string);
-    reader.readAsDataURL(file);
+    setError(null);
+    setPhotoProcessing(true);
+    try {
+      const compressed = await compressPhotoToDataUrl(file);
+      setPhotoDataUrl(compressed);
+    } catch {
+      setError("사진을 처리하지 못했습니다. 다른 사진을 선택해주세요.");
+      e.target.value = "";
+    } finally {
+      setPhotoProcessing(false);
+    }
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -80,14 +88,16 @@ export function BabyProfileForm({ initialProfile, stages, allergens, onComplete 
           htmlFor="photo"
           className="flex h-36 w-36 cursor-pointer items-center justify-center overflow-hidden rounded-full border border-dashed border-gray-300 bg-gray-50 text-xs text-gray-400"
         >
-          {photoDataUrl ? (
+          {photoProcessing ? (
+            "처리 중..."
+          ) : photoDataUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={photoDataUrl} alt="아기 사진" className="h-full w-full object-cover" />
           ) : (
             "사진 추가"
           )}
         </label>
-        <input id="photo" type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
+        <input id="photo" type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} disabled={photoProcessing} />
         <span className="text-xs text-gray-400">선택 사항</span>
       </div>
 
@@ -180,7 +190,11 @@ export function BabyProfileForm({ initialProfile, stages, allergens, onComplete 
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
-      <button type="submit" className="w-full rounded-lg bg-blue-600 py-3 text-base font-semibold text-white">
+      <button
+        type="submit"
+        disabled={photoProcessing}
+        className="w-full rounded-lg bg-blue-600 py-3 text-base font-semibold text-white disabled:opacity-60"
+      >
         {initialProfile ? "저장하기" : "시작하기"}
       </button>
     </form>

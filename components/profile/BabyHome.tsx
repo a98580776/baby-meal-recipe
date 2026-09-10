@@ -30,7 +30,9 @@ interface BabyHomeProps {
 
 const WEEKDAY_KO = ["일", "월", "화", "수", "목", "금", "토"];
 
-function formatTodayKo(now: Date): string {
+// Exported for BabyHomeOnboardingEmpty (같은 날짜 포맷을 온보딩 전 헤더에도
+// 그대로 사용 — 로직 중복 없이 재사용).
+export function formatTodayKo(now: Date): string {
   return `${now.getMonth() + 1}월 ${now.getDate()}일 ${WEEKDAY_KO[now.getDay()]}요일`;
 }
 
@@ -379,7 +381,7 @@ export function BabyHome({
       </div>
 
       <div>
-        <p className="mb-3 text-sm font-semibold text-[var(--ink-900)]">오늘 만들어볼까요</p>
+        <p className="mb-3 text-sm font-semibold text-[var(--ink-900)]">오늘의 추천 이유식</p>
         <RecommendationCard state={recommendation} confirmedStage={confirmedStage} />
       </div>
 
@@ -387,7 +389,7 @@ export function BabyHome({
         href="/plan"
         className="mt-auto w-full rounded-2xl bg-[var(--olive-600)] py-4 text-center text-base font-semibold text-white shadow-sm"
       >
-        직접 만들기
+        이유식 만들기
       </Link>
     </div>
   );

@@ -239,7 +239,7 @@ export function evaluateIngredientSafety(
         } else {
           warnings.push({
             code: "SAFETY_ALLERGEN_WARNING",
-            message: `${name}에는 알레르기 유발 성분(${allergen ?? "미상"})이 포함되어 있습니다.`,
+            message: `${nameEunNeun} 알레르기를 유발할 수도 있어요.`,
             rule_id: rule.id,
             rule_status: rule.status,
             severity: rule.severity,

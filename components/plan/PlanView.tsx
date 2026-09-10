@@ -56,7 +56,7 @@ export function PlanView({ stages, foodForms, ingredients, allergens }: PlanView
         >
           <ArrowLeft size={20} />
         </Link>
-        <h1 className="font-serif-kr text-xl font-bold tracking-tight text-[var(--ink-900)]">무엇으로 만들까요</h1>
+        <h1 className="font-serif-kr text-xl font-bold tracking-tight text-[var(--ink-900)]">레시피 조합하기</h1>
       </div>
       <RecipeInputForm
         stages={stages}

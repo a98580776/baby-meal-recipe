@@ -4,6 +4,7 @@ import { useMemo, useState, useSyncExternalStore } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { Allergen, FoodForm, Ingredient, Stage } from "@/types/domain";
 import { BabyHome } from "@/components/profile/BabyHome";
+import { BabyHomeOnboardingEmpty } from "@/components/profile/BabyHomeOnboardingEmpty";
 import { BabyProfileForm } from "@/components/profile/BabyProfileForm";
 import {
   type BabyProfile,
@@ -22,8 +23,9 @@ interface BabyProfileGateProps {
 }
 
 /**
- * 첫 실행 시 아기 프로필(이름/생년월일/사진 선택/단계 확정)을 받고, 이후
- * 재방문에서는 저장된 프로필로 바로 아기 홈(BabyHome)에 진입시킨다.
+ * 첫 실행 시 곧바로 전체 입력 폼을 띄우는 대신 BabyHomeOnboardingEmpty(헤더 +
+ * "아기 정보 입력하러 가기" CTA)를 먼저 보여주고, CTA를 눌러야 BabyProfileForm이
+ * 열린다. 재방문에서는 저장된 프로필로 바로 아기 홈(BabyHome)에 진입시킨다.
  * 실제 재료/형태 선택 후 레시피를 만드는 흐름은 /plan 라우트의 기존
  * RecipeInputForm이 그대로 담당한다 (Phase 10-2: 라우팅만 변경).
  *
@@ -67,14 +69,14 @@ export function BabyProfileGate({ stages, allergens, ingredients, foodForms }: B
 
   return (
     <div className="flex flex-1 flex-col">
-      {!profile || editing ? (
+      {editing ? (
         <BabyProfileForm
           initialProfile={profile}
           stages={stages}
           allergens={allergens}
           onComplete={handleProfileComplete}
         />
-      ) : (
+      ) : profile ? (
         <BabyHome
           profile={profile}
           ageDays={ageDays ?? 0}
@@ -84,6 +86,8 @@ export function BabyProfileGate({ stages, allergens, ingredients, foodForms }: B
           foodForms={foodForms}
           onEdit={() => setEditing(true)}
         />
+      ) : (
+        <BabyHomeOnboardingEmpty onStart={() => setEditing(true)} />
       )}
     </div>
   );

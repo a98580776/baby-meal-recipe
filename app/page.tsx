@@ -16,7 +16,7 @@ export default async function Home() {
   ]);
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-lg flex-col px-4 py-6">
+    <div className="mx-auto flex min-h-dvh max-w-lg flex-col px-2 py-6">
       <Suspense fallback={null}>
         <BabyProfileGate stages={stages} allergens={allergens} ingredients={ingredients} foodForms={foodForms} />
       </Suspense>
