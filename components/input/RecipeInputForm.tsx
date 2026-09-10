@@ -17,6 +17,7 @@ import {
   saveRecipeInputDraft,
 } from "@/lib/recipe/recipeInputDraft";
 import { isBaseSelectable, isAddOnSelectable } from "@/lib/rules/ingredientRole";
+import { getStageFoodFormGuidance } from "@/lib/profile/stageFoodFormGuidance";
 import { MEAT_FORM_SUPPORTED_INGREDIENT_IDS, type MeatForm } from "@/lib/rules/meatForm";
 
 interface RecipeInputFormProps {
@@ -96,6 +97,7 @@ export function RecipeInputForm({
   );
 
   const selectedStage = useMemo(() => stages.find((s) => s.id === stageId) ?? null, [stages, stageId]);
+  const foodFormGuidance = getStageFoodFormGuidance(selectedStage);
   const ingredientById = useMemo(() => new Map(ingredients.map((ing) => [ing.id, ing])), [ingredients]);
   const selectedIngredients = useMemo(
     () => selectedIngredientIds.map((id) => ingredientById.get(id)).filter((ing): ing is Ingredient => !!ing),
@@ -235,6 +237,8 @@ export function RecipeInputForm({
             </button>
           ))}
         </div>
+        {/* 참고용 안내 문구 — SafetyRule/안전 데이터 아님(lib/profile/stageFoodFormGuidance.ts 주석 참고) */}
+        {foodFormGuidance && <p className="mt-2 text-xs text-[var(--ink-600)]">{foodFormGuidance}</p>}
         {selectedStage?.readiness_required && (
           <label className="mt-3 flex items-center gap-2 text-sm text-[var(--ink-600)]">
             <input

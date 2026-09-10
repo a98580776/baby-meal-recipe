@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Check, MoreHorizontal, Star } from "lucide-react";
 import type { BabyProfile } from "@/lib/profile/babyProfile";
 import { formatAgeSummary } from "@/lib/profile/stageRecommendation";
+import { getStageFoodFormGuidance } from "@/lib/profile/stageFoodFormGuidance";
 import {
   getTriedIngredientsServerSnapshot,
   getTriedIngredientsSnapshot,
@@ -304,6 +305,7 @@ export function BabyHome({
   const sortedStages = [...stages].sort((a, b) => a.sort_order - b.sort_order);
   const currentIndex = confirmedStage ? sortedStages.findIndex((s) => s.id === confirmedStage.id) : -1;
   const recommendation = useDailyRecommendation(ingredients, foodForms, confirmedStage);
+  const foodFormGuidance = getStageFoodFormGuidance(confirmedStage);
 
   function handleMenuAction(action: () => void) {
     setMenuOpen(false);
@@ -378,6 +380,8 @@ export function BabyHome({
             ))}
           </div>
         )}
+        {/* 참고용 안내 문구 — SafetyRule/안전 데이터 아님(lib/profile/stageFoodFormGuidance.ts 주석 참고) */}
+        {foodFormGuidance && <p className="mt-3 text-xs text-white/70">{foodFormGuidance}</p>}
       </div>
 
       <div>
