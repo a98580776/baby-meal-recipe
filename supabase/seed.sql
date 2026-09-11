@@ -127,7 +127,7 @@ insert into ingredients (id, name_ko, name_en, category, verification_status, pr
   ('kabocha', '단호박', 'kabocha', 'vegetable', 'NEEDS_REVIEW', 'prep_kabocha', 'cook_kabocha', null),
   ('potato', '감자', 'potato', 'vegetable', 'NEEDS_REVIEW', 'prep_potato', 'cook_potato', null),
   ('sweet_potato', '고구마', 'sweet potato', 'vegetable', 'NEEDS_REVIEW', 'prep_sweet_potato', 'cook_sweet_potato', null),
-  ('beef', '소고기', 'beef', 'meat', 'NEEDS_REVIEW', 'prep_beef', 'cook_beef', null),
+  ('beef', '쇠고기', 'beef', 'meat', 'NEEDS_REVIEW', 'prep_beef', 'cook_beef', null),
   ('chicken', '닭고기', 'chicken', 'poultry', 'NEEDS_REVIEW', 'prep_chicken', 'cook_chicken', null),
   ('salmon', '연어', 'salmon', 'fish', 'NEEDS_REVIEW', 'prep_salmon', 'cook_salmon', null),
   ('tofu', '두부', 'tofu', 'soy', 'NEEDS_REVIEW', 'prep_tofu', 'cook_tofu', null),
