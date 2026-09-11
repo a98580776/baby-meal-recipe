@@ -14,6 +14,7 @@ import { isNoCookingNeededFromView } from "@/lib/recipe/cookingTimeStatus";
 import { particleSizeLabel, shapeLabel } from "@/lib/recipe/textureLabels";
 import { cookingMethodLabels } from "@/lib/recipe/cookingMethodLabels";
 import { verificationStatusBadgeText } from "@/lib/ingredients/verificationStatusLabel";
+import { LoadingState } from "@/components/common/LoadingState";
 import { SafetyNoteItem } from "@/components/shared/SafetyNoteItem";
 import { IngredientTipList } from "@/components/shared/IngredientTipList";
 import { IngredientThumbnail } from "@/components/shared/IngredientThumbnail";
@@ -217,7 +218,7 @@ export function RecipeView() {
   }
 
   if (state.status === "loading") {
-    return <p className="p-4 text-sm text-[var(--ink-600)]">레시피를 확인하는 중입니다...</p>;
+    return <LoadingState />;
   }
 
   if (state.status === "error") {

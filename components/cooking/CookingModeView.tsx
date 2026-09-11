@@ -10,6 +10,7 @@ import { buildCookingSteps, type CookingStep } from "@/lib/recipe/buildCookingSt
 import { buildStepInfoRows, stepInfoRowKey, type StepInfoRow } from "@/lib/recipe/buildStepInfoRows";
 import { getStepImageCandidates } from "@/lib/recipe/stepImageCandidates";
 import { addTriedIngredients } from "@/lib/profile/triedIngredients";
+import { LoadingState } from "@/components/common/LoadingState";
 import { SafetyNoteItem } from "@/components/shared/SafetyNoteItem";
 import { IngredientTipList } from "@/components/shared/IngredientTipList";
 
@@ -239,7 +240,7 @@ export function CookingModeView() {
   }
 
   if (state.status === "loading") {
-    return <p className="p-4 text-sm text-[var(--ink-600)]">레시피를 확인하는 중입니다...</p>;
+    return <LoadingState />;
   }
 
   if (state.status === "error") {

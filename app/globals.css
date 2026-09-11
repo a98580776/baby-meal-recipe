@@ -31,3 +31,19 @@ body {
   color: var(--ink-900);
   font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
 }
+
+@keyframes loading-dot-bounce {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-4px);
+  }
+}
+
+.loading-dot {
+  animation: loading-dot-bounce 1.3s ease-in-out infinite;
+}
