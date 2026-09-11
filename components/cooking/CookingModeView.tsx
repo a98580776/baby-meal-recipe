@@ -23,8 +23,8 @@ function StepInfoTable({ rows }: { rows: StepInfoRow[] }) {
           key={stepInfoRowKey(row, i)}
           className={`flex items-center justify-between px-3 py-2 ${i > 0 ? "border-t border-[var(--border-warm)]" : ""}`}
         >
-          <span className="text-[var(--ink-600)]">{row.label}</span>
-          <span className="text-right font-medium text-[var(--ink-900)]">{row.value}</span>
+          <span className="shrink-0 text-[var(--ink-600)]">{row.label}</span>
+          <span className="flex-1 break-keep text-right font-medium text-[var(--ink-900)]">{row.value}</span>
         </div>
       ))}
     </div>
