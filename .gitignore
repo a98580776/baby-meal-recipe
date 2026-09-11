@@ -60,3 +60,8 @@ twa-build/app/build/
 twa-build/*.aab
 twa-build/*.apk
 twa-build/*.idsig
+twa-build/*.zip
+
+# Python bytecode cache
+__pycache__/
+*.pyc
