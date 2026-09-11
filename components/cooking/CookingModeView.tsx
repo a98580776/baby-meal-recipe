@@ -296,7 +296,11 @@ export function CookingModeView() {
   return (
     <div className="flex min-h-dvh flex-col bg-[var(--ink-900)] px-6 py-8 text-white">
       <div className="mb-4 flex shrink-0 items-center gap-3">
-        <Link href="/" aria-label="처음으로 돌아가기" className="flex h-8 w-8 items-center justify-center rounded-full text-white/80">
+        <Link
+          href={`/recipe?${searchParams.toString()}`}
+          aria-label="레시피 결과로 돌아가기"
+          className="flex h-8 w-8 items-center justify-center rounded-full text-white/80"
+        >
           <ArrowLeft size={20} />
         </Link>
         <p className="flex-1 truncate font-serif-kr text-sm font-semibold">{recipeTitle}</p>
