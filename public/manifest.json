@@ -1,6 +1,6 @@
 {
-  "name": "이유식 레시피",
-  "short_name": "이유식 레시피",
+  "name": "오늘의 이유식",
+  "short_name": "오늘의 이유식",
   "description": "재료와 아기 단계를 입력하면 손질부터 조리, 안전 주의사항까지 한 화면에서 확인하는 이유식 조리 도구",
   "start_url": "/",
   "display": "standalone",
