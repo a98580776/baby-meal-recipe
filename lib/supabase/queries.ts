@@ -154,14 +154,14 @@ export async function getRecipeLookupData(
     ),
   );
 
-  const ingredients = new Map<string, ResolvedIngredient | null>();
-  for (const [id, row] of ingredientRows) {
-    if (!row) {
-      ingredients.set(id, null);
-      continue;
-    }
-    ingredients.set(id, await resolveIngredient(supabase, row, params.stage_id));
-  }
+  const resolvedRows = await Promise.all(
+    ingredientRows.map(async ([id, row]) => {
+      if (!row) return [id, null] as const;
+      return [id, await resolveIngredient(supabase, row, params.stage_id)] as const;
+    }),
+  );
+
+  const ingredients = new Map<string, ResolvedIngredient | null>(resolvedRows);
 
   return {
     stage: stageRes.data as Stage | null,
