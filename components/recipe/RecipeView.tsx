@@ -89,6 +89,7 @@ function RecipeHeroPhotoTile({ ingredientId, overlayCount }: { ingredientId: str
           src={`/images/ingredients/${ingredientId}/${ingredientId}_${HERO_PHOTO_CANDIDATE_KINDS[index]}.png`}
           alt=""
           className="h-full w-full object-cover"
+          loading="eager" // always above the fold (page-top hero) — likely LCP element
           onError={() => setIndex((i) => i + 1)}
         />
       )}

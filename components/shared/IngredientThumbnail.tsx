@@ -30,6 +30,7 @@ export function IngredientThumbnail({
       src={`/images/ingredients/${ingredientId}/${ingredientId}_${CANDIDATE_KINDS[index]}.png`}
       alt=""
       className={className}
+      loading="lazy"
       onError={() => setIndex((i) => i + 1)}
     />
   );

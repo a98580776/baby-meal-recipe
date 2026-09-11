@@ -87,6 +87,7 @@ function CookingPhoto({
       src={candidates[candidateIndex]}
       alt=""
       className="aspect-video w-full shrink-0 rounded-2xl object-cover bg-[var(--accent-photo-bg)]"
+      loading="eager" // sole image for the current full-screen STEP — always in view
       onError={() => setCandidateIndex((i) => i + 1)}
     />
   );
