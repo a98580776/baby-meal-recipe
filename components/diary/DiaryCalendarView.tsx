@@ -17,6 +17,7 @@ import {
 import { CalendarGrid } from "@/components/diary/CalendarGrid";
 import { DayDetailPanel } from "@/components/diary/DayDetailPanel";
 import { DiaryEntryEditor } from "@/components/diary/DiaryEntryEditor";
+import { ReactionRecordSheet } from "@/components/allergen/ReactionRecordSheet";
 
 interface DiaryCalendarViewProps {
   ingredients: Ingredient[];
@@ -30,6 +31,7 @@ export function DiaryCalendarView({ ingredients }: DiaryCalendarViewProps) {
   const [anchorDate, setAnchorDate] = useState(todayIso);
   const [selectedDate, setSelectedDate] = useState(todayIso);
   const [openSlot, setOpenSlot] = useState<MealSlotId | null>(null);
+  const [reactionTarget, setReactionTarget] = useState<{ ingredientId: string; diaryEntryId: string } | null>(null);
 
   const anchor = parseIsoDate(anchorDate);
   const cells = useMemo(
@@ -134,6 +136,7 @@ export function DiaryCalendarView({ ingredients }: DiaryCalendarViewProps) {
         mealSlots={DEFAULT_MEAL_SLOTS}
         ingredients={ingredients}
         onOpenSlot={setOpenSlot}
+        onOpenReaction={(ingredientId, diaryEntryId) => setReactionTarget({ ingredientId, diaryEntryId })}
       />
 
       {openSlot && (
@@ -159,6 +162,18 @@ export function DiaryCalendarView({ ingredients }: DiaryCalendarViewProps) {
                 }
               : undefined
           }
+        />
+      )}
+
+      {reactionTarget && (
+        <ReactionRecordSheet
+          ingredientId={reactionTarget.ingredientId}
+          ingredientName={
+            ingredients.find((ing) => ing.id === reactionTarget.ingredientId)?.name_ko ?? reactionTarget.ingredientId
+          }
+          defaultIntroducedDate={selectedDate}
+          onSyncDiaryNote={(note) => edit(reactionTarget.diaryEntryId, { reactionNote: note })}
+          onClose={() => setReactionTarget(null)}
         />
       )}
     </div>

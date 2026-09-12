@@ -19,6 +19,7 @@ import { SafetyNoteItem } from "@/components/shared/SafetyNoteItem";
 import { IngredientTipList } from "@/components/shared/IngredientTipList";
 import { IngredientThumbnail } from "@/components/shared/IngredientThumbnail";
 import { SaveCubeDialog } from "@/components/cubes/SaveCubeDialog";
+import { ReactionRecordSheet, todayIso } from "@/components/allergen/ReactionRecordSheet";
 
 const SCOPE_LABEL: Record<"KR_MFDS_19" | "BROADER_ALLERGEN_CONTEXT", string> = {
   KR_MFDS_19: "법정 표시대상",
@@ -150,6 +151,7 @@ export function RecipeView() {
   const input = useMemo(() => parseInputFromParams(searchParams), [searchParams]);
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [cubeDialogOpen, setCubeDialogOpen] = useState(false);
+  const [reactionIngredientId, setReactionIngredientId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!input) return;
@@ -515,6 +517,13 @@ export function RecipeView() {
                       </li>
                     ))}
                   </ul>
+                  <button
+                    type="button"
+                    onClick={() => setReactionIngredientId(ing.id)}
+                    className="mt-2 text-xs font-semibold text-[var(--olive-600)] underline"
+                  >
+                    이 재료 반응 기록 보기/추가
+                  </button>
                 </div>
               ))}
           </div>
@@ -599,6 +608,18 @@ export function RecipeView() {
           recipeName={recipeName}
           ingredients={[...recipe.ingredients, ...recipe.toppings].map((ing) => ({ id: ing.id, name_ko: ing.name_ko }))}
           storage={recipe.storage}
+        />
+      )}
+
+      {reactionIngredientId && (
+        <ReactionRecordSheet
+          ingredientId={reactionIngredientId}
+          ingredientName={
+            [...recipe.ingredients, ...recipe.toppings].find((ing) => ing.id === reactionIngredientId)?.name_ko ??
+            reactionIngredientId
+          }
+          defaultIntroducedDate={todayIso()}
+          onClose={() => setReactionIngredientId(null)}
         />
       )}
     </div>

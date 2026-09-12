@@ -10,6 +10,10 @@ interface DayDetailPanelProps {
   mealSlots: MealSlotDefinition[];
   ingredients: Ingredient[];
   onOpenSlot: (mealSlot: MealSlotDefinition["id"]) => void;
+  // 알레르겐 반응기록(feature/allergen-reaction) 연동 — 항목의 재료 하나를
+  // 선택해 ReactionRecordSheet를 연다. diaryEntryId는 저장 시 그 항목의
+  // reactionNote를 함께 갱신하기 위해 필요하다.
+  onOpenReaction: (ingredientId: string, diaryEntryId: string) => void;
 }
 
 function ingredientNames(ids: string[], ingredients: Ingredient[]): string {
@@ -19,7 +23,7 @@ function ingredientNames(ids: string[], ingredients: Ingredient[]): string {
     .join(", ");
 }
 
-export function DayDetailPanel({ date, entries, mealSlots, ingredients, onOpenSlot }: DayDetailPanelProps) {
+export function DayDetailPanel({ date, entries, mealSlots, ingredients, onOpenSlot, onOpenReaction }: DayDetailPanelProps) {
   const entryBySlot = new Map(entries.map((e) => [e.mealSlot, e]));
 
   return (
@@ -57,6 +61,22 @@ export function DayDetailPanel({ date, entries, mealSlots, ingredients, onOpenSl
                   </span>
                 )}
               </button>
+              {/* 반응기록 진입점 — 슬롯 열기 버튼과 형제 요소로 둔다(button 중첩
+                  방지). 항목에 재료가 선택돼 있을 때만 재료별로 노출한다. */}
+              {entry && entry.ingredientIds.length > 0 && (
+                <div className="mt-1.5 ml-[60px] flex flex-wrap gap-1.5">
+                  {entry.ingredientIds.map((ingredientId) => (
+                    <button
+                      key={ingredientId}
+                      type="button"
+                      onClick={() => onOpenReaction(ingredientId, entry.id)}
+                      className="rounded-full border border-[var(--border-warm)] px-2 py-0.5 text-[10px] font-medium text-[var(--ink-600)]"
+                    >
+                      {ingredients.find((ing) => ing.id === ingredientId)?.name_ko ?? ingredientId} 반응 기록
+                    </button>
+                  ))}
+                </div>
+              )}
             </li>
           );
         })}
