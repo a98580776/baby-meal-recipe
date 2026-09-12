@@ -169,7 +169,7 @@
 {
   "error": {
     "code": "SAFETY_BLOCKED",
-    "message": "두부는 등록하신 알레르기(SOY)와 관련되어 제외됩니다.",
+    "message": "두부는 등록하신 알레르기(대두)와 관련되어 제외됩니다.",
     "details": [ { "code": "SAFETY_BLOCKED", "message": "...", "rule_id": "SOY_ALLERGEN" } ]
   }
 }

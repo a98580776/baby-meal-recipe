@@ -6,6 +6,7 @@ import { Search, X } from "lucide-react";
 import type { ApiErrorDetail, RecipeRequestInput, RecipeValidationResponse } from "@/types/api";
 import type { Allergen, FoodForm, Ingredient, Stage } from "@/types/domain";
 import { IngredientSearchOverlay } from "@/components/input/IngredientSearchOverlay";
+import { SafetyNoteItem } from "@/components/shared/SafetyNoteItem";
 import {
   getRecentIngredientIdsServerSnapshot,
   getRecentIngredientIdsSnapshot,
@@ -445,21 +446,28 @@ export function RecipeInputForm({
       {formError && <p className="text-sm text-red-600">{formError}</p>}
 
       {apiErrors.length > 0 && (
-        <div className="rounded-lg border border-red-300 bg-red-50 p-3">
-          <p className="mb-1 text-sm font-semibold text-red-700">확인이 필요합니다</p>
-          <ul className="list-disc pl-5 text-sm text-red-700">
+        <div className="rounded-2xl border border-red-300 bg-red-50 p-4" role="alert">
+          <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-red-700">
+            <span aria-hidden="true">🚫</span>
+            확인이 필요합니다
+          </p>
+          <ul className="flex flex-col gap-2">
             {apiErrors.map((err, i) => (
-              <li key={i}>{err.message}</li>
+              <SafetyNoteItem key={i} note={err} />
             ))}
           </ul>
         </div>
       )}
 
       {apiWarnings.length > 0 && (
-        <div className="rounded-lg border border-amber-300 bg-amber-50 p-3">
-          <ul className="list-disc pl-5 text-sm text-amber-700">
+        <div className="rounded-2xl border border-amber-300 bg-amber-50 p-4" role="alert">
+          <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-amber-800">
+            <span aria-hidden="true">⚠️</span>
+            알려드릴 사항이 있어요
+          </p>
+          <ul className="flex flex-col gap-2">
             {apiWarnings.map((w, i) => (
-              <li key={i}>{w.message}</li>
+              <SafetyNoteItem key={i} note={w} />
             ))}
           </ul>
         </div>

@@ -634,3 +634,29 @@ describe("22. BLOCK_FORM — condition_json.mechanism 기반 메시지 분기 (2
     );
   });
 });
+
+describe("23. WARN_OR_BLOCK 알레르기 차단 메시지 — 영어 코드 대신 name_ko 노출 (백로그 §12-2)", () => {
+  it("declared allergy와 일치해 차단될 때, resolved.allergens의 name_ko로 치환되어 노출된다(원본 코드 미노출)", () => {
+    // tofu fixture의 allergens는 seedData.resolved() 헬퍼 특성상 name_ko가
+    // code와 같은 값("SOY")이라 치환 여부를 구분할 수 없다 — 실제 DB 조인
+    // (allergens.name_ko, 예: 쇠고기 코드 BEEF -> "쇠고기")과 동일한 모양으로
+    // name_ko만 다르게 override해 실제로 치환되는지 검증한다.
+    const tofuWithKoreanLabel: ResolvedIngredient = {
+      ...ingredients.tofu,
+      allergens: ingredients.tofu.allergens.map((link) =>
+        link.allergen.code === "SOY" ? { ...link, allergen: { ...link.allergen, name_ko: "대두" } } : link,
+      ),
+    };
+    const evalResult = evaluateIngredientSafety(tofuWithKoreanLabel, ["SOY"]);
+    const blocked = evalResult.errors.find((e) => e.rule_id === "SOY_ALLERGEN");
+    expect(blocked?.message).toContain("대두");
+    expect(blocked?.message).not.toContain("(SOY)");
+  });
+
+  it("resolved.allergens에 매칭되는 코드가 없으면 원본 코드로 폴백한다(임의 번역 생성 금지, CLAUDE.md §19)", () => {
+    const tofuNoAllergenLink: ResolvedIngredient = { ...ingredients.tofu, allergens: [] };
+    const evalResult = evaluateIngredientSafety(tofuNoAllergenLink, ["SOY"]);
+    const blocked = evalResult.errors.find((e) => e.rule_id === "SOY_ALLERGEN");
+    expect(blocked?.message).toContain("(SOY)");
+  });
+});

@@ -227,9 +227,14 @@ export function evaluateIngredientSafety(
         const allergen = (rule.condition_json as { allergen?: string }).allergen;
         const declared = allergen != null && declaredAllergies.includes(allergen);
         if (declared) {
+          // Resolve the raw allergen code (e.g. "beef") to its Korean label via
+          // the DB-joined allergens table (same source RecipeView renders
+          // ing.allergens[].name_ko from) instead of surfacing the code itself.
+          const allergenNameKo =
+            resolved.allergens.find((link) => link.allergen.code === allergen)?.allergen.name_ko ?? allergen;
           errors.push({
             code: "SAFETY_BLOCKED",
-            message: `${nameEunNeun} 등록하신 알레르기(${allergen})와 관련되어 제외됩니다.`,
+            message: `${nameEunNeun} 등록하신 알레르기(${allergenNameKo})와 관련되어 제외됩니다.`,
             rule_id: rule.id,
             rule_status: rule.status,
             severity: rule.severity,
