@@ -2148,3 +2148,30 @@ where id in ('egg', 'milk', 'tofu', 'wheat', 'peanut', 'shrimp', 'squid', 'musse
 update ingredients set dietitian_verified_at = '2026-09-09'
 where id in ('bell_pepper', 'burdock', 'chickpea', 'flounder', 'halibut', 'kohlrabi',
              'lentil', 'lotus_root', 'octopus', 'persimmon', 'plum', 'quinoa', 'wakame');
+
+-- Migration 0066 addition (append-only, mirrors that migration's already-applied
+-- remote DB state) -- strawberry/blueberry: E010 범용 문구 복붙 오류 수정(evidence
+-- 기반). tangerine: 근거 기반 아님 -- 제품 정책 override(2026-09-13 대화에서 사용자
+-- 확정 지시, 상세 사유는 migration 0066 파일 주석 참고).
+
+insert into evidence (id, organization, title, url, source_tier, checked_at, applicability, status) values
+('E088', 'Solid Starts', 'Strawberry -- When can babies eat strawberries?', 'https://solidstarts.com/foods/strawberry/', 'TIER_1', '2026-09-13', '6-8mo+: "whole strawberry (stem removed)" if very large/soft/ripe, or mashed/cooked if small; 9mo+: thin slices; 질식 위험은 "firm, round, or small" 크기·단단함에서 발생, 씨 제거 언급 없음', 'VERIFIED'),
+('E089', 'Solid Starts', 'Blueberry -- When can babies eat blueberries?', 'https://solidstarts.com/foods/blueberries/', 'TIER_1', '2026-09-13', '6mo+: "flatten each blueberry into a disc shape"; 9mo+: 계속 납작하게 눌러서 제공; 12mo+: 씹기 능숙하면 통째 가능. 질식 위험은 "round, firm shape"에서 발생, 씨 제거 언급 없음', 'VERIFIED');
+
+update preparation_profiles set
+  peel_rule = null,
+  seed_removal_rule = null,
+  cutting_guidance = '씨는 제거하지 않고 그대로 섭취. 꼭지(초록 잎)만 제거하고, 아주 크고 부드럽게 잘 익은 것만 통째로 제공(질식 방지). 작거나 덜 익었으면 으깨거나 익혀서 제공',
+  evidence_id = 'E088'
+where id = 'prep_strawberry';
+
+update preparation_profiles set
+  peel_rule = null,
+  seed_removal_rule = null,
+  cutting_guidance = '씨와 껍질 모두 제거하지 않고 그대로 섭취. 통째로 주면 둥글고 단단해 질식 위험이 있으므로 손가락으로 납작하게 눌러 원반 모양으로 만들어 제공',
+  evidence_id = 'E089'
+where id = 'prep_blueberry';
+
+update preparation_profiles set
+  seed_removal_rule = null
+where id = 'prep_tangerine';
