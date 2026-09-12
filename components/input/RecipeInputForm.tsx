@@ -213,6 +213,15 @@ export function RecipeInputForm({
     <form onSubmit={handleSubmit} className="flex flex-col gap-8 pb-8">
       <section>
         <h2 className="text-base font-semibold">이유식 단계</h2>
+        {/* Phase 10(b605883)에서 추가, Phase 11 개편(e206283)에서 유실 — 원문
+            그대로 복원(백로그 §12-1). recommendedStageId가 있으면 항상
+            노출(당시도 마찬가지로 stageId와의 mismatch 여부로 조건을 걸지
+            않았음) — 색상 토큰만 현재 디자인 시스템(var(--ink-600))에 맞춤. */}
+        {recommendedStageId && (
+          <p className="mb-2 text-xs text-[var(--ink-600)]">
+            생년월일 기준 추천 단계예요. 다른 단계를 원하면 직접 선택할 수 있어요.
+          </p>
+        )}
         {/* pt-2 reserves room for the ⭐ badge's -top-2 offset: overflow-x-auto
             forces overflow-y to compute as auto too (CSS overflow spec), which
             clips anything poking above this row's box unless padding makes
