@@ -18,6 +18,7 @@ import { LoadingState } from "@/components/common/LoadingState";
 import { SafetyNoteItem } from "@/components/shared/SafetyNoteItem";
 import { IngredientTipList } from "@/components/shared/IngredientTipList";
 import { IngredientThumbnail } from "@/components/shared/IngredientThumbnail";
+import { SaveCubeDialog } from "@/components/cubes/SaveCubeDialog";
 
 const SCOPE_LABEL: Record<"KR_MFDS_19" | "BROADER_ALLERGEN_CONTEXT", string> = {
   KR_MFDS_19: "법정 표시대상",
@@ -148,6 +149,7 @@ export function RecipeView() {
   const searchParams = useSearchParams();
   const input = useMemo(() => parseInputFromParams(searchParams), [searchParams]);
   const [state, setState] = useState<LoadState>({ status: "loading" });
+  const [cubeDialogOpen, setCubeDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!input) return;
@@ -582,7 +584,23 @@ export function RecipeView() {
         >
           조리 시작{cookingStepCount > 0 ? ` · ${cookingStepCount}단계` : ""}
         </Link>
+        <button
+          type="button"
+          onClick={() => setCubeDialogOpen(true)}
+          className="mt-2 block w-full rounded-2xl border border-[var(--border-warm)] bg-[var(--surface-white)] py-3 text-center text-sm font-semibold text-[var(--ink-900)]"
+        >
+          큐브로 저장
+        </button>
       </div>
+
+      {cubeDialogOpen && (
+        <SaveCubeDialog
+          onClose={() => setCubeDialogOpen(false)}
+          recipeName={recipeName}
+          ingredients={[...recipe.ingredients, ...recipe.toppings].map((ing) => ({ id: ing.id, name_ko: ing.name_ko }))}
+          storage={recipe.storage}
+        />
+      )}
     </div>
   );
 }
