@@ -363,7 +363,7 @@ export function CookingModeView() {
           actionLabel={step.actionLabel}
           hasSafetyWarning={step.safetyWarnings.length > 0}
         />
-        <p className="text-xl font-semibold leading-relaxed text-white">{step.instruction}</p>
+        <p className="w-full text-left text-xl font-semibold leading-relaxed text-white break-keep">{step.instruction}</p>
         <StepInfoTable rows={infoRows} />
         {step.tips.length > 0 && (
           // Deliberately below StepInfoTable, inside the scrollable content
