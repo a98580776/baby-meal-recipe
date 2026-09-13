@@ -15,6 +15,11 @@
   --ink-400: #888780;
   --border-warm: #E3DFD2;
   --accent-photo-bg: #DED4C0;
+
+  /* 전역 하단 네비게이션 바 높이 + safe-area. 각 화면은 이 값을 pb-[...]로
+     더해 콘텐츠/고정 CTA가 바에 가리지 않게 한다 (BottomNavBar.tsx). */
+  --bottom-nav-height: 64px;
+  --bottom-nav-space: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom));
 }
 
 @theme inline {

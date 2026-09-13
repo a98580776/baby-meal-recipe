@@ -84,7 +84,6 @@ export function BabyProfileGate({ stages, allergens, ingredients, foodForms }: B
           recommendedStageId={recommendedStageId}
           ingredients={ingredients}
           foodForms={foodForms}
-          onEdit={() => setEditing(true)}
         />
       ) : (
         <BabyHomeOnboardingEmpty onStart={() => setEditing(true)} />

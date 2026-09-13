@@ -99,7 +99,7 @@ const sections: Section[] = [
 
 export default function PrivacyPage() {
   return (
-    <div className="mx-auto max-w-lg px-4 py-6">
+    <div className="mx-auto max-w-lg px-4 pt-6 pb-[calc(1.5rem+var(--bottom-nav-space))]">
       <div className="flex items-center gap-3">
         <Link
           href="/"

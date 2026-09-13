@@ -251,7 +251,7 @@ export function RecipeView() {
   ].filter((c): c is { label: string; value: string } => c !== null);
 
   return (
-    <div className="mx-auto max-w-lg pb-28">
+    <div className="mx-auto max-w-lg pb-[calc(7rem+var(--bottom-nav-space))]">
       <div className="relative">
         {heroIngredientIds.length > 0 ? (
           <RecipeHeroPhoto ingredientIds={heroIngredientIds} />
@@ -586,7 +586,7 @@ export function RecipeView() {
       )}
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 border-t border-[var(--border-warm)] bg-[var(--surface-white)] p-4">
+      <div className="fixed inset-x-0 bottom-[var(--bottom-nav-space)] border-t border-[var(--border-warm)] bg-[var(--surface-white)] p-4">
         <Link
           href={cookingModeHref}
           className="block w-full rounded-2xl bg-[var(--ink-900)] py-4 text-center text-base font-semibold text-white shadow-sm"

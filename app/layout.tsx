@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
 import { Geist_Mono } from "next/font/google";
 import "@fontsource/pretendard/400.css";
 import "@fontsource/pretendard/500.css";
@@ -9,6 +10,7 @@ import "@fontsource/pretendard/700.css";
 import "@fontsource/noto-serif-kr/500.css";
 import "@fontsource/noto-serif-kr/700.css";
 import "./globals.css";
+import { BottomNavBar } from "@/components/common/BottomNavBar";
 
 // font-mono utility (Cooking Mode's timer digits) still needs a monospace
 // face — Pretendard has no numeral-specific mono variant, so Geist Mono
@@ -33,7 +35,12 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="ko" className={`${geistMono.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {children}
+        <Suspense fallback={null}>
+          <BottomNavBar />
+        </Suspense>
+      </body>
     </html>
   );
 }

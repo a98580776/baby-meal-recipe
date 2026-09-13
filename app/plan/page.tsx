@@ -12,7 +12,7 @@ export default async function PlanPage() {
   ]);
 
   return (
-    <div className="mx-auto max-w-lg px-4 py-6">
+    <div className="mx-auto max-w-lg px-4 pt-6 pb-[calc(1.5rem+var(--bottom-nav-space))]">
       <PlanView stages={stages} foodForms={foodForms} ingredients={ingredients} allergens={allergens} />
     </div>
   );

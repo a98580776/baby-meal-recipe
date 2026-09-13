@@ -10,6 +10,7 @@ import { buildCookingSteps, type CookingStep } from "@/lib/recipe/buildCookingSt
 import { buildStepInfoRows, stepInfoRowKey, type StepInfoRow } from "@/lib/recipe/buildStepInfoRows";
 import { getStepImageCandidates } from "@/lib/recipe/stepImageCandidates";
 import { addTriedIngredients } from "@/lib/profile/triedIngredients";
+import { clearCookingSession, loadCookingSessionStep, saveCookingSession } from "@/lib/cooking/cookingSessionStorage";
 import { LoadingState } from "@/components/common/LoadingState";
 import { SafetyNoteItem } from "@/components/shared/SafetyNoteItem";
 import { IngredientTipList } from "@/components/shared/IngredientTipList";
@@ -178,7 +179,10 @@ export function CookingModeView() {
   const searchParams = useSearchParams();
   const input = useMemo(() => parseInputFromParams(searchParams), [searchParams]);
   const [state, setState] = useState<LoadState>({ status: "loading" });
-  const [stepIndex, setStepIndex] = useState(0);
+  // 마운트 시 저장된 세션이 있고(같은 input, 24시간 이내) 있으면 그 STEP부터
+  // 복원 — lib/cooking/cookingSessionStorage.ts 참고. input이 없으면(잘못된
+  // 진입) 0으로 시작하되 그 화면은 아래에서 바로 에러 처리된다.
+  const [stepIndex, setStepIndex] = useState(() => (input ? (loadCookingSessionStep(input) ?? 0) : 0));
 
   useEffect(() => {
     if (!input) return;
@@ -227,6 +231,19 @@ export function CookingModeView() {
     addTriedIngredients(state.steps.map((s) => s.ingredientId));
   }, [state, stepIndex]);
 
+  // 조리 진행상태 저장 — STEP이 바뀔 때마다(이전/다음 모두) 기록해 다음
+  // 마운트에서 loadCookingSessionStep으로 복원할 수 있게 한다. 완료 화면에
+  // 도달하면(모든 STEP을 지난 시점) 더 이상 재개할 대상이 아니므로 세션을
+  // 지운다.
+  useEffect(() => {
+    if (!input || state.status !== "ready") return;
+    if (stepIndex >= state.steps.length) {
+      clearCookingSession();
+      return;
+    }
+    saveCookingSession(input, stepIndex);
+  }, [input, state, stepIndex]);
+
   if (!input) {
     return (
       <div className="p-4">
@@ -273,7 +290,7 @@ export function CookingModeView() {
   if (done) {
     const ingredientNames = [...new Set(steps.map((s) => s.ingredientName))];
     return (
-      <div className="flex min-h-dvh flex-col items-center justify-center bg-[var(--ink-900)] px-6 text-center">
+      <div className="flex min-h-dvh flex-col items-center justify-center bg-[var(--ink-900)] px-6 pb-[var(--bottom-nav-space)] text-center">
         <p className="mb-2 font-serif-kr text-2xl font-bold text-white">오늘의 이유식 완성!</p>
         <p className="mb-6 text-sm text-white/70">{ingredientNames.join(", ")} 조리를 모두 마쳤습니다.</p>
         <Link
@@ -295,7 +312,7 @@ export function CookingModeView() {
   const recipeTitle = [...new Set(steps.map((s) => s.ingredientName))].join(" ");
 
   return (
-    <div className="flex min-h-dvh flex-col bg-[var(--ink-900)] px-6 py-8 text-white">
+    <div className="flex min-h-dvh flex-col bg-[var(--ink-900)] px-6 pt-8 pb-[calc(2rem+var(--bottom-nav-space))] text-white">
       <div className="mb-4 flex shrink-0 items-center gap-3">
         <Link
           href={`/recipe?${searchParams.toString()}`}

@@ -26,7 +26,6 @@ interface BabyHomeProps {
   recommendedStageId: string | null;
   ingredients: Ingredient[];
   foodForms: FoodForm[];
-  onEdit: () => void;
 }
 
 const WEEKDAY_KO = ["일", "월", "화", "수", "목", "금", "토"];
@@ -297,7 +296,6 @@ export function BabyHome({
   recommendedStageId,
   ingredients,
   foodForms,
-  onEdit,
 }: BabyHomeProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const confirmedStage = stages.find((s) => s.id === profile.confirmedStageId) ?? null;
@@ -306,11 +304,6 @@ export function BabyHome({
   const currentIndex = confirmedStage ? sortedStages.findIndex((s) => s.id === confirmedStage.id) : -1;
   const recommendation = useDailyRecommendation(ingredients, foodForms, confirmedStage);
   const foodFormGuidance = getStageFoodFormGuidance(confirmedStage);
-
-  function handleMenuAction(action: () => void) {
-    setMenuOpen(false);
-    action();
-  }
 
   return (
     <div className="flex flex-1 flex-col gap-8">
@@ -342,13 +335,13 @@ export function BabyHome({
             </button>
             {menuOpen && (
               <div className="absolute right-0 top-11 z-10 w-40 rounded-xl border border-[var(--border-warm)] bg-[var(--surface-white)] py-1 shadow-lg">
-                <button
-                  type="button"
-                  onClick={() => handleMenuAction(onEdit)}
+                <Link
+                  href="/settings"
+                  onClick={() => setMenuOpen(false)}
                   className="block w-full px-4 py-2 text-left text-sm text-[var(--ink-600)] hover:bg-[var(--bg-page)]"
                 >
                   아기 정보 수정
-                </button>
+                </Link>
                 <Link
                   href="/privacy"
                   onClick={() => setMenuOpen(false)}
