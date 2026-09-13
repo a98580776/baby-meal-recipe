@@ -431,35 +431,6 @@ CHOKING_HARD_RAW 연결(→ 5개는 이미 개별 evidence로 연결 완료, §1
 4. **건강/의료 정보 앱 카테고리 심사 대응**: 이유식 안전 정보를 다루는 앱 특성상
    일반 앱보다 심사가 까다로울 수 있음 — 면책 문구, 출처 표기(evidence 체계는 이미
    있음) 등 정리 필요.
-
----
-
-## 22. Cooking Mode 이미지 노출 범위 확장 + stage-form/action 이미지 배치 (2026-09-13)
-
-> §1~§21과 별개로, Cooking Mode 사진 노출 로직을 "첫 STEP/익힘확인 STEP만" →
-> "모든 STEP"으로 확장하고, stage별 형태 사진(`_stageN_form.png`)·손질 필드별
-> 액션 사진(`_action_{fieldKind}.png`)을 코드가 받아주도록 매칭 로직을 확장했다
-> (`13afbe7`, `af11603`, `b67f7d5` — main 머지 완료). 이미지 자산 78장(stage-form
-> 72장 + action 6장: bell_pepper/kabocha/mango `_action_seed_removal`, avocado
-> `_action_peel`, shrimp `_action_peel`/`_action_cutting`)도 함께 배치·커밋했다.
-
-- **재료-월령(단계) 적합성 필터 부재(`DATA_MODEL_GAP`) — 기존 항목(§ 2026-09-08
-  amendment, 위 참고) 독립 재확인**: stage-form 이미지 72장이 실제로 유효한
-  stage에 해당하는지 검증하는 과정에서, 이 앱에는 "재료를 특정 stage에서 막는"
-  게이트가 여전히 어디에도 없음을 코드베이스 재조사로 재확인했다(스키마/
-  `validateRecipeInput.ts`/`getIngredientsList`/`resolveIngredient` 전부 무관련
-  확인, `peanut`의 400 에러도 stage가 아니라 `TOPPING_ONLY` role 제약이었음을
-  라이브 서버 호출로 검증). **새로운 발견이 아니라 기존 gap이 여전히 유효하고
-  현재 아키텍처상 안전 이슈로 이어지지 않는다는 것의 재확인**이다 — 별도 조치
-  없음. raw/cooked serving mode(§ 2026-09-08 amendment의 "B-1/E-1" 항목)가 실제
-  로드맵에 오를 때 이 gap도 함께 재검토 대상.
-- **shrimp action 이미지 2장 신규 추가**: `shrimp_action_peel.png`(껍질·꼬리
-  제거), `shrimp_action_cutting.png`(세로로 갈라 원형 단면을 없앤 상태 —
-  `SHRIMP_CYLINDRICAL_CHOKING`/BLOCK_FORM 안전규칙이 요구하는 형태를 시각화).
-  최초 배치 때 새우만 빠졌던 이유는 파이프라인의 "네이밍 불일치"가 아니라 아예
-  생성이 안 됐던 것으로 확인됨(파일명 어떤 형태로도 존재하지 않았음) — 이번에
-  올바른 fieldKind(peel/cutting, 새우는 seed_removal 필드 자체가 없음) 기준으로
-  신규 생성해 배치 완료.
 5. **스토어 등록 정보**: 스크린샷, 설명문, 카테고리 분류 등 통상적인 제출 자산.
 
 ### 21.3 무계정 구조 관련 결정 (2026-09-09)
@@ -590,3 +561,30 @@ CHOKING_HARD_RAW 연결(→ 5개는 이미 개별 evidence로 연결 완료, §1
 - 3은 1/2 검증 후 착수 (동시 개발 시 버그 원인 추적 어려움)
 - 5는 별도 트랙, 특정 릴리즈에 강제 편입하지 않음
 ---
+
+## 22. Cooking Mode 이미지 노출 범위 확장 + stage-form/action 이미지 배치 (2026-09-13)
+
+> §1~§21과 별개로, Cooking Mode 사진 노출 로직을 "첫 STEP/익힘확인 STEP만" →
+> "모든 STEP"으로 확장하고, stage별 형태 사진(`_stageN_form.png`)·손질 필드별
+> 액션 사진(`_action_{fieldKind}.png`)을 코드가 받아주도록 매칭 로직을 확장했다
+> (`13afbe7`, `af11603`, `b67f7d5` — main 머지 완료). 이미지 자산 78장(stage-form
+> 72장 + action 6장: bell_pepper/kabocha/mango `_action_seed_removal`, avocado
+> `_action_peel`, shrimp `_action_peel`/`_action_cutting`)도 함께 배치·커밋했다.
+
+- **재료-월령(단계) 적합성 필터 부재(`DATA_MODEL_GAP`) — 기존 항목(§ 2026-09-08
+  amendment, 위 참고) 독립 재확인**: stage-form 이미지 72장이 실제로 유효한
+  stage에 해당하는지 검증하는 과정에서, 이 앱에는 "재료를 특정 stage에서 막는"
+  게이트가 여전히 어디에도 없음을 코드베이스 재조사로 재확인했다(스키마/
+  `validateRecipeInput.ts`/`getIngredientsList`/`resolveIngredient` 전부 무관련
+  확인, `peanut`의 400 에러도 stage가 아니라 `TOPPING_ONLY` role 제약이었음을
+  라이브 서버 호출로 검증). **새로운 발견이 아니라 기존 gap이 여전히 유효하고
+  현재 아키텍처상 안전 이슈로 이어지지 않는다는 것의 재확인**이다 — 별도 조치
+  없음. raw/cooked serving mode(§ 2026-09-08 amendment의 "B-1/E-1" 항목)가 실제
+  로드맵에 오를 때 이 gap도 함께 재검토 대상.
+- **shrimp action 이미지 2장 신규 추가**: `shrimp_action_peel.png`(껍질·꼬리
+  제거), `shrimp_action_cutting.png`(세로로 갈라 원형 단면을 없앤 상태 —
+  `SHRIMP_CYLINDRICAL_CHOKING`/BLOCK_FORM 안전규칙이 요구하는 형태를 시각화).
+  최초 배치 때 새우만 빠졌던 이유는 파이프라인의 "네이밍 불일치"가 아니라 아예
+  생성이 안 됐던 것으로 확인됨(파일명 어떤 형태로도 존재하지 않았음) — 이번에
+  올바른 fieldKind(peel/cutting, 새우는 seed_removal 필드 자체가 없음) 기준으로
+  신규 생성해 배치 완료.
