@@ -2175,3 +2175,66 @@ where id = 'prep_blueberry';
 update preparation_profiles set
   seed_removal_rule = null
 where id = 'prep_tangerine';
+
+-- Migration 0067 addition (append-only, mirrors that migration's already-applied
+-- remote DB state) -- 쿠킹모드 노출 문구 정리: 내부 문서 각주 노출 버그 수정(radish),
+-- 안전규칙과 중복되는 기전/다른형태 설명 제거(octopus/shrimp/peanut/burdock/
+-- lotus_root/persimmon/yogurt), 월령 전체나열 삭제(bell_pepper/mussel/kohlrabi --
+-- texture_profiles가 stage별 값 보유), 지시문과 완전 중복인 tip 25건 삭제.
+-- evidence_id/status 등 근거 메타데이터는 변경하지 않음.
+
+update preparation_profiles set cutting_guidance =
+  '초기에는 포크로 쉽게 으깨질 만큼 푹 익힌 무를 으깨어 제공. 이후 단계에서는 잘게 썬 익힌 무 또는 강판에 간 소량의 생 무를 제공 가능.'
+where id = 'prep_radish';
+
+update preparation_profiles set cutting_guidance =
+  '원통형 단면이 남지 않도록 반드시 세로로 슬라이스.'
+where id = 'prep_octopus';
+
+update preparation_profiles set cutting_guidance =
+  '세로로 길게 갈라 둥근 단면 자체를 없앰(둥글게 썬 조각/통짜 원통형 절대 금지). 6개월+ 곱게 다지거나 잘게 다져 부드러운 음식에 섞어 제공.'
+where id = 'prep_shrimp';
+
+update preparation_profiles set cutting_guidance =
+  '통땅콩·덩어리 땅콩버터 절대 금지. 묽게 희석하거나 곱게 간 형태로 다른 음식에 소량씩 섞어서 제공.'
+where id = 'prep_peanut';
+
+update preparation_profiles set cutting_guidance =
+  '뿌리 자체는 충분히 익혀 부드럽게 만든 뒤 제공.'
+where id = 'prep_burdock';
+
+update cooking_profiles set completion_checks = '{"충분히 부드럽게 익음"}'
+where id = 'cook_burdock';
+
+update preparation_profiles set cutting_guidance =
+  '생연근 제공 금지(식중독 위험 + 질식 위험). 완전히 무르지 않는 재료 특성을 고려해 충분히 익히고 얇게 썰어서 제공.'
+where id = 'prep_lotus_root';
+
+update preparation_profiles set cutting_guidance =
+  '충분히 익어 부드러운 것만 제공(덜 익은 감은 떫은맛으로 놀랄 수 있으나 무해).'
+where id = 'prep_persimmon';
+
+update preparation_profiles set cutting_guidance =
+  '저온살균 무가당 플레인 전지 요거트만 제공("베이비 요거트" 등 가공식품은 당류 함량 확인 필요).'
+where id = 'prep_yogurt';
+
+update preparation_profiles set cutting_guidance = null where id = 'prep_bell_pepper';
+update preparation_profiles set cutting_guidance = null where id = 'prep_mussel';
+
+update preparation_profiles set cutting_guidance =
+  '생/덜 익은 단단한 상태로 제공 금지.'
+where id = 'prep_kohlrabi';
+
+delete from ingredient_tips where id in (
+  'tip_carrot_1', 'tip_kabocha_2', 'tip_potato_2', 'tip_sweet_potato_2',
+  'tip_onion_1', 'tip_onion_2', 'tip_kidney_bean_2',
+  'tip_green_pea_1', 'tip_green_pea_2',
+  'tip_chestnut_1', 'tip_chestnut_2',
+  'tip_cheese_1', 'tip_seaweed_1',
+  'tip_sesame_1', 'tip_sesame_2',
+  'tip_radish_1', 'tip_cabbage_1',
+  'tip_napa_cabbage_1', 'tip_napa_cabbage_2',
+  'tip_spinach_1', 'tip_mushroom_1',
+  'tip_kiwi_2', 'tip_tangerine_1',
+  'tip_banana_1', 'tip_avocado_1'
+);
