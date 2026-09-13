@@ -367,7 +367,7 @@ export function BabyHome({
             {menuOpen && (
               <div className="absolute right-0 top-11 z-10 w-40 rounded-xl border border-[var(--border-warm)] bg-[var(--surface-white)] py-1 shadow-lg">
                 <Link
-                  href="/settings"
+                  href="/settings/profile"
                   onClick={() => setMenuOpen(false)}
                   className="block w-full px-4 py-2 text-left text-sm text-[var(--ink-600)] hover:bg-[var(--bg-page)]"
                 >

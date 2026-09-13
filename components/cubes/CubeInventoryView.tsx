@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { calculateDDay, formatDDay } from "@/lib/cubeInventory/dDay";
 import { deductCubeUsage, deleteCube, listCompositeCubes, listIngredientCubes } from "@/lib/cubeInventory/cubeRepository";
 import type { CompositeCube, CubeKind, CubeStatus, IngredientCube } from "@/lib/cubeInventory/types";
+import { AddIngredientCubeDialog } from "./AddIngredientCubeDialog";
 
 interface CubeInventoryViewProps {
   ingredientNameById: Record<string, string>;
@@ -32,6 +33,7 @@ export function CubeInventoryView({ ingredientNameById }: CubeInventoryViewProps
   const [tab, setTab] = useState<CubeStatus>("available");
   const [reloadToken, setReloadToken] = useState(0);
   const [state, setState] = useState<LoadState>({ status: "loading" });
+  const [showAddDialog, setShowAddDialog] = useState(false);
 
   // React 데이터 페칭 권장 패턴(components/recipe/RecipeView.tsx의 load()와
   // 동일한 구조 — cancelled 플래그 + effect 로컬 async 함수)을 그대로
@@ -81,7 +83,7 @@ export function CubeInventoryView({ ingredientNameById }: CubeInventoryViewProps
   }
 
   return (
-    <div className="mx-auto max-w-lg px-4 py-6 pb-[calc(3rem+var(--bottom-nav-space))]">
+    <div className="mx-auto max-w-lg px-2 py-6 pb-[calc(3rem+var(--bottom-nav-space))]">
       <div className="mb-6 flex items-center gap-3">
         <Link
           href="/"
@@ -90,7 +92,15 @@ export function CubeInventoryView({ ingredientNameById }: CubeInventoryViewProps
         >
           <ArrowLeft size={20} />
         </Link>
-        <h1 className="font-serif-kr text-xl font-bold tracking-tight text-[var(--ink-900)]">큐브 재고함</h1>
+        <h1 className="flex-1 font-serif-kr text-xl font-bold tracking-tight text-[var(--ink-900)]">큐브 재고함</h1>
+        <button
+          type="button"
+          onClick={() => setShowAddDialog(true)}
+          aria-label="큐브 추가"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--ink-600)]"
+        >
+          <Plus size={20} />
+        </button>
       </div>
 
       <div className="mb-5 flex gap-2 rounded-2xl bg-[var(--bg-page)] p-1">
@@ -168,6 +178,14 @@ export function CubeInventoryView({ ingredientNameById }: CubeInventoryViewProps
             );
           })}
         </ul>
+      )}
+
+      {showAddDialog && (
+        <AddIngredientCubeDialog
+          onClose={() => setShowAddDialog(false)}
+          onSaved={() => setReloadToken((t) => t + 1)}
+          ingredientNameById={ingredientNameById}
+        />
       )}
     </div>
   );
