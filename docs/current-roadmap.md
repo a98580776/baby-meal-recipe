@@ -623,3 +623,68 @@ CHOKING_HARD_RAW 연결(→ 5개는 이미 개별 evidence로 연결 완료, §1
 
 ### 원칙 재확인
 - 큐브/캘린더/알레르기 데이터 전부 클라이언트 로컬(IndexedDB) 저장, Supabase migration 없이 구현 완료 — 무계정 아키텍처 원칙 유지됨
+
+## 23. UI 여백 통일 + 큐브 수동 추가 + 설정 목록화 + 쿠킹모드 문구 정리 (2026-09-14)
+
+> Claude Desktop 세션에서 발견한 UX 이슈 4건 + 데이터 정리 1건. 전부 Claude Code가
+> feature branch에서 구현 → Claude Desktop이 git diff/vitest/tsc/eslint 독립 재검증
+> → main fast-forward 병합 순서로 진행. main 최종 HEAD: `498700e`.
+
+### 23-1. 캘린더/큐브재고 여백 통일 + 큐브 수동 추가 + 설정 목록화 (commit `5cdcc78`)
+
+- **여백 통일**: `app/diary/page.tsx`, `components/cubes/CubeInventoryView.tsx`의
+  좌우 패딩을 홈 화면 기준(`px-2`)에 맞춤(기존 `px-4`로 캘린더/큐브재고 화면이
+  상대적으로 좁아 보이던 문제).
+- **큐브 수동 추가**: 큐브 재고함에 레시피를 거치지 않고 단일 재료 큐브를 바로
+  등록하는 `+` 버튼 신설(`AddIngredientCubeDialog.tsx` 신규) — 기존
+  `createIngredientCube()` repository 함수는 있었으나 호출하는 UI가 없던 상태였음.
+- **설정 목록화**: `/settings`가 바로 아기정보 폼으로 가던 것을 "앱 설정(준비중)/
+  아기 정보/어플 초기화" 3항목 목록으로 변경. 아기정보 폼은 `/settings/profile`로
+  이동(`BabyProfileSettingsView.tsx` 신규).
+- **어플 초기화 신설**: IndexedDB 3종(diary/cubeInventory/allergenIntroduction) +
+  localStorage/sessionStorage 6개 키 전체를 지우는 `resetAppData()` 신규
+  (`lib/settings/resetAppData.ts`, 단위테스트로 전체 스토리지 초기화 검증).
+  삭제 전 확인 모달(`ResetAppDialog.tsx`) 포함, 되돌릴 수 없음을 명시.
+- Claude Desktop 검증: diff 전량 대조, storage key 리터럴 3개를 원본 모듈과 직접
+  대조해 정확히 일치 확인, vitest 271/271, tsc(`.next` 타입 미생성 이슈는 main도
+  동일해 무관 확인), eslint 신규 이슈 0건(기존 `BabyHome.tsx` 에러 1건은 main에도
+  존재하는 사전 이슈로 확인) — main fast-forward 병합.
+
+### 23-2. 쿠킹모드 노출 문구 정리 — migration 0067 (commit `2ab3a34`)
+
+70개 재료의 손질/조리 텍스트(prep/cook 필드 최종값, migration UPDATE까지 전부
+반영) + `ingredient_tips`를 프로그램적으로 전수 대조(문자열 overlap 기반, 스팟체크
+아님)한 뒤 진행. evidence_id/status 등 근거 메타데이터는 변경하지 않음(migration
+0065와 동일 원칙).
+
+- **버그 수정**: `prep_radish.cutting_guidance`에 내부 조사문서 각주("투자 문서
+  §2-4 caveat 참고" 등)가 사용자 화면에 그대로 노출되고 있던 것 제거.
+- **안전규칙 중복 제거(5건)**: 문어/새우/땅콩/우엉/연근 — 공식 `safety_rules`
+  배너와 거의 동일한 "위험 기전/다른 형태 제품" 설명을 prep 필드에서 제거하고
+  실제 행동 지시(무엇을 하라)만 남김. 우엉은 `cutting_guidance`와
+  `cook_burdock.completion_checks` 두 곳 모두에 중복돼 있어 둘 다 수정.
+- **월령 전체나열 제거(3건)**: 파프리카/홍합(전체 삭제)·콜라비(일부 삭제) —
+  `texture_profiles`에 이미 stage별로 정확한 값이 존재해 정보 손실 없이 제거
+  가능함을 확인 후 진행.
+- **팁(tip) ↔ 지시문 중복 삭제(25건)**: `ingredient_tips`가 같은 재료의
+  prep/cook 필드와 사실상 동일한 문장을 재진술하고 있던 것 삭제(당근/단호박/
+  감자/고구마/양파/강낭콩/완두콩/밤/치즈/김/참깨/무/양배추/배추/시금치/버섯 일부/
+  키위 일부/귤/바나나/아보카도 등). 지시문에 없는 고유 정보가 있는 5건
+  (`tip_egg_1`/`tip_mushroom_2`/`tip_barley_1`/`tip_kiwi_1`/`tip_mango_2`)은
+  검토 후 유지.
+- Pre/post 스냅샷 대조 FINAL_OK=true(handoff 문서:
+  `docs/claude-desktop-handoff/2026-09-14-cooking-instruction-cleanup-migration-0067-execution-report.md`),
+  vitest 271/271·tsc·eslint 전부 기존과 동일 확인 후 main 병합.
+
+### 23-3. 쿠킹모드 지시문 좌측 정렬 (commit `498700e`)
+
+`CookingModeView.tsx`의 메인 지시문(`step.instruction`)이 가운데 정렬 + 줄바꿈
+제어 없이 표시돼 여러 줄일 때 들쭉날쭉하게 보이던 문제 수정. 해당 `<p>`만
+`w-full text-left break-keep`으로 덮어써 좌측 정렬 + 한글 어절 단위 줄바꿈 적용,
+나머지 요소(재료명 라벨/정보 테이블 등)는 계속 중앙 정렬 유지.
+
+> **2026-09-14 세션 종료 확인**: 23-1/23-2/23-3 전 커밋을 Claude Desktop이 git
+> diff/vitest/tsc/eslint로 독립 재검증(원격 Supabase DB 실제 값 자체는 네트워크
+> 제약으로 직접 조회 불가 — migration SQL·seed.sql mirror·pre/post 스냅샷 보고서
+> 대조까지만 수행). main이 origin과 완전 동기화 상태(`498700e`), 관련 feature
+> 브랜치 전부 로컬/원격 삭제 완료.
