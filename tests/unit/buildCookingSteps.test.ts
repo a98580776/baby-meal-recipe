@@ -40,6 +40,39 @@ describe("buildCookingSteps", () => {
     ]);
   });
 
+  it("tags each prep step with the preparation field it came from, and null for non-prep steps", () => {
+    // carrot: wash_rule → "wash", peel_rule → "peel", 조리 방법/완료 확인 → null.
+    const steps = buildCookingSteps(makeRecipe(["carrot"]));
+    expect(steps.map((s) => s.fieldKind)).toEqual(["wash", "peel", null, null]);
+  });
+
+  it("maps every preparation field to its own distinct fieldKind (not just position-based)", () => {
+    // apple: wash+peel+seed_removal+core all set → exercises the middle two
+    // kinds carrot's fixture skips, in the same relative order as the
+    // preparation-field loop in buildCookingSteps.ts.
+    const appleSteps = buildCookingSteps(makeRecipe(["apple"]));
+    expect(appleSteps.filter((s) => s.fieldKind !== null).map((s) => s.fieldKind)).toEqual([
+      "wash",
+      "peel",
+      "seed_removal",
+      "core",
+    ]);
+
+    // chicken: only wash_rule + bone_removal_rule set (peel/seed/core/cutting
+    // are null) — confirms fieldKind tracks which field actually produced a
+    // step, not a fixed positional slot.
+    const chickenSteps = buildCookingSteps(makeRecipe(["chicken"]));
+    expect(chickenSteps.filter((s) => s.fieldKind !== null).map((s) => s.fieldKind)).toEqual(["wash", "bone"]);
+
+    // salmon: only fishbone_removal_rule set.
+    const salmonSteps = buildCookingSteps(makeRecipe(["salmon"]));
+    expect(salmonSteps.filter((s) => s.fieldKind !== null).map((s) => s.fieldKind)).toEqual(["fishbone"]);
+
+    // onion: only cutting_guidance set.
+    const onionSteps = buildCookingSteps(makeRecipe(["onion"]));
+    expect(onionSteps.filter((s) => s.fieldKind !== null).map((s) => s.fieldKind)).toEqual(["cutting"]);
+  });
+
   it("labels completion-check and temperature steps as 익힘 확인, everything else as 완료", () => {
     const steps = buildCookingSteps(makeRecipe(["carrot"]));
     expect(steps[0].actionLabel).toBe("완료");

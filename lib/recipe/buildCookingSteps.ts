@@ -8,6 +8,11 @@ export interface CookingStep {
   ingredientName: string;
   instruction: string;
   actionLabel: "완료" | "익힘 확인";
+  // Which preparation field this step came from (wash/peel/seed_removal/
+  // core/bone/fishbone/cutting) — null for non-prep steps (조리 방법/익힘
+  // 확인/등). Lets stepImageCandidates try a field-specific action photo
+  // (`{ingredientId}_action_{fieldKind}.png`) before falling back.
+  fieldKind: string | null;
   // Verified cook-time text (cooking_profiles.time_guidance) for 익힘 확인
   // steps only — null when no such data exists. Never a fabricated number
   // (Phase 11 §15): the Cooking Mode count-up timer is what covers steps
@@ -58,13 +63,18 @@ export function buildCookingSteps(recipe: RecipeResponse): CookingStep[] {
   for (const ing of entries) {
     let index = 0;
     const stepsStartIndex = steps.length;
-    const push = (instruction: string, actionLabel: CookingStep["actionLabel"] = "완료") => {
+    const push = (
+      instruction: string,
+      actionLabel: CookingStep["actionLabel"] = "완료",
+      fieldKind: string | null = null,
+    ) => {
       steps.push({
         id: `${ing.id}-${index++}`,
         ingredientId: ing.id,
         ingredientName: ing.name_ko,
         instruction,
         actionLabel,
+        fieldKind,
         timeGuidance: actionLabel === "익힘 확인" ? (ing.cooking?.time_guidance ?? null) : null,
         recommendedTime: actionLabel === "익힘 확인" ? (ing.cooking?.recommended_time ?? null) : null,
         timerEnabled: actionLabel === "익힘 확인",
@@ -75,16 +85,16 @@ export function buildCookingSteps(recipe: RecipeResponse): CookingStep[] {
 
     const p = ing.preparation;
     if (p) {
-      for (const rule of [
-        p.wash_rule,
-        p.peel_rule,
-        p.seed_removal_rule,
-        p.core_tough_part_rule,
-        p.bone_removal_rule,
-        p.fishbone_removal_rule,
-        p.cutting_guidance,
-      ]) {
-        if (rule) push(`${ing.name_ko}: ${rule}`);
+      for (const [rule, fieldKind] of [
+        [p.wash_rule, "wash"],
+        [p.peel_rule, "peel"],
+        [p.seed_removal_rule, "seed_removal"],
+        [p.core_tough_part_rule, "core"],
+        [p.bone_removal_rule, "bone"],
+        [p.fishbone_removal_rule, "fishbone"],
+        [p.cutting_guidance, "cutting"],
+      ] as const) {
+        if (rule) push(`${ing.name_ko}: ${rule}`, "완료", fieldKind);
       }
     }
 

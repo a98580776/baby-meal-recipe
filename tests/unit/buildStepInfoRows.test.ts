@@ -12,6 +12,7 @@ function makeStep(overrides: Partial<CookingStep> = {}): CookingStep {
     ingredientName: "당근",
     instruction: "당근: 흐르는 물로 세척",
     actionLabel: "완료",
+    fieldKind: null,
     timeGuidance: null,
     recommendedTime: null,
     timerEnabled: false,
