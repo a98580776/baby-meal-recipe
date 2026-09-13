@@ -15,7 +15,9 @@ import {
 import { filterRecommendationCandidates, pickDailyIngredientId, todayDateKey } from "@/lib/recipe/dailyRecommendation";
 import { saveRecipeInputDraft } from "@/lib/recipe/recipeInputDraft";
 import { buildCookingSteps } from "@/lib/recipe/buildCookingSteps";
+import { getPendingCheckIns, type PendingCheckInItem } from "@/lib/allergenIntroduction/pendingCheckIns";
 import { IngredientThumbnail } from "@/components/shared/IngredientThumbnail";
+import { AllergenCheckInModal } from "@/components/allergen/AllergenCheckInModal";
 import type { ApiErrorResponse, RecipeResponse } from "@/types/api";
 import type { FoodForm, Ingredient, Stage } from "@/types/domain";
 
@@ -285,6 +287,34 @@ function RecommendationCard({
 }
 
 /**
+ * 홈 마운트 시 한 번 "어제 새로 먹인 재료" 체크인 대상을 조회한다(로드 함수를
+ * effect 밖에 두면 안 되는 이유는 useAllergenIntroduction.ts와 동일 —
+ * react-hooks/set-state-in-effect 오탐 회피). 모달에서 항목을 모두 처리하면
+ * 목록을 비워 모달을 닫는다; 재조회는 하지 않는다(다음 홈 재진입 때 새로
+ * 조회됨).
+ */
+function usePendingAllergenCheckIns(): {
+  items: PendingCheckInItem[];
+  dismiss: () => void;
+} {
+  const [items, setItems] = useState<PendingCheckInItem[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      const found = await getPendingCheckIns();
+      if (!cancelled) setItems(found);
+    }
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return { items, dismiss: () => setItems([]) };
+}
+
+/**
  * 재방문 사용자가 들어오는 아기 중심 홈 (Phase 11 §5). 상단(사진/이름/생후일수/
  * 단계)과 하단(오늘 이유식 만들기 CTA) 두 영역으로만 구성한다 — 재료 목록, 상세
  * 정보 나열 등은 넣지 않는다. 프로필 편집은 우측 상단 ⋯ 메뉴로 옮긴다.
@@ -304,6 +334,7 @@ export function BabyHome({
   const currentIndex = confirmedStage ? sortedStages.findIndex((s) => s.id === confirmedStage.id) : -1;
   const recommendation = useDailyRecommendation(ingredients, foodForms, confirmedStage);
   const foodFormGuidance = getStageFoodFormGuidance(confirmedStage);
+  const pendingCheckIns = usePendingAllergenCheckIns();
 
   return (
     <div className="flex flex-1 flex-col gap-8">
@@ -388,6 +419,14 @@ export function BabyHome({
       >
         이유식 만들기
       </Link>
+
+      {pendingCheckIns.items.length > 0 && (
+        <AllergenCheckInModal
+          items={pendingCheckIns.items}
+          ingredients={ingredients}
+          onClose={pendingCheckIns.dismiss}
+        />
+      )}
     </div>
   );
 }

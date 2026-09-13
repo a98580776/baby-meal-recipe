@@ -3,7 +3,12 @@
 import { useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { useAllergenIntroduction } from "@/lib/allergenIntroduction/useAllergenIntroduction";
-import { REACTION_STATUS_VALUES, type AllergenIntroduction, type ReactionStatus } from "@/lib/allergenIntroduction/types";
+import {
+  REACTION_STATUS_VALUES,
+  type AllergenIntroduction,
+  type CheckInStatus,
+  type ReactionStatus,
+} from "@/lib/allergenIntroduction/types";
 import { reactionStatusLabel } from "@/lib/allergenIntroduction/reactionStatus";
 
 interface ReactionRecordSheetProps {
@@ -17,6 +22,15 @@ interface ReactionRecordSheetProps {
   // reactionNote도 함께 갱신해 메모를 동기화한다(레시피 화면에서 열렸을
   // 때는 대응하는 다이어리 항목이 없으므로 undefined).
   onSyncDiaryNote?: (note: string) => void;
+  // 알레르기 체크인 모달(AllergenCheckInModal)의 "반응이 있었어요" 흐름에서만
+  // 전달 — 저장 시 checkInStatus를 이 값으로 함께 갱신한다. 다이어리/레시피
+  // 화면의 일반 반응 기록 저장에서는 전달하지 않는다(undefined면 기존
+  // checkInStatus를 건드리지 않음 — allergenIntroductions.ts 참고).
+  checkInStatusOnSave?: CheckInStatus;
+  // 저장이 성공적으로 끝난 직후(onClose 호출 직전) 호출 — 체크인 모달이
+  // "저장했을 때만" 목록에서 항목을 제거하기 위해 필요(뒤로가기로 취소한
+  // 경우와 구분).
+  onSaved?: () => void;
   onClose: () => void;
 }
 
@@ -39,6 +53,8 @@ export function ReactionRecordSheet({
   ingredientName,
   defaultIntroducedDate,
   onSyncDiaryNote,
+  checkInStatusOnSave,
+  onSaved,
   onClose,
 }: ReactionRecordSheetProps) {
   const { record, isLoading, save, remove } = useAllergenIntroduction(ingredientId);
@@ -67,6 +83,8 @@ export function ReactionRecordSheet({
           save={save}
           remove={remove}
           onSyncDiaryNote={onSyncDiaryNote}
+          checkInStatusOnSave={checkInStatusOnSave}
+          onSaved={onSaved}
           onClose={onClose}
         />
       )}
@@ -81,6 +99,8 @@ interface ReactionRecordFormProps {
   save: ReturnType<typeof useAllergenIntroduction>["save"];
   remove: ReturnType<typeof useAllergenIntroduction>["remove"];
   onSyncDiaryNote?: (note: string) => void;
+  checkInStatusOnSave?: CheckInStatus;
+  onSaved?: () => void;
   onClose: () => void;
 }
 
@@ -91,6 +111,8 @@ function ReactionRecordForm({
   save,
   remove,
   onSyncDiaryNote,
+  checkInStatusOnSave,
+  onSaved,
   onClose,
 }: ReactionRecordFormProps) {
   const [reactionStatus, setReactionStatus] = useState<ReactionStatus>(record?.reactionStatus ?? "none");
@@ -104,8 +126,10 @@ function ReactionRecordForm({
       reactionStatus,
       reactionNote: note.trim() || undefined,
       followUpDate: followUpDate || undefined,
+      checkInStatus: checkInStatusOnSave,
     });
     onSyncDiaryNote?.(note.trim());
+    onSaved?.();
     onClose();
   }
 
