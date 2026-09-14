@@ -16,7 +16,7 @@ export default async function Home() {
   ]);
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-lg flex-col px-2 pt-6 pb-[calc(1.5rem+var(--bottom-nav-space))]">
+    <div className="mx-auto flex min-h-dvh max-w-lg flex-col px-1 pt-6 pb-[calc(1.5rem+var(--bottom-nav-space))]">
       <Suspense fallback={null}>
         <BabyProfileGate stages={stages} allergens={allergens} ingredients={ingredients} foodForms={foodForms} />
       </Suspense>

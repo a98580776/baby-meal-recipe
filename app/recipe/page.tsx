@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default function RecipePage() {
   return (
-    <Suspense fallback={<LoadingState />}>
+    <Suspense fallback={<LoadingState message="레시피를 확인하는 중이에요" />}>
       <RecipeView />
     </Suspense>
   );

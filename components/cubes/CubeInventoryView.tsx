@@ -83,7 +83,7 @@ export function CubeInventoryView({ ingredientNameById }: CubeInventoryViewProps
   }
 
   return (
-    <div className="mx-auto max-w-lg px-2 py-6 pb-[calc(3rem+var(--bottom-nav-space))]">
+    <div className="mx-auto max-w-lg px-1 py-6 pb-[calc(3rem+var(--bottom-nav-space))]">
       <div className="mb-6 flex items-center gap-3">
         <Link
           href="/"
@@ -93,14 +93,6 @@ export function CubeInventoryView({ ingredientNameById }: CubeInventoryViewProps
           <ArrowLeft size={20} />
         </Link>
         <h1 className="flex-1 font-serif-kr text-xl font-bold tracking-tight text-[var(--ink-900)]">큐브 재고함</h1>
-        <button
-          type="button"
-          onClick={() => setShowAddDialog(true)}
-          aria-label="큐브 추가"
-          className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--ink-600)]"
-        >
-          <Plus size={20} />
-        </button>
       </div>
 
       <div className="mb-5 flex gap-2 rounded-2xl bg-[var(--bg-page)] p-1">
@@ -179,6 +171,15 @@ export function CubeInventoryView({ ingredientNameById }: CubeInventoryViewProps
           })}
         </ul>
       )}
+
+      <button
+        type="button"
+        onClick={() => setShowAddDialog(true)}
+        aria-label="큐브 추가"
+        className="fixed bottom-[calc(1.5rem+var(--bottom-nav-space))] right-4 z-10 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--ink-900)] text-white shadow-lg"
+      >
+        <Plus size={26} />
+      </button>
 
       {showAddDialog && (
         <AddIngredientCubeDialog

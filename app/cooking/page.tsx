@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default function CookingPage() {
   return (
-    <Suspense fallback={<LoadingState />}>
+    <Suspense fallback={<LoadingState message="조리 단계를 준비하는 중이에요" />}>
       <CookingModeView />
     </Suspense>
   );

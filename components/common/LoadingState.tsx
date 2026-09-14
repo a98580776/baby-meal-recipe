@@ -4,7 +4,7 @@ type LoadingStateProps = {
 
 const DOT_DELAYS_MS = [0, 150, 300];
 
-export function LoadingState({ message = "레시피를 확인하는 중이에요" }: LoadingStateProps) {
+export function LoadingState({ message = "불러오는 중이에요" }: LoadingStateProps) {
   return (
     <div className="flex min-h-dvh w-full flex-col items-center justify-center gap-4 bg-[var(--bg-cream)] px-4 py-6">
       {/* eslint-disable-next-line @next/next/no-img-element */}
