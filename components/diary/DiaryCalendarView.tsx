@@ -87,7 +87,7 @@ export function DiaryCalendarView({ ingredients }: DiaryCalendarViewProps) {
   const monthLabel = `${anchor.getFullYear()}년 ${anchor.getMonth() + 1}월`;
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="flex w-full flex-1 flex-col">
       <div className="flex items-center justify-between">
         <p className="font-serif-kr text-xl font-bold tracking-tight text-[var(--ink-900)]">이유식 다이어리</p>
         <div className="flex rounded-full border border-[var(--border-warm)] bg-[var(--surface-white)] p-0.5 text-xs font-semibold">

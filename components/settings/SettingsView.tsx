@@ -16,7 +16,7 @@ export function SettingsView() {
   const [showResetDialog, setShowResetDialog] = useState(false);
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="flex w-full flex-1 flex-col">
       <h1 className="font-serif-kr text-xl font-bold tracking-tight text-[var(--ink-900)]">설정</h1>
 
       <ul className="mt-6 flex flex-col divide-y divide-[var(--border-warm)] overflow-hidden rounded-2xl border border-[var(--border-warm)] bg-[var(--surface-white)]">
