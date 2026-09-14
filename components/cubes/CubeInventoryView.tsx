@@ -83,7 +83,7 @@ export function CubeInventoryView({ ingredientNameById }: CubeInventoryViewProps
   }
 
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-lg flex-col px-4 py-6 pb-[calc(3rem+var(--bottom-nav-space))]">
+    <div className="mx-auto flex min-h-dvh w-full max-w-lg flex-col px-6 py-6 pb-[calc(3rem+var(--bottom-nav-space))]">
       <div className="mb-6 flex items-center gap-3">
         <Link
           href="/"
