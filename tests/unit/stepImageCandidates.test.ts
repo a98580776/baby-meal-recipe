@@ -39,7 +39,7 @@ describe("getStepImageCandidates", () => {
     // 쓰므로 avocado용 리네임이 apple의 peel 스텝에 전혀 영향을 주지 않는다.
     const candidates = getStepImageCandidates(base({ ingredientId: "apple", fieldKind: "peel" }));
     expect(candidates[0]).toBe("/images/ingredients/apple/apple_action_peel.png");
-    expect(candidates[1]).toBe("/images/ingredients/apple/apple_stage2_form.png");
+    expect(candidates[1]).toBe("/images/ingredients/apple/apple_stage2_form.jpg");
     expect(candidates).not.toContain("/images/ingredients/avocado/avocado_action_peel.png");
   });
 
@@ -49,7 +49,7 @@ describe("getStepImageCandidates", () => {
     );
     expect(candidates).toEqual([
       "/images/ingredients/avocado/avocado_action_peel.png",
-      "/images/ingredients/avocado/avocado_stage2_form.png",
+      "/images/ingredients/avocado/avocado_stage2_form.jpg",
       "/images/ingredients/avocado/avocado_safety.png",
       "/images/ingredients/avocado/avocado_raw.png",
       "/images/ingredients/avocado/avocado_texture.png",
@@ -60,7 +60,7 @@ describe("getStepImageCandidates", () => {
   it("익힘 확인 STEP은 fieldKind 유무와 무관하게 doneness를 raw/texture보다 우선한다(회귀 없음)", () => {
     const candidates = getStepImageCandidates(base({ actionLabel: "익힘 확인", fieldKind: null }));
     expect(candidates).toEqual([
-      "/images/ingredients/avocado/avocado_stage2_form.png",
+      "/images/ingredients/avocado/avocado_stage2_form.jpg",
       "/images/ingredients/avocado/avocado_doneness.png",
       "/images/ingredients/avocado/avocado_texture.png",
       "/images/ingredients/avocado/avocado_raw.png",
@@ -69,6 +69,6 @@ describe("getStepImageCandidates", () => {
 
   it("stageId에서 숫자를 못 뽑으면(예상 밖 포맷) form 후보를 만들지 않는다", () => {
     const candidates = getStepImageCandidates(base({ stageId: "unknown", fieldKind: null }));
-    expect(candidates.some((c) => c.includes("_form.png"))).toBe(false);
+    expect(candidates.some((c) => c.includes("_form.jpg"))).toBe(false);
   });
 });

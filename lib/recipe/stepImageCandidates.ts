@@ -28,10 +28,12 @@ export function getStepImageCandidates(params: {
 
   const candidates = order.map(path);
 
-  // stage별 형태 이미지({id}_stage{N}_form.png) — stage_id는 "stage_1" 형태라
+  // stage별 형태 이미지({id}_stage{N}_form.jpg) — stage_id는 "stage_1" 형태라
   // 숫자만 뽑아 파일명에 맞춘다. 아직 없는 재료는 자연스럽게 404 → 다음 후보로.
+  // JPEG인 이유: 72장 전부 알파 채널 미사용(완전 불투명)이 확인돼 PNG→JPEG
+  // 압축으로 96% 용량을 줄였다(로딩 성능 개선).
   const stageNum = stageId.match(/(\d+)$/)?.[1];
-  const formCandidate = stageNum ? `${dir}/${ingredientId}_stage${stageNum}_form.png` : null;
+  const formCandidate = stageNum ? `${dir}/${ingredientId}_stage${stageNum}_form.jpg` : null;
 
   // prep 필드별 액션 이미지(예: {id}_action_wash.png) — 아직 한 장도 생성되지
   // 않았지만, fieldKind가 있는 손질 스텝에서는 항상 최우선 후보로 시도한다.

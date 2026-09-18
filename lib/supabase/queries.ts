@@ -132,27 +132,19 @@ export async function getRecipeLookupData(
   supabase: SupabaseClient,
   params: { stage_id: string; food_form_id: string; ingredient_ids: string[] },
 ): Promise<RecipeLookupData> {
-  const [stageRes, foodFormRes] = await Promise.all([
+  const uniqueIds = [...new Set(params.ingredient_ids)];
+  const [stageRes, foodFormRes, ingredientsRes] = await Promise.all([
     supabase.from("stages").select("*").eq("id", params.stage_id).maybeSingle(),
     supabase.from("food_forms").select("*").eq("id", params.food_form_id).maybeSingle(),
+    supabase.from("ingredients").select("*").in("id", uniqueIds),
   ]);
   if (stageRes.error) throw stageRes.error;
   if (foodFormRes.error) throw foodFormRes.error;
+  if (ingredientsRes.error) throw ingredientsRes.error;
 
-  const uniqueIds = [...new Set(params.ingredient_ids)];
-  const ingredientRows = await Promise.all(
-    uniqueIds.map((id) =>
-      supabase
-        .from("ingredients")
-        .select("*")
-        .eq("id", id)
-        .maybeSingle()
-        .then((res) => {
-          if (res.error) throw res.error;
-          return [id, res.data as Ingredient | null] as const;
-        }),
-    ),
-  );
+  // .in() 응답은 요청 순서를 보장하지 않으므로 id -> row map으로 재정렬한다.
+  const ingredientById = new Map((ingredientsRes.data as Ingredient[]).map((row) => [row.id, row]));
+  const ingredientRows = uniqueIds.map((id) => [id, ingredientById.get(id) ?? null] as const);
 
   const resolvedRows = await Promise.all(
     ingredientRows.map(async ([id, row]) => {
