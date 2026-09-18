@@ -87,15 +87,19 @@ function tableForKind(kind: CubeKind) {
 }
 
 /**
- * remainingCount를 delta만큼 조정하고, 0 이하가 되면 status를 자동으로
- * "depleted"로, 다시 0보다 커지면 "available"로 되돌린다. 0 미만으로는
- * 내려가지 않는다(이미 소진된 큐브를 중복 차감해도 음수가 되지 않음).
+ * remainingCount를 delta만큼 조정한다. 0 이하가 되면 "소진" 상태로 남기는
+ * 대신 레코드 자체를 삭제한다(소진 탭을 따로 두지 않는 정책). 0보다 크게
+ * 남아있는 동안은 status를 항상 "available"로 유지한다.
  */
 export async function adjustRemainingCount(kind: CubeKind, id: string, delta: number): Promise<void> {
   const table = tableForKind(kind);
   const existing = await table.get(id);
   if (!existing) return;
   const remainingCount = Math.max(0, existing.remainingCount + delta);
+  if (remainingCount <= 0) {
+    await table.delete(id);
+    return;
+  }
   await table.update(id, {
     remainingCount,
     status: statusForRemainingCount(remainingCount),

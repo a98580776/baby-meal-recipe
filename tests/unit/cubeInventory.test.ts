@@ -75,7 +75,7 @@ describe("createCompositeCube", () => {
 });
 
 describe("adjustRemainingCount / deductCubeUsage", () => {
-  it("decrements remainingCount and flips status to depleted at 0", async () => {
+  it("decrements remainingCount and deletes the cube once it reaches 0", async () => {
     const cube = await createIngredientCube({
       ingredientId: "tofu",
       totalAmountG: 60,
@@ -85,17 +85,16 @@ describe("adjustRemainingCount / deductCubeUsage", () => {
     });
 
     await deductCubeUsage("ingredient", cube.id);
-    let updated = (await listIngredientCubes()).find((c) => c.id === cube.id)!;
-    expect(updated.remainingCount).toBe(1);
-    expect(updated.status).toBe("available");
+    let updated = (await listIngredientCubes()).find((c) => c.id === cube.id);
+    expect(updated?.remainingCount).toBe(1);
+    expect(updated?.status).toBe("available");
 
     await deductCubeUsage("ingredient", cube.id);
-    updated = (await listIngredientCubes()).find((c) => c.id === cube.id)!;
-    expect(updated.remainingCount).toBe(0);
-    expect(updated.status).toBe("depleted");
+    updated = (await listIngredientCubes()).find((c) => c.id === cube.id);
+    expect(updated).toBeUndefined();
   });
 
-  it("never decrements remainingCount below 0", async () => {
+  it("deletes the cube instead of letting remainingCount go below 0", async () => {
     const cube = await createIngredientCube({
       ingredientId: "tofu",
       totalAmountG: 30,
@@ -104,12 +103,11 @@ describe("adjustRemainingCount / deductCubeUsage", () => {
       expiryDate: "2026-10-12",
     });
     await deductCubeUsage("ingredient", cube.id, 5);
-    const updated = (await listIngredientCubes()).find((c) => c.id === cube.id)!;
-    expect(updated.remainingCount).toBe(0);
-    expect(updated.status).toBe("depleted");
+    const updated = (await listIngredientCubes()).find((c) => c.id === cube.id);
+    expect(updated).toBeUndefined();
   });
 
-  it("flips status back to available when remainingCount rises above 0", async () => {
+  it("safely no-ops when adjusting a cube that was already deleted at 0", async () => {
     const cube = await createIngredientCube({
       ingredientId: "carrot",
       totalAmountG: 30,
@@ -118,13 +116,13 @@ describe("adjustRemainingCount / deductCubeUsage", () => {
       expiryDate: "2026-10-12",
     });
     await deductCubeUsage("ingredient", cube.id);
+    expect((await listIngredientCubes()).find((c) => c.id === cube.id)).toBeUndefined();
+
     await adjustRemainingCount("ingredient", cube.id, 1);
-    const updated = (await listIngredientCubes()).find((c) => c.id === cube.id)!;
-    expect(updated.remainingCount).toBe(1);
-    expect(updated.status).toBe("available");
+    expect((await listIngredientCubes()).find((c) => c.id === cube.id)).toBeUndefined();
   });
 
-  it("filters listIngredientCubes by status", async () => {
+  it("filters listIngredientCubes by status — depleted cubes no longer exist to filter", async () => {
     const depleted = await createIngredientCube({
       ingredientId: "carrot",
       totalAmountG: 30,
@@ -142,7 +140,7 @@ describe("adjustRemainingCount / deductCubeUsage", () => {
     });
 
     expect((await listIngredientCubes("available")).map((c) => c.ingredientId)).toEqual(["potato"]);
-    expect((await listIngredientCubes("depleted")).map((c) => c.ingredientId)).toEqual(["carrot"]);
+    expect(await listIngredientCubes("depleted")).toEqual([]);
   });
 });
 

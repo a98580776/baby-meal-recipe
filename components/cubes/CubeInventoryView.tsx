@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { calculateDDay, formatDDay } from "@/lib/cubeInventory/dDay";
 import { deductCubeUsage, deleteCube, listCompositeCubes, listIngredientCubes } from "@/lib/cubeInventory/cubeRepository";
-import type { CompositeCube, CubeKind, CubeStatus, IngredientCube } from "@/lib/cubeInventory/types";
+import type { CompositeCube, CubeKind, IngredientCube } from "@/lib/cubeInventory/types";
 import { AddIngredientCubeDialog } from "./AddIngredientCubeDialog";
 
 interface CubeInventoryViewProps {
@@ -18,11 +18,6 @@ type CubeRow =
 
 type LoadState = { status: "loading" } | { status: "error" } | { status: "ready"; rows: CubeRow[] };
 
-const TABS: { value: CubeStatus; label: string }[] = [
-  { value: "available", label: "보관 중" },
-  { value: "depleted", label: "소진" },
-];
-
 function ddayTone(dDay: number): string {
   if (dDay < 0) return "bg-red-100 text-red-700";
   if (dDay <= 3) return "bg-amber-100 text-amber-700";
@@ -30,7 +25,6 @@ function ddayTone(dDay: number): string {
 }
 
 export function CubeInventoryView({ ingredientNameById }: CubeInventoryViewProps) {
-  const [tab, setTab] = useState<CubeStatus>("available");
   const [reloadToken, setReloadToken] = useState(0);
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -48,8 +42,8 @@ export function CubeInventoryView({ ingredientNameById }: CubeInventoryViewProps
     async function load() {
       try {
         const [ingredientCubes, compositeCubes] = await Promise.all([
-          listIngredientCubes(tab),
-          listCompositeCubes(tab),
+          listIngredientCubes("available"),
+          listCompositeCubes("available"),
         ]);
         const rows: CubeRow[] = [
           ...ingredientCubes.map((cube): CubeRow => ({ kind: "ingredient", cube })),
@@ -65,7 +59,7 @@ export function CubeInventoryView({ ingredientNameById }: CubeInventoryViewProps
     return () => {
       cancelled = true;
     };
-  }, [tab, reloadToken]);
+  }, [reloadToken]);
 
   async function handleUseOne(kind: CubeKind, id: string) {
     await deductCubeUsage(kind, id);
@@ -83,7 +77,7 @@ export function CubeInventoryView({ ingredientNameById }: CubeInventoryViewProps
   }
 
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-lg flex-col px-6 py-6 pb-[calc(3rem+var(--bottom-nav-space))]">
+    <div className="mx-auto flex min-h-dvh w-full max-w-lg flex-col px-12 py-6 pb-[calc(3rem+var(--bottom-nav-space))]">
       <div className="mb-6 flex items-center gap-3">
         <Link
           href="/"
@@ -95,21 +89,6 @@ export function CubeInventoryView({ ingredientNameById }: CubeInventoryViewProps
         <h1 className="flex-1 font-serif-kr text-xl font-bold tracking-tight text-[var(--ink-900)]">큐브 재고함</h1>
       </div>
 
-      <div className="mb-5 flex gap-2 rounded-2xl bg-[var(--bg-page)] p-1">
-        {TABS.map((t) => (
-          <button
-            key={t.value}
-            type="button"
-            onClick={() => setTab(t.value)}
-            className={`flex-1 rounded-xl py-2 text-sm font-semibold ${
-              tab === t.value ? "bg-[var(--surface-white)] text-[var(--ink-900)] shadow-sm" : "text-[var(--ink-400)]"
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-
       {state.status === "loading" && <p className="p-4 text-center text-sm text-[var(--ink-400)]">불러오는 중...</p>}
 
       {state.status === "error" && (
@@ -119,9 +98,7 @@ export function CubeInventoryView({ ingredientNameById }: CubeInventoryViewProps
       )}
 
       {state.status === "ready" && state.rows.length === 0 && (
-        <p className="p-4 text-center text-sm text-[var(--ink-400)]">
-          {tab === "available" ? "보관 중인 큐브가 없습니다." : "소진된 큐브가 없습니다."}
-        </p>
+        <p className="p-4 text-center text-sm text-[var(--ink-400)]">보관 중인 큐브가 없습니다.</p>
       )}
 
       {state.status === "ready" && state.rows.length > 0 && (
@@ -141,9 +118,12 @@ export function CubeInventoryView({ ingredientNameById }: CubeInventoryViewProps
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-[var(--ink-600)]">
-                  {row.cube.remainingCount}/{row.cube.unitCount}개 남음 · 총 {row.cube.totalAmountG}g
-                </p>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-2xl font-bold text-[var(--ink-900)]">{row.cube.remainingCount}</span>
+                  <span className="text-xs text-[var(--ink-600)]">
+                    /{row.cube.unitCount}개 남음 · 총 {row.cube.totalAmountG}g
+                  </span>
+                </div>
                 <p className="mt-0.5 text-xs text-[var(--ink-400)]">
                   만든 날짜 {row.cube.madeDate} · 소비기한 {row.cube.expiryDate}
                 </p>
