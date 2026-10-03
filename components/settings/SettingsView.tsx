@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, ExternalLink } from "lucide-react";
 import { ResetAppDialog } from "@/components/settings/ResetAppDialog";
+import { FEEDBACK_FORM_URL } from "@/lib/constants/feedback";
 
 /**
  * /settings는 목록 화면이다. 항목별 실제 내용(아기 정보 폼 등)은 각자
@@ -33,6 +34,20 @@ export function SettingsView() {
             <p className="text-sm font-semibold text-[var(--ink-900)]">아기 정보</p>
             <ChevronRight size={18} className="text-[var(--ink-400)]" />
           </Link>
+        </li>
+        <li>
+          <a
+            href={FEEDBACK_FORM_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between px-4 py-4"
+          >
+            <div>
+              <p className="text-sm font-semibold text-[var(--ink-900)]">의견 보내기</p>
+              <p className="mt-0.5 text-xs text-[var(--ink-400)]">불편한 점이나 원하는 기능을 알려주세요</p>
+            </div>
+            <ExternalLink size={18} className="text-[var(--ink-400)]" />
+          </a>
         </li>
         <li>
           <button
