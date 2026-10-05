@@ -55,7 +55,7 @@ android {
     namespace "app.vercel.baby_meal_recipe.twa"
     defaultConfig {
         applicationId "app.vercel.baby_meal_recipe.twa"
-        minSdkVersion 21
+        minSdkVersion 24
         targetSdkVersion 36
         versionCode 5
         versionName "5"
